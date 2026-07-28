@@ -15,7 +15,8 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.cipherwizard31.SongBookApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -24,6 +25,9 @@
       "eas": {
         "projectId": "b7fabb99-7df6-41b4-990d-0506a22efeee"
       }
-    }
+    },
+    "plugins": [
+      "expo-sharing"
+    ]
   }
 }
