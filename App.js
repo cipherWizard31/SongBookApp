@@ -394,7 +394,10 @@ export default function App() {
       <SafeAreaView style={stylesContainer.container}>
         {/* HEADER */}
         <View style={stylesContainer.header}>
-          <TouchableOpacity onPress={() => toggleSidebar(true)}>
+          <TouchableOpacity
+            onPress={() => toggleSidebar(true)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={stylesContainer.hamburgerBtn}>
             <Text style={stylesContainer.hamburgerIcon}>☰</Text>
           </TouchableOpacity>
 
@@ -792,7 +795,7 @@ const stylesContainer = StyleSheet.create({
 
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
@@ -800,10 +803,11 @@ const stylesContainer = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  hamburgerIcon: { fontSize: 20, color: '#000' },
+  hamburgerBtn: { padding: 8 },
+  hamburgerIcon: { fontSize: 22, color: '#000' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  appLogo: { width: 18, height: 18 },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: '#000', letterSpacing: 1.5 },
+  appLogo: { width: 20, height: 20 },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#000', letterSpacing: 1.5 },
 
   searchBox: { paddingHorizontal: 16, paddingTop: 8 },
   searchInput: { backgroundColor: '#F5F5F5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, borderWidth: 1, borderColor: '#E5E5E5' },
@@ -837,17 +841,21 @@ const stylesContainer = StyleSheet.create({
     width: 56, 
     height: 56, 
     borderRadius: 28, 
-    justify: 'center', 
+    justifyContent: 'center', 
     alignItems: 'center', 
-    elevation: 6 
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   fabText: { 
-    fontSize: 32, 
+    fontSize: 34, 
     color: '#FFF', 
     fontWeight: '300', 
     textAlign: 'center',
-    lineHeight: 34,
-    includeFontPadding: false
+    lineHeight: 56,
+    includeFontPadding: false,
   },
 
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
