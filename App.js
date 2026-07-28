@@ -10,43 +10,108 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
-const DEFAULT_STYLES = ['All', 'Waltz (3/4)', 'Ballad (4/4)', 'Wollo (6/8)', 'Reggae (2/4)', 'Chikchika (6/8)', 'Disco (4/4)', 'Swing(4/4)'];
-const DEFAULT_SCALES = ['All', '1st (C Major/Tizeta)', '2nd (D Minor/Natural)', '5th (C Major/Ambassel)', '6th (D Minor/Bati)', 'C Minor (Anchihoye)', 'C Minor (Tizeta)', 'C Minor (Ambassel)', 'C Minor (Blues)'];
+// Custom Default Styles & Scales
+const DEFAULT_STYLES = [
+  'All',
+  'Waltz (3/4)',
+  'Ballad (4/4)',
+  'Wollo (6/8)',
+  'Reggae (2/4)',
+  'Chikchika (6/8)',
+  'Disco (4/4)',
+  'Swing(4/4)',
+];
+
+const DEFAULT_SCALES = [
+  'All',
+  '1st (C Major/Tizeta)',
+  '2nd (D Minor/Natural)',
+  '5th (C Major/Ambassel)',
+  '6th (D Minor/Bati)',
+  'C Minor (Anchihoye)',
+  'C Minor (Tizeta)',
+  'C Minor (Ambassel)',
+  'C Minor (Blues)',
+];
+
+// Scale Dictionary Reference
+const SCALE_DICTIONARY = [
+  {
+    name: '1st (C Major/Tizeta)',
+    notes: 'C - D - E - G - A',
+    description: 'Pentatonic scale widely used for traditional, nostalgic, and joyful melodies.',
+  },
+  {
+    name: '2nd (D Minor/Natural)',
+    notes: 'D - E - F - G - A - Bb - C',
+    description: 'Standard minor diatonic scale used for solemn and worshipful progressions.',
+  },
+  {
+    name: '5th (C Major/Ambassel)',
+    notes: 'C - Db - F - G - Ab',
+    description: 'Pentatonic scale featuring a distinct flat second, ideal for prayerful worship.',
+  },
+  {
+    name: '6th (D Minor/Bati)',
+    notes: 'D - F - G - A - C',
+    description: 'Minor pentatonic scale frequently used in expressive worship ballads.',
+  },
+  {
+    name: 'C Minor (Anchihoye)',
+    notes: 'C - Db - F - Gb - Bb',
+    description: 'Unique pentatonic scale with diminished notes evoking deep reverence.',
+  },
+  {
+    name: 'C Minor (Tizeta)',
+    notes: 'C - D - Eb - G - Ab',
+    description: 'Minor variant of Tizeta commonly used in reflective worship.',
+  },
+  {
+    name: 'C Minor (Ambassel)',
+    notes: 'C - Eb - F - Ab - Bb',
+    description: 'Deep minor Ambassel variation for intense spiritual songs.',
+  },
+  {
+    name: 'C Minor (Blues)',
+    notes: 'C - Eb - F - F# - G - Bb',
+    description: 'Hexatonic blues scale used in contemporary Christian worship arrangements.',
+  },
+];
 
 const STORAGE_KEY = '@songbook_songs';
 const CUSTOM_STYLES_KEY = '@songbook_custom_styles';
 const CUSTOM_SCALES_KEY = '@songbook_custom_scales';
 
 export default function App() {
-  // State
   const [songs, setSongs] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
   const [scales, setScales] = useState(DEFAULT_SCALES);
 
-  // Active Filters
+  const [currentScreen, setCurrentScreen] = useState('songs');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [selectedStyle, setSelectedStyle] = useState('All');
   const [selectedScale, setSelectedScale] = useState('All');
 
-  // Modals
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
 
-  // Form State
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [style, setStyle] = useState('Reggae');
-  const [scale, setScale] = useState('1st Position');
+  const [style, setStyle] = useState('Ballad (4/4)');
+  const [scale, setScale] = useState('1st (C Major/Tizeta)');
   const [lyrics, setLyrics] = useState('');
 
-  // New Custom Options State
   const [newCustomStyle, setNewCustomStyle] = useState('');
   const [newCustomScale, setNewCustomScale] = useState('');
 
-  // Load Initial Data
   useEffect(() => {
     loadData();
   }, []);
@@ -65,7 +130,6 @@ export default function App() {
     }
   };
 
-  // Add Custom Style
   const handleAddCustomStyle = async () => {
     if (!newCustomStyle.trim()) return;
     const updated = [...styles, newCustomStyle.trim()];
@@ -75,7 +139,6 @@ export default function App() {
     await AsyncStorage.setItem(CUSTOM_STYLES_KEY, JSON.stringify(updated));
   };
 
-  // Add Custom Scale
   const handleAddCustomScale = async () => {
     if (!newCustomScale.trim()) return;
     const updated = [...scales, newCustomScale.trim()];
@@ -85,7 +148,6 @@ export default function App() {
     await AsyncStorage.setItem(CUSTOM_SCALES_KEY, JSON.stringify(updated));
   };
 
-  // Save New Song
   const handleSaveSong = async () => {
     if (!title.trim() || !author.trim()) {
       Alert.alert('Missing Fields', 'Please enter a song title and author.');
@@ -105,14 +167,35 @@ export default function App() {
     setSongs(updatedSongs);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSongs));
 
-    // Reset & Close Modal
     setTitle('');
     setAuthor('');
     setLyrics('');
     setModalVisible(false);
   };
 
-  // Filter Logic
+  const handleExportSongs = async () => {
+    if (songs.length === 0) {
+      Alert.alert('Export Empty', 'No songs available to export.');
+      return;
+    }
+
+    try {
+      const jsonContent = JSON.stringify(songs, null, 2);
+      const fileUri = `${FileSystem.documentDirectory}SelahKignit_Backup.json`;
+
+      await FileSystem.writeAsStringAsync(fileUri, jsonContent);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Export Saved', `Saved locally to: ${fileUri}`);
+      }
+    } catch (error) {
+      Alert.alert('Export Error', 'Could not export songs.');
+      console.error(error);
+    }
+  };
+
   const filteredSongs = songs.filter((s) => {
     const styleMatch = selectedStyle === 'All' || s.style === selectedStyle;
     const scaleMatch = selectedScale === 'All' || s.scale === selectedScale;
@@ -124,86 +207,197 @@ export default function App() {
       <SafeAreaView style={stylesContainer.container}>
         {/* HEADER */}
         <View style={stylesContainer.header}>
-          <Text style={stylesContainer.headerTitle}>SONGS</Text>
+          <TouchableOpacity
+            style={stylesContainer.hamburgerBtn}
+            onPress={() => setSidebarOpen(true)}>
+            <Text style={stylesContainer.hamburgerIcon}>☰</Text>
+          </TouchableOpacity>
+
+          <View style={stylesContainer.titleRow}>
+            <Image
+              source={require('./assets/music-note.png')}
+              style={stylesContainer.appLogo}
+              resizeMode="contain"
+            />
+            <Text style={stylesContainer.headerTitle}>SELAH KIGNIT</Text>
+          </View>
+
+          <View style={{ width: 24 }} />
         </View>
 
-        {/* FILTER SLIDERS */}
-        <View style={stylesContainer.filterContainer}>
-          <Text style={stylesContainer.filterLabel}>STYLE</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
-            {styles.map((st) => (
-              <TouchableOpacity
-                key={st}
-                style={[
-                  stylesContainer.chip,
-                  selectedStyle === st && stylesContainer.chipSelected,
-                ]}
-                onPress={() => setSelectedStyle(st)}>
-                <Text
-                  style={[
-                    stylesContainer.chipText,
-                    selectedStyle === st && stylesContainer.chipTextSelected,
-                  ]}>
-                  {st}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+        {/* SONGS SCREEN */}
+        {currentScreen === 'songs' && (
+          <View style={{ flex: 1 }}>
+            <View style={stylesContainer.filterContainer}>
+              <Text style={stylesContainer.filterLabel}>STYLE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
+                {styles.map((st) => (
+                  <TouchableOpacity
+                    key={st}
+                    style={[
+                      stylesContainer.chip,
+                      selectedStyle === st && stylesContainer.chipSelected,
+                    ]}
+                    onPress={() => setSelectedStyle(st)}>
+                    <Text
+                      style={[
+                        stylesContainer.chipText,
+                        selectedStyle === st && stylesContainer.chipTextSelected,
+                      ]}>
+                      {st}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-          <Text style={stylesContainer.filterLabel}>SCALE</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
-            {scales.map((sc) => (
-              <TouchableOpacity
-                key={sc}
-                style={[
-                  stylesContainer.chip,
-                  selectedScale === sc && stylesContainer.chipSelected,
-                ]}
-                onPress={() => setSelectedScale(sc)}>
-                <Text
-                  style={[
-                    stylesContainer.chipText,
-                    selectedScale === sc && stylesContainer.chipTextSelected,
-                  ]}>
-                  {sc}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+              <Text style={stylesContainer.filterLabel}>SCALE</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
+                {scales.map((sc) => (
+                  <TouchableOpacity
+                    key={sc}
+                    style={[
+                      stylesContainer.chip,
+                      selectedScale === sc && stylesContainer.chipSelected,
+                    ]}
+                    onPress={() => setSelectedScale(sc)}>
+                    <Text
+                      style={[
+                        stylesContainer.chipText,
+                        selectedScale === sc && stylesContainer.chipTextSelected,
+                      ]}>
+                      {sc}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
 
-        {/* SONG FEED */}
-        <FlatList
-          data={filteredSongs}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
-          ListEmptyComponent={
-            <Text style={stylesContainer.emptyText}>No songs in this view.</Text>
-          }
-          renderItem={({ item }) => (
+            <FlatList
+              data={filteredSongs}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
+              ListEmptyComponent={
+                <Text style={stylesContainer.emptyText}>No songs found in this view.</Text>
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={stylesContainer.card}
+                  activeOpacity={0.7}
+                  onPress={() => setSongDetailModal(item)}>
+                  <View style={{ flex: 1, paddingRight: 10 }}>
+                    <Text style={stylesContainer.cardTitle}>{item.title}</Text>
+                    <Text style={stylesContainer.cardAuthor}>{item.author}</Text>
+                  </View>
+                  <View style={stylesContainer.tagContainer}>
+                    <Text style={stylesContainer.tag}>{item.style}</Text>
+                    <Text style={stylesContainer.tag}>{item.scale}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+
             <TouchableOpacity
-              style={stylesContainer.card}
-              activeOpacity={0.7}
-              onPress={() => setSongDetailModal(item)}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={stylesContainer.cardTitle}>{item.title}</Text>
-                <Text style={stylesContainer.cardAuthor}>{item.author}</Text>
-              </View>
-              <View style={stylesContainer.tagContainer}>
-                <Text style={stylesContainer.tag}>{item.style}</Text>
-                <Text style={stylesContainer.tag}>{item.scale}</Text>
-              </View>
+              style={stylesContainer.fab}
+              activeOpacity={0.8}
+              onPress={() => setModalVisible(true)}>
+              <Text style={stylesContainer.fabText}>+</Text>
             </TouchableOpacity>
-          )}
-        />
+          </View>
+        )}
 
-        {/* FLOATING ACTION BUTTON */}
-        <TouchableOpacity
-          style={stylesContainer.fab}
-          activeOpacity={0.8}
-          onPress={() => setModalVisible(true)}>
-          <Text style={stylesContainer.fabText}>+</Text>
-        </TouchableOpacity>
+        {/* SCALE DICTIONARY SCREEN */}
+        {currentScreen === 'dictionary' && (
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <Text style={stylesContainer.screenTitle}>Scale Dictionary (Qenet)</Text>
+            <Text style={stylesContainer.screenSub}>
+              Reference guide for traditional scale intervals and characteristics.
+            </Text>
+
+            {SCALE_DICTIONARY.map((scaleItem) => (
+              <View key={scaleItem.name} style={stylesContainer.dictCard}>
+                <Text style={stylesContainer.dictTitle}>{scaleItem.name}</Text>
+                <Text style={stylesContainer.dictNotes}>{scaleItem.notes}</Text>
+                <Text style={stylesContainer.dictDesc}>{scaleItem.description}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* SETTINGS SCREEN */}
+        {currentScreen === 'settings' && (
+          <View style={{ flex: 1, padding: 20 }}>
+            <Text style={stylesContainer.screenTitle}>Settings</Text>
+            <Text style={stylesContainer.screenSub}>Manage your application data and backups.</Text>
+
+            <TouchableOpacity
+              style={stylesContainer.settingItem}
+              onPress={handleExportSongs}>
+              <View>
+                <Text style={stylesContainer.settingTitle}>Export Songs Data</Text>
+                <Text style={stylesContainer.settingDesc}>
+                  Save a local JSON backup file of all your songs.
+                </Text>
+              </View>
+              <Text style={{ fontSize: 18, color: '#000' }}>➔</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* SIDEBAR MENU MODAL */}
+        <Modal visible={sidebarOpen} animationType="fade" transparent={true}>
+          <View style={stylesContainer.drawerOverlay}>
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => setSidebarOpen(false)}
+            />
+            <View style={stylesContainer.drawerContainer}>
+              <View style={stylesContainer.drawerHeader}>
+                <Image
+                  source={require('./assets/music-note.png')}
+                  style={stylesContainer.drawerLogo}
+                  resizeMode="contain"
+                />
+                <Text style={stylesContainer.drawerTitle}>Selah Kignit</Text>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  stylesContainer.drawerItem,
+                  currentScreen === 'songs' && stylesContainer.drawerItemActive,
+                ]}
+                onPress={() => {
+                  setCurrentScreen('songs');
+                  setSidebarOpen(false);
+                }}>
+                <Text style={stylesContainer.drawerItemText}>🎵 Songs</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  stylesContainer.drawerItem,
+                  currentScreen === 'dictionary' && stylesContainer.drawerItemActive,
+                ]}
+                onPress={() => {
+                  setCurrentScreen('dictionary');
+                  setSidebarOpen(false);
+                }}>
+                <Text style={stylesContainer.drawerItemText}>📖 Scale Dictionary</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  stylesContainer.drawerItem,
+                  currentScreen === 'settings' && stylesContainer.drawerItemActive,
+                ]}
+                onPress={() => {
+                  setCurrentScreen('settings');
+                  setSidebarOpen(false);
+                }}>
+                <Text style={stylesContainer.drawerItemText}>⚙️ Settings</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* ADD SONG MODAL */}
         <Modal visible={modalVisible} animationType="fade" transparent={false}>
@@ -229,7 +423,6 @@ export default function App() {
                 onChangeText={setAuthor}
               />
 
-              {/* STYLE SELECTION */}
               <Text style={stylesContainer.inputLabel}>STYLE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
                 {styles.filter((s) => s !== 'All').map((st) => (
@@ -256,7 +449,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {/* SCALE SELECTION */}
               <Text style={stylesContainer.inputLabel}>SCALE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
                 {scales.filter((s) => s !== 'All').map((sc) => (
@@ -283,7 +475,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {/* LYRICS */}
               <Text style={stylesContainer.inputLabel}>LYRICS</Text>
               <TextInput
                 style={[stylesContainer.input, stylesContainer.textArea]}
@@ -295,7 +486,6 @@ export default function App() {
                 onChangeText={setLyrics}
               />
 
-              {/* MODAL ACTIONS */}
               <View style={stylesContainer.buttonRow}>
                 <TouchableOpacity
                   style={[stylesContainer.btn, stylesContainer.btnCancel]}
@@ -313,7 +503,7 @@ export default function App() {
           </SafeAreaView>
         </Modal>
 
-        {/* SONG DETAIL / LYRICS MODAL */}
+        {/* SONG DETAIL MODAL */}
         <Modal visible={!!songDetailModal} animationType="fade">
           <SafeAreaView style={stylesContainer.modalContainer}>
             <View style={{ padding: 24, flex: 1 }}>
@@ -348,23 +538,144 @@ export default function App() {
 const stylesContainer = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
 
-  // Header
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justify: 'space-between',
+  },
+  hamburgerBtn: {
+    padding: 4,
+  },
+  hamburgerIcon: {
+    fontSize: 22,
+    color: '#000000',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  appLogo: {
+    width: 22,
+    height: 22,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     color: '#000000',
     letterSpacing: 2,
   },
 
-  // Filter Section
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    flexDirection: 'row',
+  },
+  drawerContainer: {
+    width: '75%',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    paddingTop: 50,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 32,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  drawerLogo: {
+    width: 28,
+    height: 28,
+  },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: 1,
+  },
+  drawerItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  drawerItemActive: {
+    backgroundColor: '#F5F5F5',
+  },
+  drawerItemText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+  },
+
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  screenSub: {
+    fontSize: 13,
+    color: '#666666',
+    marginBottom: 20,
+  },
+
+  dictCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 12,
+  },
+  dictTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 4,
+  },
+  dictNotes: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444444',
+    marginBottom: 8,
+  },
+  dictDesc: {
+    fontSize: 13,
+    color: '#666666',
+    lineHeight: 18,
+  },
+
+  settingItem: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    padding: 18,
+    flexDirection: 'row',
+    justify: 'space-between',
+    alignItems: 'center',
+  },
+  settingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  settingDesc: {
+    fontSize: 12,
+    color: '#666666',
+  },
+
   filterContainer: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
@@ -407,7 +718,6 @@ const stylesContainer = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Song Feed Card
   card: {
     backgroundColor: '#FFFFFF',
     padding: 20,
@@ -423,13 +733,11 @@ const stylesContainer = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000000',
-    letterSpacing: 0.3,
   },
   cardAuthor: {
     fontSize: 13,
     color: '#666666',
     marginTop: 4,
-    fontWeight: '400',
   },
   tagContainer: {
     alignItems: 'flex-end',
@@ -444,17 +752,14 @@ const stylesContainer = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 4,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   emptyText: {
     textAlign: 'center',
     color: '#999999',
     marginTop: 60,
     fontSize: 14,
-    letterSpacing: 0.5,
   },
 
-  // Floating Action Button
   fab: {
     position: 'absolute',
     right: 24,
@@ -463,13 +768,9 @@ const stylesContainer = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
+    justify: 'center',
     alignItems: 'center',
     elevation: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
   },
   fabText: {
     fontSize: 28,
@@ -478,7 +779,6 @@ const stylesContainer = StyleSheet.create({
     marginTop: -2,
   },
 
-  // Modals
   modalContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -488,7 +788,6 @@ const stylesContainer = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 6,
     color: '#000000',
-    letterSpacing: 0.5,
   },
   detailAuthor: {
     fontSize: 15,
@@ -535,7 +834,6 @@ const stylesContainer = StyleSheet.create({
     borderRadius: 8,
   },
 
-  // Buttons
   buttonRow: {
     flexDirection: 'row',
     justify: 'space-between',

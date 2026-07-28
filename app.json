@@ -4,7 +4,7 @@
     "slug": "SongBookApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/music-note.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
