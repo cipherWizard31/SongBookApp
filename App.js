@@ -13,6 +13,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -158,6 +159,53 @@ export default function App() {
     }
     return () => clearInterval(scrollInterval);
   }, [isAutoScrolling]);
+
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (songDetailModal) {
+        setSongDetailModal(null);
+        setIsAutoScrolling(false);
+        return true;
+      }
+      if (modalVisible) {
+        setModalVisible(false);
+        return true;
+      }
+      if (createSetlistModal) {
+        setCreateSetlistModal(false);
+        return true;
+      }
+      if (sidebarOpen) {
+        toggleSidebar(false);
+        return true;
+      }
+      if (currentScreen !== 'songs') {
+        setCurrentScreen('songs');
+        return true;
+      }
+      if (searchQuery || selectedStyle !== 'All' || selectedScale !== 'All' || activeSetlistFilter) {
+        setSearchQuery('');
+        setSelectedStyle('All');
+        setSelectedScale('All');
+        setActiveSetlistFilter(null);
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    return () => backHandler.remove();
+  }, [
+    songDetailModal,
+    modalVisible,
+    createSetlistModal,
+    sidebarOpen,
+    currentScreen,
+    searchQuery,
+    selectedStyle,
+    selectedScale,
+    activeSetlistFilter,
+  ]);
 
   const toggleSidebar = (open) => {
     if (open) {
@@ -568,7 +616,7 @@ export default function App() {
         )}
 
         {/* LEFT SIDE SLIDING SIDEBAR */}
-        <Modal visible={sidebarOpen} transparent={true} animationType="none">
+        <Modal visible={sidebarOpen} transparent={true} animationType="none" onRequestClose={() => toggleSidebar(false)}>
           <View style={stylesContainer.drawerOverlay}>
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => toggleSidebar(false)} />
             
@@ -627,7 +675,7 @@ export default function App() {
         </Modal>
 
         {/* CREATE SETLIST MODAL */}
-        <Modal visible={createSetlistModal} animationType="fade" transparent={true}>
+        <Modal visible={createSetlistModal} animationType="fade" transparent={true} onRequestClose={() => setCreateSetlistModal(false)}>
           <View style={stylesContainer.drawerOverlay}>
             <View style={[stylesContainer.drawerContainer, { width: '85%', margin: 'auto', borderRadius: 12, height: 'auto', alignSelf: 'center', position: 'relative' }]}>
               <Text style={stylesContainer.modalHeader}>Create Setlist</Text>
@@ -650,7 +698,7 @@ export default function App() {
         </Modal>
 
         {/* ADD SONG MODAL */}
-        <Modal visible={modalVisible} animationType="slide">
+        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
           <SafeAreaView style={stylesContainer.modalContainer}>
             <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 30 }}>
               <Text style={stylesContainer.modalHeader}>New Song</Text>
@@ -705,7 +753,13 @@ export default function App() {
         </Modal>
 
         {/* READ SONG DETAIL MODAL */}
-        <Modal visible={!!songDetailModal} animationType="slide">
+        <Modal
+          visible={!!songDetailModal}
+          animationType="slide"
+          onRequestClose={() => {
+            setSongDetailModal(null);
+            setIsAutoScrolling(false);
+          }}>
           <SafeAreaView style={stylesContainer.modalContainer}>
             <View style={{ padding: 16, flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

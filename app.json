@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SongBookApp",
-    "slug": "SongBookApp",
+    "name": "Selah Kignit",
+    "slug": "selah-kignit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/music-note.png",
@@ -12,14 +12,14 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/music-note.png",
+        "backgroundImage": "./assets/music-note.png",
+        "monochromeImage": "./assets/music-note.png"
       },
-      "package": "com.cipherwizard31.SongBookApp"
+      "package": "com.cipherwizard31.Selah-Kignit"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/music-note.png"
     },
     "extra": {
       "eas": {
