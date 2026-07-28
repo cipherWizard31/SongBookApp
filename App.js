@@ -14,7 +14,9 @@ import {
   Animated,
   Dimensions,
   BackHandler,
+  Switch,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -84,6 +86,7 @@ const CUSTOM_STYLES_KEY = '@songbook_custom_styles';
 const CUSTOM_SCALES_KEY = '@songbook_custom_scales';
 const SETLISTS_KEY = '@songbook_setlists';
 const STYLE_DICT_KEY = '@songbook_style_dictionary';
+const DARK_MODE_KEY = '@songbook_dark_mode';
 
 export default function App() {
   const [songs, setSongs] = useState([]);
@@ -91,6 +94,7 @@ export default function App() {
   const [scales, setScales] = useState(DEFAULT_SCALES);
   const [setlists, setSetlists] = useState([]);
   const [styleDict, setStyleDict] = useState(STYLE_DICTIONARY_INITIAL);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('songs');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -126,6 +130,42 @@ export default function App() {
   const [recordingStyleName, setRecordingStyleName] = useState(null);
   // Track the current audio player so we can release it before creating a new one
   const currentPlayerRef = useRef(null);
+
+  const theme = isDarkMode
+    ? {
+      bg: '#121212',
+      cardBg: '#1E1E1E',
+      text: '#F0F0F0',
+      subText: '#AAAAAA',
+      border: '#2C2C2C',
+      inputBg: '#252525',
+      secondaryBg: '#1A1A1A',
+      headerBg: '#181818',
+      chipBg: '#2C2C2C',
+      chipBorder: '#444444',
+      chipText: '#CCCCCC',
+      chipSelectedBg: '#FFFFFF',
+      chipSelectedText: '#000000',
+      fabBg: '#FFFFFF',
+      fabText: '#000000',
+    }
+    : {
+      bg: '#FFFFFF',
+      cardBg: '#FFFFFF',
+      text: '#000000',
+      subText: '#666666',
+      border: '#E5E5E5',
+      inputBg: '#FAFAFA',
+      secondaryBg: '#F8F8F8',
+      headerBg: '#FFFFFF',
+      chipBg: '#F5F5F5',
+      chipBorder: '#E5E5E5',
+      chipText: '#555555',
+      chipSelectedBg: '#000000',
+      chipSelectedText: '#FFFFFF',
+      fabBg: '#000000',
+      fabText: '#FFFFFF',
+    };
 
   useEffect(() => {
     loadData();
@@ -231,14 +271,25 @@ export default function App() {
       const savedScales = await AsyncStorage.getItem(CUSTOM_SCALES_KEY);
       const savedSetlists = await AsyncStorage.getItem(SETLISTS_KEY);
       const savedStyleDict = await AsyncStorage.getItem(STYLE_DICT_KEY);
+      const savedDarkMode = await AsyncStorage.getItem(DARK_MODE_KEY);
 
       if (savedSongs) setSongs(JSON.parse(savedSongs));
       if (savedStyles) setStyles(JSON.parse(savedStyles));
       if (savedScales) setScales(JSON.parse(savedScales));
       if (savedSetlists) setSetlists(JSON.parse(savedSetlists));
       if (savedStyleDict) setStyleDict(JSON.parse(savedStyleDict));
+      if (savedDarkMode !== null) setIsDarkMode(JSON.parse(savedDarkMode));
     } catch (e) {
       console.error('Data load error', e);
+    }
+  };
+
+  const toggleDarkMode = async (val) => {
+    setIsDarkMode(val);
+    try {
+      await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(val));
+    } catch (e) {
+      console.error('Save dark mode error', e);
     }
   };
 
@@ -329,6 +380,8 @@ export default function App() {
 
     setTitle('');
     setAuthor('');
+    setStyle('Ballad (4/4)');
+    setScale('1st (C Major/Tizeta)');
     setChords('');
     setLyrics('');
     setAudioUri(null);
@@ -439,19 +492,20 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={stylesContainer.container}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <SafeAreaView style={[stylesContainer.container, { backgroundColor: theme.bg }]}>
         {/* HEADER */}
-        <View style={stylesContainer.header}>
+        <View style={[stylesContainer.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
           <TouchableOpacity
             onPress={() => toggleSidebar(true)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={stylesContainer.hamburgerBtn}>
-            <Text style={stylesContainer.hamburgerIcon}>☰</Text>
+            <Text style={[stylesContainer.hamburgerIcon, { color: theme.text }]}>☰</Text>
           </TouchableOpacity>
 
           <View style={stylesContainer.titleRow}>
             <Image source={require('./assets/music-note.png')} style={stylesContainer.appLogo} resizeMode="contain" />
-            <Text style={stylesContainer.headerTitle}>SELAH KIGNIT</Text>
+            <Text style={[stylesContainer.headerTitle, { color: theme.text }]}>SELAH KIGNIT</Text>
           </View>
 
           <View style={{ width: 24 }} />
@@ -462,9 +516,9 @@ export default function App() {
           <View style={{ flex: 1 }}>
             <View style={stylesContainer.searchBox}>
               <TextInput
-                style={stylesContainer.searchInput}
+                style={[stylesContainer.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
                 placeholder="Search title, artist or lyrics..."
-                placeholderTextColor="#888"
+                placeholderTextColor={theme.subText}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -473,42 +527,42 @@ export default function App() {
             {setlists.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.setlistBar}>
                 <TouchableOpacity
-                  style={[stylesContainer.setlistChip, !activeSetlistFilter && stylesContainer.setlistChipActive]}
+                  style={[stylesContainer.setlistChip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, !activeSetlistFilter && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
                   onPress={() => setActiveSetlistFilter(null)}>
-                  <Text style={[stylesContainer.setlistText, !activeSetlistFilter && stylesContainer.setlistTextActive]}>All Songs</Text>
+                  <Text style={[stylesContainer.setlistText, { color: theme.chipText }, !activeSetlistFilter && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>All Songs</Text>
                 </TouchableOpacity>
                 {setlists.map((sl) => (
                   <TouchableOpacity
                     key={sl.id}
-                    style={[stylesContainer.setlistChip, activeSetlistFilter === sl.id && stylesContainer.setlistChipActive]}
+                    style={[stylesContainer.setlistChip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, activeSetlistFilter === sl.id && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
                     onPress={() => setActiveSetlistFilter(sl.id)}>
-                    <Text style={[stylesContainer.setlistText, activeSetlistFilter === sl.id && stylesContainer.setlistTextActive]}>📋 {sl.name}</Text>
+                    <Text style={[stylesContainer.setlistText, { color: theme.chipText }, activeSetlistFilter === sl.id && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>📋 {sl.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
 
-            <View style={stylesContainer.filterContainer}>
-              <Text style={stylesContainer.filterLabel}>STYLE</Text>
+            <View style={[stylesContainer.filterContainer, { backgroundColor: theme.bg }]}>
+              <Text style={[stylesContainer.filterLabel, { color: theme.subText }]}>STYLE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
                 {styles.map((st) => (
                   <TouchableOpacity
                     key={st}
-                    style={[stylesContainer.chip, selectedStyle === st && stylesContainer.chipSelected]}
+                    style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, selectedStyle === st && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
                     onPress={() => setSelectedStyle(st)}>
-                    <Text style={[stylesContainer.chipText, selectedStyle === st && stylesContainer.chipTextSelected]}>{st}</Text>
+                    <Text style={[stylesContainer.chipText, { color: theme.chipText }, selectedStyle === st && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{st}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
-              <Text style={stylesContainer.filterLabel}>SCALE</Text>
+              <Text style={[stylesContainer.filterLabel, { color: theme.subText }]}>SCALE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
                 {scales.map((sc) => (
                   <TouchableOpacity
                     key={sc}
-                    style={[stylesContainer.chip, selectedScale === sc && stylesContainer.chipSelected]}
+                    style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, selectedScale === sc && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
                     onPress={() => setSelectedScale(sc)}>
-                    <Text style={[stylesContainer.chipText, selectedScale === sc && stylesContainer.chipTextSelected]}>{sc}</Text>
+                    <Text style={[stylesContainer.chipText, { color: theme.chipText }, selectedScale === sc && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{sc}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -518,29 +572,29 @@ export default function App() {
               data={filteredSongs}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-              ListEmptyComponent={<Text style={stylesContainer.emptyText}>No songs found.</Text>}
+              ListEmptyComponent={<Text style={[stylesContainer.emptyText, { color: theme.subText }]}>No songs found.</Text>}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={stylesContainer.card}
+                  style={[stylesContainer.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                   activeOpacity={0.7}
                   onPress={() => {
                     setSongDetailModal(item);
                     setTransposeKey(0);
                   }}>
                   <View style={{ flex: 1, paddingRight: 10 }}>
-                    <Text style={stylesContainer.cardTitle}>{item.title}</Text>
-                    <Text style={stylesContainer.cardAuthor}>{item.author}</Text>
+                    <Text style={[stylesContainer.cardTitle, { color: theme.text }]}>{item.title}</Text>
+                    <Text style={[stylesContainer.cardAuthor, { color: theme.subText }]}>{item.author}</Text>
                   </View>
                   <View style={stylesContainer.tagContainer}>
-                    <Text style={stylesContainer.tag}>{item.style}</Text>
-                    <Text style={stylesContainer.tag}>{item.scale}</Text>
+                    <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.style}</Text>
+                    <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.scale}</Text>
                   </View>
                 </TouchableOpacity>
               )}
             />
 
-            <TouchableOpacity style={stylesContainer.fab} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
-              <Text style={stylesContainer.fabText}>+</Text>
+            <TouchableOpacity style={[stylesContainer.fab, { backgroundColor: theme.fabBg }]} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
+              <Text style={[stylesContainer.fabText, { color: theme.fabText }]}>+</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -548,13 +602,13 @@ export default function App() {
         {/* STYLE DICTIONARY SCREEN */}
         {currentScreen === 'styledict' && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Text style={stylesContainer.screenTitle}>Style & Rhythm Dictionary</Text>
-            <Text style={stylesContainer.screenSub}>Listen to audio samples and rhythm patterns.</Text>
+            <Text style={[stylesContainer.screenTitle, { color: theme.text }]}>Style & Rhythm Dictionary</Text>
+            <Text style={[stylesContainer.screenSub, { color: theme.subText }]}>Listen to audio samples and rhythm patterns.</Text>
             {styleDict.map((s) => (
-              <View key={s.name} style={stylesContainer.dictCard}>
-                <Text style={stylesContainer.dictTitle}>{s.name}</Text>
-                <Text style={stylesContainer.dictNotes}>Rhythm Pattern: {s.rhythm}</Text>
-                <Text style={stylesContainer.dictDesc}>{s.description}</Text>
+              <View key={s.name} style={[stylesContainer.dictCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <Text style={[stylesContainer.dictTitle, { color: theme.text }]}>{s.name}</Text>
+                <Text style={[stylesContainer.dictNotes, { color: theme.subText }]}>Rhythm Pattern: {s.rhythm}</Text>
+                <Text style={[stylesContainer.dictDesc, { color: theme.subText }]}>{s.description}</Text>
 
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   {s.audioUri ? (
@@ -581,13 +635,13 @@ export default function App() {
         {/* SCALE DICTIONARY SCREEN */}
         {currentScreen === 'dictionary' && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Text style={stylesContainer.screenTitle}>Scale Dictionary (Qenet)</Text>
-            <Text style={stylesContainer.screenSub}>Traditional scale notes and features.</Text>
+            <Text style={[stylesContainer.screenTitle, { color: theme.text }]}>Scale Dictionary (Qenet)</Text>
+            <Text style={[stylesContainer.screenSub, { color: theme.subText }]}>Traditional scale notes and features.</Text>
             {SCALE_DICTIONARY.map((s) => (
-              <View key={s.name} style={stylesContainer.dictCard}>
-                <Text style={stylesContainer.dictTitle}>{s.name}</Text>
-                <Text style={stylesContainer.dictNotes}>{s.notes}</Text>
-                <Text style={stylesContainer.dictDesc}>{s.description}</Text>
+              <View key={s.name} style={[stylesContainer.dictCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                <Text style={[stylesContainer.dictTitle, { color: theme.text }]}>{s.name}</Text>
+                <Text style={[stylesContainer.dictNotes, { color: theme.subText }]}>{s.notes}</Text>
+                <Text style={[stylesContainer.dictDesc, { color: theme.subText }]}>{s.description}</Text>
               </View>
             ))}
           </ScrollView>
@@ -596,21 +650,36 @@ export default function App() {
         {/* SETTINGS SCREEN */}
         {currentScreen === 'settings' && (
           <View style={{ flex: 1, padding: 16 }}>
-            <Text style={stylesContainer.screenTitle}>Settings & Backup</Text>
-            <TouchableOpacity style={stylesContainer.settingItem} onPress={handleExportSongs}>
-              <View>
-                <Text style={stylesContainer.settingTitle}>Export Full Backup</Text>
-                <Text style={stylesContainer.settingDesc}>Export songs, setlists, and style dictionary.</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20 }}>
+              <Text style={[stylesContainer.screenTitle, { color: theme.text }]}>Settings & Backup</Text>
+            </View>
+            <View style={[stylesContainer.settingItem, { marginBottom: 12 }, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={[stylesContainer.settingTitle, { color: theme.text }]}>Dark Mode</Text>
+                <Text style={[stylesContainer.settingDesc, { color: theme.subText }]}>Switch between light and dark themes</Text>
               </View>
-              <Text>➔</Text>
+              <Switch
+                value={isDarkMode}
+                onValueChange={toggleDarkMode}
+                trackColor={{ false: '#767577', true: '#555555' }}
+                thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'}
+              />
+            </View>
+
+            <TouchableOpacity style={[stylesContainer.settingItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={handleExportSongs}>
+              <View>
+                <Text style={[stylesContainer.settingTitle, { color: theme.text }]}>Export Full Backup</Text>
+                <Text style={[stylesContainer.settingDesc, { color: theme.subText }]}>Export songs, setlists, and style dictionary.</Text>
+              </View>
+              <Text style={{ color: theme.text }}>➔</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[stylesContainer.settingItem, { marginTop: 10 }]} onPress={handleImportSongs}>
+            <TouchableOpacity style={[stylesContainer.settingItem, { marginTop: 10 }, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={handleImportSongs}>
               <View>
-                <Text style={stylesContainer.settingTitle}>Import Full Backup</Text>
-                <Text style={stylesContainer.settingDesc}>Restore full application state from backup.</Text>
+                <Text style={[stylesContainer.settingTitle, { color: theme.text }]}>Import Full Backup</Text>
+                <Text style={[stylesContainer.settingDesc, { color: theme.subText }]}>Restore full application state from backup.</Text>
               </View>
-              <Text>➔</Text>
+              <Text style={{ color: theme.text }}>➔</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -619,56 +688,56 @@ export default function App() {
         <Modal visible={sidebarOpen} transparent={true} animationType="none" onRequestClose={() => toggleSidebar(false)}>
           <View style={stylesContainer.drawerOverlay}>
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => toggleSidebar(false)} />
-            
-            <Animated.View style={[stylesContainer.drawerContainer, { transform: [{ translateX: slideAnim }] }]}>
-              <View style={stylesContainer.drawerHeader}>
+
+            <Animated.View style={[stylesContainer.drawerContainer, { backgroundColor: theme.cardBg, transform: [{ translateX: slideAnim }] }]}>
+              <View style={[stylesContainer.drawerHeader, { borderBottomColor: theme.border }]}>
                 <Image source={require('./assets/music-note.png')} style={stylesContainer.drawerLogo} resizeMode="contain" />
-                <Text style={stylesContainer.drawerTitle}>Selah Kignit</Text>
+                <Text style={[stylesContainer.drawerTitle, { color: theme.text }]}>Selah Kignit</Text>
               </View>
 
               <TouchableOpacity
-                style={[stylesContainer.drawerItem, currentScreen === 'songs' && stylesContainer.drawerItemActive]}
+                style={[stylesContainer.drawerItem, currentScreen === 'songs' && { backgroundColor: isDarkMode ? '#2C2C2C' : '#F5F5F5' }]}
                 onPress={() => {
                   setCurrentScreen('songs');
                   toggleSidebar(false);
                 }}>
-                <Text style={stylesContainer.drawerItemText}>🎵 Songs Feed</Text>
+                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>🎵 Songs Feed</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[stylesContainer.drawerItem, currentScreen === 'styledict' && stylesContainer.drawerItemActive]}
+                style={[stylesContainer.drawerItem, currentScreen === 'styledict' && { backgroundColor: isDarkMode ? '#2C2C2C' : '#F5F5F5' }]}
                 onPress={() => {
                   setCurrentScreen('styledict');
                   toggleSidebar(false);
                 }}>
-                <Text style={stylesContainer.drawerItemText}>🥁 Style Dictionary</Text>
+                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>🥁 Style Dictionary</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[stylesContainer.drawerItem, currentScreen === 'dictionary' && stylesContainer.drawerItemActive]}
+                style={[stylesContainer.drawerItem, currentScreen === 'dictionary' && { backgroundColor: isDarkMode ? '#2C2C2C' : '#F5F5F5' }]}
                 onPress={() => {
                   setCurrentScreen('dictionary');
                   toggleSidebar(false);
                 }}>
-                <Text style={stylesContainer.drawerItemText}>📖 Scale Dictionary</Text>
+                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>📖 Scale Dictionary</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[stylesContainer.drawerItem, currentScreen === 'settings' && stylesContainer.drawerItemActive]}
+                style={[stylesContainer.drawerItem, currentScreen === 'settings' && { backgroundColor: isDarkMode ? '#2C2C2C' : '#F5F5F5' }]}
                 onPress={() => {
                   setCurrentScreen('settings');
                   toggleSidebar(false);
                 }}>
-                <Text style={stylesContainer.drawerItemText}>⚙️ Backup & Restore</Text>
+                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>⚙️ Settings</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[stylesContainer.drawerItem, { marginTop: 20, borderTopWidth: 1, borderColor: '#EEE' }]}
+                style={[stylesContainer.drawerItem, { marginTop: 20, borderTopWidth: 1, borderColor: theme.border }]}
                 onPress={() => {
                   toggleSidebar(false);
                   setCreateSetlistModal(true);
                 }}>
-                <Text style={stylesContainer.drawerItemText}>➕ Create New Setlist</Text>
+                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>➕ Create New Setlist</Text>
               </TouchableOpacity>
             </Animated.View>
           </View>
@@ -677,79 +746,110 @@ export default function App() {
         {/* CREATE SETLIST MODAL */}
         <Modal visible={createSetlistModal} animationType="fade" transparent={true} onRequestClose={() => setCreateSetlistModal(false)}>
           <View style={stylesContainer.drawerOverlay}>
-            <View style={[stylesContainer.drawerContainer, { width: '85%', margin: 'auto', borderRadius: 12, height: 'auto', alignSelf: 'center', position: 'relative' }]}>
-              <Text style={stylesContainer.modalHeader}>Create Setlist</Text>
+            <View style={[stylesContainer.drawerContainer, { backgroundColor: theme.cardBg, width: '85%', margin: 'auto', borderRadius: 12, height: 'auto', alignSelf: 'center', position: 'relative' }]}>
+              <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>Create Setlist</Text>
               <TextInput
-                style={stylesContainer.input}
+                style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
                 placeholder="Setlist Name (e.g. Sunday Service)"
+                placeholderTextColor={theme.subText}
                 value={newSetlistName}
                 onChangeText={setNewSetlistName}
               />
               <View style={stylesContainer.buttonRow}>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel]} onPress={() => setCreateSetlistModal(false)}>
-                  <Text style={stylesContainer.btnCancelText}>Cancel</Text>
+                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setCreateSetlistModal(false)}>
+                  <Text style={[stylesContainer.btnCancelText, { color: theme.text }]}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave]} onPress={handleCreateSetlist}>
-                  <Text style={stylesContainer.btnSaveText}>Save</Text>
+                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={handleCreateSetlist}>
+                  <Text style={[stylesContainer.btnSaveText, { color: isDarkMode ? '#000' : '#FFF' }]}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
 
-        {/* ADD SONG MODAL */}
-        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-          <SafeAreaView style={stylesContainer.modalContainer}>
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 30 }}>
-              <Text style={stylesContainer.modalHeader}>New Song</Text>
+        {/* ADD SONG MODAL (BOTTOM SHEET SLIDING POPUP) */}
+        <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
+          <View style={stylesContainer.bottomSheetOverlay}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalVisible(false)} />
+            <View style={[stylesContainer.bottomSheetContent, { backgroundColor: theme.cardBg }]}>
+              <View style={[stylesContainer.dragHandle, { backgroundColor: isDarkMode ? '#444' : '#DDD' }]} />
+              <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+                <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>New Song</Text>
 
-              <Text style={stylesContainer.inputLabel}>TITLE *</Text>
-              <TextInput style={stylesContainer.input} placeholder="Song Title" value={title} onChangeText={setTitle} />
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>TITLE *</Text>
+                <TextInput style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]} placeholder="Song Title" placeholderTextColor={theme.subText} value={title} onChangeText={setTitle} />
 
-              <Text style={stylesContainer.inputLabel}>AUTHOR / ARTIST *</Text>
-              <TextInput style={stylesContainer.input} placeholder="Artist or Composer" value={author} onChangeText={setAuthor} />
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>AUTHOR / ARTIST *</Text>
+                <TextInput style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]} placeholder="Artist or Composer" placeholderTextColor={theme.subText} value={author} onChangeText={setAuthor} />
 
-              <Text style={stylesContainer.inputLabel}>CHORDS (OPTIONAL)</Text>
-              <TextInput
-                style={[stylesContainer.input, { height: 50 }]}
-                placeholder="e.g. Intro: C - Am - F - G"
-                multiline
-                value={chords}
-                onChangeText={setChords}
-              />
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>RHYTHM / STYLE</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+                  {styles.filter((st) => st !== 'All').map((st) => (
+                    <TouchableOpacity
+                      key={st}
+                      style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, style === st && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
+                      onPress={() => setStyle(st)}>
+                      <Text style={[stylesContainer.chipText, { color: theme.chipText }, style === st && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{st}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
 
-              <Text style={stylesContainer.inputLabel}>AUDIO MEMO</Text>
-              <View style={stylesContainer.customInputRow}>
-                {recorderState.isRecording && !recordingStyleName ? (
-                  <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: 'red' }]} onPress={stopRecording}>
-                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Stop Recording</Text>
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>SCALE (QENET)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+                  {scales.filter((sc) => sc !== 'All').map((sc) => (
+                    <TouchableOpacity
+                      key={sc}
+                      style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, scale === sc && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
+                      onPress={() => setScale(sc)}>
+                      <Text style={[stylesContainer.chipText, { color: theme.chipText }, scale === sc && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{sc}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>CHORDS (OPTIONAL)</Text>
+                <TextInput
+                  style={[stylesContainer.input, { height: 50, backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+                  placeholder="e.g. Intro: C - Am - F - G"
+                  placeholderTextColor={theme.subText}
+                  multiline
+                  value={chords}
+                  onChangeText={setChords}
+                />
+
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>AUDIO MEMO</Text>
+                <View style={stylesContainer.customInputRow}>
+                  {recorderState.isRecording && !recordingStyleName ? (
+                    <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: 'red' }]} onPress={stopRecording}>
+                      <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Stop Recording</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={() => startRecording()}>
+                      <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: 'bold' }}>{audioUri ? 'Re-record Memo' : '🎙️ Record Memo'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>LYRICS</Text>
+                <TextInput
+                  style={[stylesContainer.input, stylesContainer.textArea, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+                  placeholder="Lyrics..."
+                  placeholderTextColor={theme.subText}
+                  multiline
+                  value={lyrics}
+                  onChangeText={setLyrics}
+                />
+
+                <View style={stylesContainer.buttonRow}>
+                  <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setModalVisible(false)}>
+                    <Text style={[stylesContainer.btnCancelText, { color: theme.text }]}>Cancel</Text>
                   </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: '#000' }]} onPress={() => startRecording()}>
-                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{audioUri ? 'Re-record Memo' : '🎙️ Record Memo'}</Text>
+                  <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={handleSaveSong}>
+                    <Text style={[stylesContainer.btnSaveText, { color: isDarkMode ? '#000' : '#FFF' }]}>Save Song</Text>
                   </TouchableOpacity>
-                )}
-              </View>
-
-              <Text style={stylesContainer.inputLabel}>LYRICS</Text>
-              <TextInput
-                style={[stylesContainer.input, stylesContainer.textArea]}
-                placeholder="Lyrics..."
-                multiline
-                value={lyrics}
-                onChangeText={setLyrics}
-              />
-
-              <View style={stylesContainer.buttonRow}>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel]} onPress={() => setModalVisible(false)}>
-                  <Text style={stylesContainer.btnCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave]} onPress={handleSaveSong}>
-                  <Text style={stylesContainer.btnSaveText}>Save Song</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </SafeAreaView>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
         </Modal>
 
         {/* READ SONG DETAIL MODAL */}
@@ -760,49 +860,49 @@ export default function App() {
             setSongDetailModal(null);
             setIsAutoScrolling(false);
           }}>
-          <SafeAreaView style={stylesContainer.modalContainer}>
+          <SafeAreaView style={[stylesContainer.modalContainer, { backgroundColor: theme.bg }]}>
             <View style={{ padding: 16, flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
-                  <Text style={stylesContainer.modalHeader}>{songDetailModal?.title}</Text>
-                  <Text style={stylesContainer.detailAuthor}>{songDetailModal?.author}</Text>
+                  <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>{songDetailModal?.title}</Text>
+                  <Text style={[stylesContainer.detailAuthor, { color: theme.subText }]}>{songDetailModal?.author}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setShowChords(!showChords)}>
-                  <Text style={{ fontSize: 12, fontWeight: '700' }}>{showChords ? 'Hide Chords' : 'Show Chords'}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>{showChords ? 'Hide Chords' : 'Show Chords'}</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={stylesContainer.readerBar}>
+              <View style={[stylesContainer.readerBar, { backgroundColor: theme.secondaryBg }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 11, fontWeight: 'bold' }}>KEY:</Text>
-                  <TouchableOpacity style={stylesContainer.smallBtn} onPress={() => setTransposeKey(transposeKey - 1)}>
-                    <Text style={{ color: '#FFF' }}>-1</Text>
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: theme.text }}>KEY:</Text>
+                  <TouchableOpacity style={[stylesContainer.smallBtn, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={() => setTransposeKey(transposeKey - 1)}>
+                    <Text style={{ color: isDarkMode ? '#000' : '#FFF' }}>-1</Text>
                   </TouchableOpacity>
-                  <Text style={{ fontWeight: 'bold' }}>{transposeKey > 0 ? `+${transposeKey}` : transposeKey}</Text>
-                  <TouchableOpacity style={stylesContainer.smallBtn} onPress={() => setTransposeKey(transposeKey + 1)}>
-                    <Text style={{ color: '#FFF' }}>+1</Text>
+                  <Text style={{ fontWeight: 'bold', color: theme.text }}>{transposeKey > 0 ? `+${transposeKey}` : transposeKey}</Text>
+                  <TouchableOpacity style={[stylesContainer.smallBtn, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={() => setTransposeKey(transposeKey + 1)}>
+                    <Text style={{ color: isDarkMode ? '#000' : '#FFF' }}>+1</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
-                  style={[stylesContainer.smallBtn, { backgroundColor: isAutoScrolling ? 'black' : '#666' }]}
+                  style={[stylesContainer.smallBtn, { backgroundColor: isAutoScrolling ? (isDarkMode ? '#FFF' : '#000') : '#666' }]}
                   onPress={() => setIsAutoScrolling(!isAutoScrolling)}>
-                  <Text style={{ color: '#FFF' }}>{isAutoScrolling ? 'Pause Scroll' : 'Auto Scroll'}</Text>
+                  <Text style={{ color: isAutoScrolling && isDarkMode ? '#000' : '#FFF' }}>{isAutoScrolling ? 'Pause Scroll' : 'Auto Scroll'}</Text>
                 </TouchableOpacity>
               </View>
 
               {setlists.length > 0 && (
                 <View style={{ marginVertical: 6 }}>
-                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#888' }}>ADD TO SETLIST:</Text>
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: theme.subText }}>ADD TO SETLIST:</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginTop: 2 }}>
                     {setlists.map((sl) => {
                       const inSetlist = sl.songIds.includes(songDetailModal?.id);
                       return (
                         <TouchableOpacity
                           key={sl.id}
-                          style={[stylesContainer.chip, inSetlist && stylesContainer.chipSelected]}
+                          style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, inSetlist && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
                           onPress={() => toggleSongInSetlist(sl.id, songDetailModal?.id)}>
-                          <Text style={[stylesContainer.chipText, inSetlist && stylesContainer.chipTextSelected]}>
+                          <Text style={[stylesContainer.chipText, { color: theme.chipText }, inSetlist && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>
                             {inSetlist ? '✓ ' : '+ '}
                             {sl.name}
                           </Text>
@@ -815,26 +915,26 @@ export default function App() {
 
               {songDetailModal?.audioUri && (
                 <TouchableOpacity
-                  style={{ backgroundColor: '#000', padding: 8, borderRadius: 6, marginVertical: 6 }}
+                  style={{ backgroundColor: isDarkMode ? '#FFF' : '#000', padding: 8, borderRadius: 6, marginVertical: 6 }}
                   onPress={() => playSound(songDetailModal.audioUri)}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold', textAlign: 'center', fontSize: 12 }}>▶ Play Audio Memo</Text>
+                  <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: 'bold', textAlign: 'center', fontSize: 12 }}>▶ Play Audio Memo</Text>
                 </TouchableOpacity>
               )}
 
-              <ScrollView ref={scrollRef} style={stylesContainer.lyricsBox}>
+              <ScrollView ref={scrollRef} style={[stylesContainer.lyricsBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
                 {showChords && songDetailModal?.chords && (
-                  <Text style={stylesContainer.chordText}>Chords: {transposeChordText(songDetailModal.chords, transposeKey)}</Text>
+                  <Text style={[stylesContainer.chordText, { color: theme.text }]}>Chords: {transposeChordText(songDetailModal.chords, transposeKey)}</Text>
                 )}
-                <Text style={stylesContainer.lyricsText}>{transposeChordText(songDetailModal?.lyrics || '', transposeKey)}</Text>
+                <Text style={[stylesContainer.lyricsText, { color: theme.text }]}>{transposeChordText(songDetailModal?.lyrics || '', transposeKey)}</Text>
               </ScrollView>
 
               <TouchableOpacity
-                style={[stylesContainer.btn, stylesContainer.btnCancel, { marginTop: 10 }]}
+                style={[stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border, paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 10 }]}
                 onPress={() => {
                   setSongDetailModal(null);
                   setIsAutoScrolling(false);
                 }}>
-                <Text style={stylesContainer.btnCancelText}>Close</Text>
+                <Text style={[stylesContainer.btnCancelText, { color: theme.text }]}>Close</Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -887,40 +987,40 @@ const stylesContainer = StyleSheet.create({
   tag: { fontSize: 10, fontWeight: '600', backgroundColor: '#F0F0F0', color: '#000', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, textTransform: 'uppercase' },
   emptyText: { textAlign: 'center', color: '#999', marginTop: 40, fontSize: 15 },
 
-  fab: { 
-    position: 'absolute', 
-    right: 20, 
-    bottom: Platform.OS === 'android' ? 30 : 20, 
-    backgroundColor: '#000', 
-    width: 56, 
-    height: 56, 
-    borderRadius: 28, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: Platform.OS === 'android' ? 30 : 20,
+    backgroundColor: '#000',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
     elevation: 6,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
-  fabText: { 
-    fontSize: 34, 
-    color: '#FFF', 
-    fontWeight: '300', 
+  fabText: {
+    fontSize: 34,
+    color: '#FFF',
+    fontWeight: '300',
     textAlign: 'center',
     lineHeight: 56,
     includeFontPadding: false,
   },
 
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  drawerContainer: { 
+  drawerContainer: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: DRAWER_WIDTH, 
-    backgroundColor: '#FFF', 
-    padding: 20, 
+    width: DRAWER_WIDTH,
+    backgroundColor: '#FFF',
+    padding: 20,
     paddingTop: 40,
     elevation: 10,
     shadowColor: '#000',
@@ -938,6 +1038,32 @@ const stylesContainer = StyleSheet.create({
   smallBtn: { backgroundColor: '#000', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 5 },
 
   modalContainer: { flex: 1, backgroundColor: '#FFF' },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '88%',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  dragHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#DDD',
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
   modalHeader: { fontSize: 22, fontWeight: '800', color: '#000' },
   detailAuthor: { fontSize: 15, color: '#666' },
   inputLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginTop: 14, marginBottom: 4, letterSpacing: 1.1 },

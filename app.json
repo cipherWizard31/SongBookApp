@@ -16,14 +16,20 @@
         "backgroundImage": "./assets/music-note.png",
         "monochromeImage": "./assets/music-note.png"
       },
-      "package": "com.cipherwizard31.Selah-Kignit"
+      "package": "com.cipherwizard31.selahkignit",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/music-note.png"
     },
     "extra": {
       "eas": {
-        "projectId": "b7fabb99-7df6-41b4-990d-0506a22efeee"
+        "projectId": "92e92d0a-20d3-40a5-9288-a27f2147c34a"
       }
     },
     "plugins": [
