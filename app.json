@@ -27,7 +27,13 @@
       }
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Selah Kignit to access your microphone for recording audio memos."
+        }
+      ]
     ]
   }
 }

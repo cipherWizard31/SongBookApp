@@ -16,9 +16,17 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  createAudioPlayer,
+} from 'expo-audio';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
@@ -50,13 +58,13 @@ const DEFAULT_SCALES = [
 const CHROMATIC_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const STYLE_DICTIONARY_INITIAL = [
-  { name: 'Waltz (3/4)', rhythm: '1 - 2 - 3', description: 'Triple time rhythm ideal for slow devotional worship.' },
-  { name: 'Ballad (4/4)', rhythm: '1 - 2 - 3 - 4', description: 'Standard 4/4 slow worship tempo.' },
-  { name: 'Wollo (6/8)', rhythm: '1-2-3, 4-5-6', description: 'Traditional Ethiopian 6/8 compound rhythm.' },
-  { name: 'Reggae (2/4)', rhythm: 'Offbeat Emphasis', description: 'Upbeat rhythm with syncopated offbeats.' },
-  { name: 'Chikchika (6/8)', rhythm: 'Fast 6/8 Syncopation', description: 'Lively fast-paced traditional rhythm.' },
-  { name: 'Disco (4/4)', rhythm: 'Four on the Floor', description: 'Upbeat energetic dance rhythm.' },
-  { name: 'Swing (4/4)', rhythm: 'Swung Eighths', description: 'Classic jazz/swing beat pattern.' },
+  { name: 'Waltz (3/4)', rhythm: '1 - 2 - 3', description: 'Triple time rhythm ideal for slow devotional worship.', audioUri: null },
+  { name: 'Ballad (4/4)', rhythm: '1 - 2 - 3 - 4', description: 'Standard 4/4 slow worship tempo.', audioUri: null },
+  { name: 'Wollo (6/8)', rhythm: '1-2-3, 4-5-6', description: 'Traditional Ethiopian 6/8 compound rhythm.', audioUri: null },
+  { name: 'Reggae (2/4)', rhythm: 'Offbeat Emphasis', description: 'Upbeat rhythm with syncopated offbeats.', audioUri: null },
+  { name: 'Chikchika (6/8)', rhythm: 'Fast 6/8 Syncopation', description: 'Lively fast-paced traditional rhythm.', audioUri: null },
+  { name: 'Disco (4/4)', rhythm: 'Four on the Floor', description: 'Upbeat energetic dance rhythm.', audioUri: null },
+  { name: 'Swing (4/4)', rhythm: 'Swung Eighths', description: 'Classic jazz/swing beat pattern.', audioUri: null },
 ];
 
 const SCALE_DICTIONARY = [
@@ -107,11 +115,34 @@ export default function App() {
   const [scale, setScale] = useState('1st (C Major/Tizeta)');
   const [chords, setChords] = useState('');
   const [lyrics, setLyrics] = useState('');
+  const [audioUri, setAudioUri] = useState(null);
 
   const [newSetlistName, setNewSetlistName] = useState('');
 
+  // expo-audio: hook-based recorder (must be at top level)
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+  const [recordingStyleName, setRecordingStyleName] = useState(null);
+  // Track the current audio player so we can release it before creating a new one
+  const currentPlayerRef = useRef(null);
+
   useEffect(() => {
     loadData();
+    // Request microphone permission on mount
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        console.warn('Microphone permission not granted');
+      }
+      await setAudioModeAsync({ playsInSilentMode: true });
+    })();
+    return () => {
+      // Release player on unmount
+      if (currentPlayerRef.current) {
+        currentPlayerRef.current.release();
+        currentPlayerRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -163,6 +194,51 @@ export default function App() {
     }
   };
 
+  const startRecording = async (styleTargetName = null) => {
+    try {
+      // Check permission
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) return Alert.alert('Permission required', 'Microphone access is needed to record audio.');
+      await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
+      setRecordingStyleName(styleTargetName);
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
+    } catch (err) {
+      Alert.alert('Recording failed', err.message);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recorderState.isRecording) return;
+    await audioRecorder.stop();
+    const uri = audioRecorder.uri;
+
+    if (recordingStyleName) {
+      const updatedDict = styleDict.map((s) => (s.name === recordingStyleName ? { ...s, audioUri: uri } : s));
+      setStyleDict(updatedDict);
+      await AsyncStorage.setItem(STYLE_DICT_KEY, JSON.stringify(updatedDict));
+      setRecordingStyleName(null);
+    } else {
+      setAudioUri(uri);
+    }
+  };
+
+  const playSound = async (uri) => {
+    if (!uri) return;
+    try {
+      // Release any existing player first
+      if (currentPlayerRef.current) {
+        currentPlayerRef.current.release();
+        currentPlayerRef.current = null;
+      }
+      const player = createAudioPlayer({ uri });
+      currentPlayerRef.current = player;
+      player.play();
+    } catch (err) {
+      Alert.alert('Playback failed', err.message);
+    }
+  };
+
   const transposeChordText = (text, semitones) => {
     if (!text || semitones === 0) return text;
     return text.replace(/\b[A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9)?\b/g, (match) => {
@@ -196,6 +272,7 @@ export default function App() {
       scale,
       chords,
       lyrics,
+      audioUri,
     };
 
     const updated = [newSong, ...songs];
@@ -206,6 +283,7 @@ export default function App() {
     setAuthor('');
     setChords('');
     setLyrics('');
+    setAudioUri(null);
     setModalVisible(false);
   };
 
@@ -420,12 +498,30 @@ export default function App() {
         {currentScreen === 'styledict' && (
           <ScrollView style={{ flex: 1, padding: 16 }}>
             <Text style={stylesContainer.screenTitle}>Style & Rhythm Dictionary</Text>
-            <Text style={stylesContainer.screenSub}>Explore rhythm patterns and descriptions.</Text>
+            <Text style={stylesContainer.screenSub}>Listen to audio samples and rhythm patterns.</Text>
             {styleDict.map((s) => (
               <View key={s.name} style={stylesContainer.dictCard}>
                 <Text style={stylesContainer.dictTitle}>{s.name}</Text>
                 <Text style={stylesContainer.dictNotes}>Rhythm Pattern: {s.rhythm}</Text>
                 <Text style={stylesContainer.dictDesc}>{s.description}</Text>
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  {s.audioUri ? (
+                    <TouchableOpacity style={stylesContainer.smallBtn} onPress={() => playSound(s.audioUri)}>
+                      <Text style={{ color: '#FFF', fontSize: 11 }}>▶ Play Sample</Text>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {recorderState.isRecording && recordingStyleName === s.name ? (
+                    <TouchableOpacity style={[stylesContainer.smallBtn, { backgroundColor: 'red' }]} onPress={stopRecording}>
+                      <Text style={{ color: '#FFF', fontSize: 11 }}>Stop Recording</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={stylesContainer.smallBtn} onPress={() => startRecording(s.name)}>
+                      <Text style={{ color: '#FFF', fontSize: 11 }}>🎙️ {s.audioUri ? 'Re-record' : 'Record Sample'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             ))}
           </ScrollView>
@@ -571,6 +667,19 @@ export default function App() {
                 onChangeText={setChords}
               />
 
+              <Text style={stylesContainer.inputLabel}>AUDIO MEMO</Text>
+              <View style={stylesContainer.customInputRow}>
+                {recorderState.isRecording && !recordingStyleName ? (
+                  <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: 'red' }]} onPress={stopRecording}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Stop Recording</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: '#000' }]} onPress={() => startRecording()}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{audioUri ? 'Re-record Memo' : '🎙️ Record Memo'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
               <Text style={stylesContainer.inputLabel}>LYRICS</Text>
               <TextInput
                 style={[stylesContainer.input, stylesContainer.textArea]}
@@ -647,6 +756,14 @@ export default function App() {
                 </View>
               )}
 
+              {songDetailModal?.audioUri && (
+                <TouchableOpacity
+                  style={{ backgroundColor: '#000', padding: 8, borderRadius: 6, marginVertical: 6 }}
+                  onPress={() => playSound(songDetailModal.audioUri)}>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold', textAlign: 'center', fontSize: 12 }}>▶ Play Audio Memo</Text>
+                </TouchableOpacity>
+              )}
+
               <ScrollView ref={scrollRef} style={stylesContainer.lyricsBox}>
                 {showChords && songDetailModal?.chords && (
                   <Text style={stylesContainer.chordText}>Chords: {transposeChordText(songDetailModal.chords, transposeKey)}</Text>
@@ -720,7 +837,7 @@ const stylesContainer = StyleSheet.create({
     width: 56, 
     height: 56, 
     borderRadius: 28, 
-    justifyContent: 'center', 
+    justify: 'center', 
     alignItems: 'center', 
     elevation: 6 
   },
@@ -764,6 +881,7 @@ const stylesContainer = StyleSheet.create({
   inputLabel: { fontSize: 9, fontWeight: '700', color: '#888', marginTop: 10, marginBottom: 3, letterSpacing: 1.2 },
   input: { borderWidth: 1, borderColor: '#E5E5E5', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 12, backgroundColor: '#FAFAFA' },
   textArea: { height: 100, textAlignVertical: 'top' },
+  customInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
 
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, gap: 8 },
   btn: { flex: 1, paddingVertical: 12, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
