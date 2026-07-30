@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -34,7 +34,9 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 
-// Core Data & Constants
+// ==========================================
+// CORE DATA & CONSTANTS
+// ==========================================
 const DEFAULT_STYLES = [
   'All',
   'Waltz (3/4)',
@@ -87,6 +89,187 @@ const CUSTOM_SCALES_KEY = '@songbook_custom_scales';
 const STYLE_DICT_KEY = '@songbook_style_dictionary';
 const DARK_MODE_KEY = '@songbook_dark_mode';
 
+// ==========================================
+// CHORD & LYRIC UTILITIES (PARSER & TRANSPOSER)
+// ==========================================
+
+/**
+ * Transposes a single chord string by given semitones.
+ */
+function transposeChord(chord, semitones) {
+  if (!chord || semitones === 0) return chord;
+  return chord.replace(/\b[A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9|sus2|sus4|\/[A-G](?:#|b)?)?\b/g, (match) => {
+    const rootMatch = match.match(/^[A-G](?:#|b)?/);
+    if (!rootMatch) return match;
+    const root = rootMatch[0];
+    const suffix = match.slice(root.length);
+
+    let idx = CHROMATIC_NOTES.indexOf(root);
+    if (idx === -1) {
+      if (root === 'Bb') idx = 10;
+      if (root === 'Eb') idx = 3;
+      if (root === 'Ab') idx = 8;
+      if (root === 'Db') idx = 1;
+      if (root === 'Gb') idx = 6;
+    }
+    if (idx === -1) return match;
+
+    let newIdx = (idx + semitones) % 12;
+    if (newIdx < 0) newIdx += 12;
+    return CHROMATIC_NOTES[newIdx] + suffix;
+  });
+}
+
+/**
+ * Parses a single line into structural objects.
+ * Handles bracketed chords [C], empty lyric segments, sections, and plain text.
+ */
+function parseChordLine(line) {
+  const trimmed = line.trim();
+
+  // Blank line check
+  if (!trimmed) {
+    return { type: 'blank' };
+  }
+
+  // Section Header check (e.g. Verse 1, [Chorus], Bridge, etc.)
+  const sectionMatch = trimmed.match(/^\[?(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus|Hook|Tag|Ending|Refrain)[\s\d]*\]?$/i);
+  if (sectionMatch) {
+    return {
+      type: 'section',
+      text: trimmed.replace(/[\[\]]/g, '').toUpperCase(),
+    };
+  }
+
+  // Parse segments splitting by [CHORD] pattern
+  const parts = line.split(/(\[[^\]]+\])/);
+  const segments = [];
+  let currentChord = null;
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (part.startsWith('[') && part.endsWith(']')) {
+      // If we already had an unattached chord, push it with empty lyric
+      if (currentChord !== null) {
+        segments.push({ chord: currentChord, lyric: '' });
+      }
+      currentChord = part.slice(1, -1);
+    } else {
+      if (currentChord !== null) {
+        segments.push({ chord: currentChord, lyric: part });
+        currentChord = null;
+      } else if (part.length > 0) {
+        segments.push({ chord: null, lyric: part });
+      }
+    }
+  }
+
+  // Trailing chord without following lyric
+  if (currentChord !== null) {
+    segments.push({ chord: currentChord, lyric: '' });
+  }
+
+  return { type: 'line', segments };
+}
+
+/**
+ * Migration Helper: Converts legacy separated (chords + lyrics) structure to single inline content.
+ */
+function migrateSongToInline(song) {
+  if (song.content !== undefined) {
+    return song.content; // Already migrated
+  }
+
+  const chords = (song.chords || '').trim();
+  const lyrics = (song.lyrics || '').trim();
+
+  if (chords && lyrics) {
+    return `Intro / Main Chords:\n[${chords.replace(/\s+/g, '][')}]\n\n${lyrics}`;
+  } else if (chords) {
+    return chords;
+  } else if (lyrics) {
+    return lyrics;
+  }
+  return '';
+}
+
+// ==========================================
+// RENDERER COMPONENTS
+// ==========================================
+const LyricChordSegment = React.memo(({ chord, lyric, semitones, showChords, themeState, isDarkMode }) => {
+  const chordColor = isDarkMode ? '#4DA6FF' : '#0066FF';
+  const transposed = chord ? transposeChord(chord, semitones) : null;
+
+  return (
+    <View style={stylesContainer.segmentContainer}>
+      {showChords && (
+        <Text style={[stylesContainer.chordText, { color: chordColor }]}>
+          {transposed || ' '}
+        </Text>
+      )}
+      <Text style={[stylesContainer.lyricText, { color: themeState.text }]}>
+        {lyric || ' '}
+      </Text>
+    </View>
+  );
+});
+
+const SongContentViewer = React.memo(({ content, semitones, showChords, themeState, isDarkMode }) => {
+  const parsedLines = useMemo(() => {
+    if (!content) return [];
+    return content.split('\n').map(parseChordLine);
+  }, [content]);
+
+  if (!content || !content.trim()) {
+    return (
+      <Text style={{ fontStyle: 'italic', color: themeState.subText, textAlign: 'center', marginVertical: 20 }}>
+        No lyrics or chords provided for this song.
+      </Text>
+    );
+  }
+
+  const headerColor = isDarkMode ? '#FFB74D' : '#E65100';
+
+  return (
+    <View style={{ flex: 1 }}>
+      {parsedLines.map((lineObj, idx) => {
+        if (lineObj.type === 'blank') {
+          return <View key={`blank-${idx}`} style={{ height: 12 }} />;
+        }
+
+        if (lineObj.type === 'section') {
+          return (
+            <View key={`sec-${idx}`} style={{ marginTop: 14, marginBottom: 4 }}>
+              <Text style={[stylesContainer.sectionHeader, { color: headerColor }]}>
+                {lineObj.text}
+              </Text>
+            </View>
+          );
+        }
+
+        return (
+          <View key={`line-${idx}`} style={stylesContainer.lineRow}>
+            {lineObj.segments.map((seg, sIdx) => (
+              <LyricChordSegment
+                key={`seg-${idx}-${sIdx}`}
+                chord={seg.chord}
+                lyric={seg.lyric}
+                semitones={semitones}
+                showChords={showChords}
+                themeState={themeState}
+                isDarkMode={isDarkMode}
+              />
+            ))}
+          </View>
+        );
+      })}
+    </View>
+  );
+});
+
+// ==========================================
+// MAIN APP COMPONENT
+// ==========================================
 export default function App() {
   const [songs, setSongs] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
@@ -110,20 +293,19 @@ export default function App() {
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const scrollRef = useRef(null);
 
+  // Form State
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [style, setStyle] = useState('Ballad (4/4)');
   const [scale, setScale] = useState('1st (C Major/Tizeta)');
-  const [chords, setChords] = useState('');
-  const [lyrics, setLyrics] = useState('');
+  const [content, setContent] = useState('');
   const [audioUri, setAudioUri] = useState(null);
   const [editingSongId, setEditingSongId] = useState(null);
 
-  // expo-audio: hook-based recorder (must be at top level)
+  // Audio recording
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder);
   const [recordingStyleName, setRecordingStyleName] = useState(null);
-  // Track the current audio player so we can release it before creating a new one
   const currentPlayerRef = useRef(null);
 
   const theme = isDarkMode
@@ -164,7 +346,6 @@ export default function App() {
 
   useEffect(() => {
     loadData();
-    // Request microphone permission on mount
     (async () => {
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted) {
@@ -173,7 +354,6 @@ export default function App() {
       await setAudioModeAsync({ playsInSilentMode: true });
     })();
     return () => {
-      // Release player on unmount
       if (currentPlayerRef.current) {
         currentPlayerRef.current.release();
         currentPlayerRef.current = null;
@@ -261,7 +441,15 @@ export default function App() {
       const savedStyleDict = await AsyncStorage.getItem(STYLE_DICT_KEY);
       const savedDarkMode = await AsyncStorage.getItem(DARK_MODE_KEY);
 
-      if (savedSongs) setSongs(JSON.parse(savedSongs));
+      if (savedSongs) {
+        const rawSongs = JSON.parse(savedSongs);
+        // Execute automatic inline format migration for legacy entries
+        const migrated = rawSongs.map((s) => ({
+          ...s,
+          content: migrateSongToInline(s),
+        }));
+        setSongs(migrated);
+      }
       if (savedStyles) setStyles(JSON.parse(savedStyles));
       if (savedScales) setScales(JSON.parse(savedScales));
       if (savedStyleDict) setStyleDict(JSON.parse(savedStyleDict));
@@ -282,7 +470,6 @@ export default function App() {
 
   const startRecording = async (styleTargetName = null) => {
     try {
-      // Check permission
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted) return Alert.alert('Permission required', 'Microphone access is needed to record audio.');
       await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
@@ -312,7 +499,6 @@ export default function App() {
   const playSound = async (uri) => {
     if (!uri) return;
     try {
-      // Release any existing player first
       if (currentPlayerRef.current) {
         currentPlayerRef.current.release();
         currentPlayerRef.current = null;
@@ -325,160 +511,6 @@ export default function App() {
     }
   };
 
-  const transposeChordText = (text, semitones) => {
-    if (!text || semitones === 0) return text;
-    return text.replace(/\b[A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9)?\b/g, (match) => {
-      const root = match.match(/^[A-G](?:#|b)?/)[0];
-      const suffix = match.slice(root.length);
-      let idx = CHROMATIC_NOTES.indexOf(root);
-      if (idx === -1) {
-        if (root === 'Bb') idx = 10;
-        if (root === 'Eb') idx = 3;
-        if (root === 'Ab') idx = 8;
-        if (root === 'Db') idx = 1;
-      }
-      if (idx === -1) return match;
-      let newIdx = (idx + semitones) % 12;
-      if (newIdx < 0) newIdx += 12;
-      return CHROMATIC_NOTES[newIdx] + suffix;
-    });
-  };
-
-  const renderColorCodedLyrics = (lyricsText, chordsText, semitones, isDark, themeState, showChordsState) => {
-    const CHORD_COLOR = isDark ? '#4DA6FF' : '#0066FF';
-    const HEADER_COLOR = isDark ? '#FFB74D' : '#E65100';
-
-    const isChordToken = (str) => {
-      const cleaned = str.replace(/[\[\],.:]/g, '').trim();
-      if (!cleaned) return false;
-      return /^[A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9|sus2|sus4|\/[A-G](?:#|b)?)?$/i.test(cleaned);
-    };
-
-    const elements = [];
-
-    if (showChordsState && chordsText && chordsText.trim()) {
-      elements.push(
-        <View key="top-chords" style={{ marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderColor: themeState.border }}>
-          <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeState.subText, letterSpacing: 1, marginBottom: 2 }}>
-            MAIN CHORDS / INTRO
-          </Text>
-          <Text style={{ fontSize: 15, fontWeight: 'bold', color: CHORD_COLOR }}>
-            {transposeChordText(chordsText, semitones)}
-          </Text>
-        </View>
-      );
-    }
-
-    if (!lyricsText || !lyricsText.trim()) {
-      if (!chordsText) {
-        elements.push(
-          <Text key="empty" style={{ fontStyle: 'italic', color: themeState.subText, textAlign: 'center', marginVertical: 20 }}>
-            No lyrics or chords provided for this song.
-          </Text>
-        );
-      }
-      return elements;
-    }
-
-    const lines = lyricsText.split('\n');
-
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-
-      if (!trimmed) {
-        elements.push(<View key={`empty-${index}`} style={{ height: 10 }} />);
-        return;
-      }
-
-      // Section Header check (e.g. Verse, [Verse], Chorus, Bridge, Intro, Outro)
-      const sectionMatch = trimmed.match(/^\[?(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus|Hook|Tag|Ending|Refrain)[\s\d]*\]?$/i);
-      if (sectionMatch) {
-        elements.push(
-          <View key={`sec-${index}`} style={{ marginTop: 12, marginBottom: 4 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: HEADER_COLOR, letterSpacing: 1.1 }}>
-              {trimmed.replace(/[\[\]]/g, '').toUpperCase()}
-            </Text>
-          </View>
-        );
-        return;
-      }
-
-      // Bracketed inline chords (e.g. [C] can we [Am] build this?)
-      if (trimmed.includes('[') && trimmed.includes(']')) {
-        const parts = line.split(/(\[[^\]]+\])/);
-        elements.push(
-          <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
-            {parts.map((part, pIdx) => {
-              if (part.startsWith('[') && part.endsWith(']')) {
-                const chordInner = part.slice(1, -1);
-                if (showChordsState) {
-                  return (
-                    <Text key={pIdx} style={{ color: CHORD_COLOR, fontWeight: 'bold', fontSize: 15 }}>
-                      {transposeChordText(chordInner, semitones)}{' '}
-                    </Text>
-                  );
-                }
-                return null;
-              }
-              return part;
-            })}
-          </Text>
-        );
-        return;
-      }
-
-      // Line is predominantly chords (e.g. "C   Am   F   G")
-      const words = trimmed.split(/\s+/);
-      const chordCount = words.filter((w) => isChordToken(w)).length;
-      const isPureChordLine = words.length > 0 && chordCount / words.length >= 0.5;
-
-      if (isPureChordLine) {
-        if (!showChordsState) return;
-        elements.push(
-          <Text
-            key={`line-${index}`}
-            style={{
-              fontSize: 15,
-              fontWeight: 'bold',
-              color: CHORD_COLOR,
-              marginVertical: 2,
-              fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-            }}>
-            {transposeChordText(line, semitones)}
-          </Text>
-        );
-        return;
-      }
-
-      // Leading chord on lyric line (e.g. "C, can we build this?")
-      const leadingChordMatch = line.match(/^([A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9|sus2|sus4|\/[A-G](?:#|b)?)?)([\s,:\-].*)$/i);
-      if (leadingChordMatch && isChordToken(leadingChordMatch[1])) {
-        const chordPart = leadingChordMatch[1];
-        const restPart = leadingChordMatch[2];
-        elements.push(
-          <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
-            {showChordsState && (
-              <Text style={{ color: CHORD_COLOR, fontWeight: 'bold', fontSize: 16 }}>
-                {transposeChordText(chordPart, semitones)}
-              </Text>
-            )}
-            {restPart}
-          </Text>
-        );
-        return;
-      }
-
-      // Standard Lyric Line
-      elements.push(
-        <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
-          {line}
-        </Text>
-      );
-    });
-
-    return elements;
-  };
-
   const handleEditSong = (song) => {
     if (!song) return;
     setEditingSongId(song.id);
@@ -486,8 +518,7 @@ export default function App() {
     setAuthor(song.author || '');
     setStyle(song.style || 'Ballad (4/4)');
     setScale(song.scale || '1st (C Major/Tizeta)');
-    setChords(song.chords || '');
-    setLyrics(song.lyrics || '');
+    setContent(song.content !== undefined ? song.content : migrateSongToInline(song));
     setAudioUri(song.audioUri || null);
     setSongDetailModal(null);
     setModalVisible(true);
@@ -526,7 +557,7 @@ export default function App() {
     if (editingSongId) {
       updated = songs.map((s) =>
         s.id === editingSongId
-          ? { ...s, title, author, style, scale, chords, lyrics, audioUri }
+          ? { ...s, title, author, style, scale, content, audioUri }
           : s
       );
     } else {
@@ -536,8 +567,7 @@ export default function App() {
         author,
         style,
         scale,
-        chords,
-        lyrics,
+        content,
         audioUri,
       };
       updated = [newSong, ...songs];
@@ -551,8 +581,7 @@ export default function App() {
     setAuthor('');
     setStyle('Ballad (4/4)');
     setScale('1st (C Major/Tizeta)');
-    setChords('');
-    setLyrics('');
+    setContent('');
     setAudioUri(null);
     setModalVisible(false);
   };
@@ -602,11 +631,15 @@ export default function App() {
     try {
       const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
       if (!res.canceled && res.assets && res.assets[0]) {
-        const content = await FileSystem.readAsStringAsync(res.assets[0].uri);
-        const parsed = JSON.parse(content);
+        const contentStr = await FileSystem.readAsStringAsync(res.assets[0].uri);
+        const parsed = JSON.parse(contentStr);
 
         if (parsed.songs) {
-          const mergedSongs = [...parsed.songs, ...songs];
+          const migratedImported = parsed.songs.map((s) => ({
+            ...s,
+            content: migrateSongToInline(s),
+          }));
+          const mergedSongs = [...migratedImported, ...songs];
           setSongs(mergedSongs);
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mergedSongs));
 
@@ -624,7 +657,11 @@ export default function App() {
           }
           Alert.alert('Restore Complete', 'Full application state restored successfully.');
         } else if (Array.isArray(parsed)) {
-          const merged = [...parsed, ...songs];
+          const migratedImported = parsed.map((s) => ({
+            ...s,
+            content: migrateSongToInline(s),
+          }));
+          const merged = [...migratedImported, ...songs];
           setSongs(merged);
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           Alert.alert('Success', `Imported ${parsed.length} songs.`);
@@ -637,10 +674,10 @@ export default function App() {
 
   const filteredSongs = songs.filter((s) => {
     const query = searchQuery.toLowerCase();
-    const titleMatch = s.title.toLowerCase().includes(query);
-    const authorMatch = s.author.toLowerCase().includes(query);
-    const lyricsMatch = s.lyrics.toLowerCase().includes(query);
-    const searchMatch = titleMatch || authorMatch || lyricsMatch;
+    const titleMatch = (s.title || '').toLowerCase().includes(query);
+    const authorMatch = (s.author || '').toLowerCase().includes(query);
+    const contentMatch = (s.content || s.lyrics || '').toLowerCase().includes(query);
+    const searchMatch = titleMatch || authorMatch || contentMatch;
 
     const styleMatch = selectedStyle === 'All' || s.style === selectedStyle;
     const scaleMatch = selectedScale === 'All' || s.scale === selectedScale;
@@ -688,9 +725,20 @@ export default function App() {
                 {styles.map((st) => (
                   <TouchableOpacity
                     key={st}
-                    style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, selectedStyle === st && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
+                    style={[
+                      stylesContainer.chip,
+                      { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
+                      selectedStyle === st && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg },
+                    ]}
                     onPress={() => setSelectedStyle(st)}>
-                    <Text style={[stylesContainer.chipText, { color: theme.chipText }, selectedStyle === st && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{st}</Text>
+                    <Text
+                      style={[
+                        stylesContainer.chipText,
+                        { color: theme.chipText },
+                        selectedStyle === st && { color: theme.chipSelectedText, fontWeight: 'bold' },
+                      ]}>
+                      {st}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -700,9 +748,20 @@ export default function App() {
                 {scales.map((sc) => (
                   <TouchableOpacity
                     key={sc}
-                    style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, selectedScale === sc && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
+                    style={[
+                      stylesContainer.chip,
+                      { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
+                      selectedScale === sc && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg },
+                    ]}
                     onPress={() => setSelectedScale(sc)}>
-                    <Text style={[stylesContainer.chipText, { color: theme.chipText }, selectedScale === sc && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>{sc}</Text>
+                    <Text
+                      style={[
+                        stylesContainer.chipText,
+                        { color: theme.chipText },
+                        selectedScale === sc && { color: theme.chipSelectedText, fontWeight: 'bold' },
+                      ]}>
+                      {sc}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -874,7 +933,7 @@ export default function App() {
           </View>
         </Modal>
 
-        {/* ADD SONG MODAL (BOTTOM SHEET SLIDING POPUP) */}
+        {/* SONG EDITOR MODAL (SINGLE CONSOLIDATED CONTENT TEXTAREA) */}
         <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
           <View style={stylesContainer.bottomSheetOverlay}>
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalVisible(false)} />
@@ -913,16 +972,6 @@ export default function App() {
                   ))}
                 </ScrollView>
 
-                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>CHORDS (OPTIONAL)</Text>
-                <TextInput
-                  style={[stylesContainer.input, { height: 50, backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-                  placeholder="e.g. Intro: C - Am - F - G"
-                  placeholderTextColor={theme.subText}
-                  multiline
-                  value={chords}
-                  onChangeText={setChords}
-                />
-
                 <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>AUDIO MEMO</Text>
                 <View style={stylesContainer.customInputRow}>
                   {recorderState.isRecording && !recordingStyleName ? (
@@ -936,14 +985,14 @@ export default function App() {
                   )}
                 </View>
 
-                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>LYRICS</Text>
+                <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>SONG CONTENT (INLINE BRACKET CHORDS)</Text>
                 <TextInput
                   style={[stylesContainer.input, stylesContainer.textArea, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-                  placeholder="Lyrics..."
+                  placeholder={'[C]Amazing [G]grace\nHow [Am]sweet the [F]sound'}
                   placeholderTextColor={theme.subText}
                   multiline
-                  value={lyrics}
-                  onChangeText={setLyrics}
+                  value={content}
+                  onChangeText={setContent}
                 />
 
                 <View style={stylesContainer.buttonRow}>
@@ -955,8 +1004,7 @@ export default function App() {
                       setAuthor('');
                       setStyle('Ballad (4/4)');
                       setScale('1st (C Major/Tizeta)');
-                      setChords('');
-                      setLyrics('');
+                      setContent('');
                       setAudioUri(null);
                       setModalVisible(false);
                     }}>
@@ -1024,8 +1072,6 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-
-
               {songDetailModal?.audioUri && (
                 <TouchableOpacity
                   style={{ backgroundColor: isDarkMode ? '#FFF' : '#000', padding: 8, borderRadius: 6, marginVertical: 6 }}
@@ -1035,7 +1081,13 @@ export default function App() {
               )}
 
               <ScrollView ref={scrollRef} style={[stylesContainer.lyricsBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-                {renderColorCodedLyrics(songDetailModal?.lyrics || '', songDetailModal?.chords || '', transposeKey, isDarkMode, theme, showChords)}
+                <SongContentViewer
+                  content={songDetailModal?.content !== undefined ? songDetailModal.content : migrateSongToInline(songDetailModal || {})}
+                  semitones={transposeKey}
+                  showChords={showChords}
+                  themeState={theme}
+                  isDarkMode={isDarkMode}
+                />
               </ScrollView>
 
               <TouchableOpacity
@@ -1054,6 +1106,9 @@ export default function App() {
   );
 }
 
+// ==========================================
+// STYLES
+// ==========================================
 const stylesContainer = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
 
@@ -1076,19 +1131,11 @@ const stylesContainer = StyleSheet.create({
   searchBox: { paddingHorizontal: 16, paddingTop: 10 },
   searchInput: { backgroundColor: '#F5F5F5', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: '#E5E5E5' },
 
-  setlistBar: { paddingHorizontal: 14, marginTop: 8 },
-  setlistChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#DDD', marginRight: 6 },
-  setlistChipActive: { backgroundColor: '#000', borderColor: '#000' },
-  setlistText: { fontSize: 13, color: '#333' },
-  setlistTextActive: { color: '#FFF', fontWeight: 'bold' },
-
   filterContainer: { backgroundColor: '#FFFFFF', paddingVertical: 4 },
   filterLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginLeft: 16, marginTop: 4, letterSpacing: 1.1 },
   chipRow: { flexDirection: 'row', paddingHorizontal: 12, marginVertical: 4 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: '#F5F5F5', marginRight: 6, borderWidth: 1, borderColor: '#E5E5E5' },
-  chipSelected: { backgroundColor: '#000', borderColor: '#000' },
   chipText: { fontSize: 13, color: '#555' },
-  chipTextSelected: { color: '#FFF', fontWeight: 'bold' },
 
   card: { backgroundColor: '#FFF', padding: 16, borderRadius: 12, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#E5E5E5' },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#000' },
@@ -1141,7 +1188,6 @@ const stylesContainer = StyleSheet.create({
   drawerLogo: { width: 28, height: 28 },
   drawerTitle: { fontSize: 20, fontWeight: '800', color: '#000' },
   drawerItem: { paddingVertical: 13, paddingHorizontal: 12, borderRadius: 8, marginBottom: 2 },
-  drawerItemActive: { backgroundColor: '#F5F5F5' },
   drawerItemText: { fontSize: 15, fontWeight: '600', color: '#000' },
 
   readerBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8F8F8', padding: 8, borderRadius: 8, marginVertical: 8 },
@@ -1178,7 +1224,7 @@ const stylesContainer = StyleSheet.create({
   detailAuthor: { fontSize: 15, color: '#666' },
   inputLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginTop: 14, marginBottom: 4, letterSpacing: 1.1 },
   input: { borderWidth: 1, borderColor: '#E5E5E5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, backgroundColor: '#FAFAFA' },
-  textArea: { height: 120, textAlignVertical: 'top' },
+  textArea: { height: 160, textAlignVertical: 'top' },
   customInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
 
   buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, gap: 10 },
@@ -1200,6 +1246,31 @@ const stylesContainer = StyleSheet.create({
   settingDesc: { fontSize: 12, color: '#666' },
 
   lyricsBox: { flex: 1, backgroundColor: '#FAFAFA', borderRadius: 8, padding: 16, borderWidth: 1, borderColor: '#E5E5E5', marginTop: 4 },
-  chordText: { fontSize: 14, fontWeight: 'bold', color: '#000', marginBottom: 10 },
-  lyricsText: { fontSize: 16, lineHeight: 26, color: '#222' },
+
+  // INLINE CHORD RENDERER STYLES
+  lineRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-end',
+    marginVertical: 2,
+  },
+  segmentContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  chordText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginBottom: 1,
+    paddingRight: 2,
+  },
+  lyricText: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+  },
 });
