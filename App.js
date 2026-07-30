@@ -84,7 +84,6 @@ const SCALE_DICTIONARY = [
 const STORAGE_KEY = '@songbook_songs';
 const CUSTOM_STYLES_KEY = '@songbook_custom_styles';
 const CUSTOM_SCALES_KEY = '@songbook_custom_scales';
-const SETLISTS_KEY = '@songbook_setlists';
 const STYLE_DICT_KEY = '@songbook_style_dictionary';
 const DARK_MODE_KEY = '@songbook_dark_mode';
 
@@ -92,7 +91,6 @@ export default function App() {
   const [songs, setSongs] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
   const [scales, setScales] = useState(DEFAULT_SCALES);
-  const [setlists, setSetlists] = useState([]);
   const [styleDict, setStyleDict] = useState(STYLE_DICTIONARY_INITIAL);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -103,11 +101,9 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('All');
   const [selectedScale, setSelectedScale] = useState('All');
-  const [activeSetlistFilter, setActiveSetlistFilter] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
-  const [createSetlistModal, setCreateSetlistModal] = useState(false);
 
   const [transposeKey, setTransposeKey] = useState(0);
   const [showChords, setShowChords] = useState(true);
@@ -121,8 +117,7 @@ export default function App() {
   const [chords, setChords] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [audioUri, setAudioUri] = useState(null);
-
-  const [newSetlistName, setNewSetlistName] = useState('');
+  const [editingSongId, setEditingSongId] = useState(null);
 
   // expo-audio: hook-based recorder (must be at top level)
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -209,10 +204,7 @@ export default function App() {
       }
       if (modalVisible) {
         setModalVisible(false);
-        return true;
-      }
-      if (createSetlistModal) {
-        setCreateSetlistModal(false);
+        setEditingSongId(null);
         return true;
       }
       if (sidebarOpen) {
@@ -223,11 +215,10 @@ export default function App() {
         setCurrentScreen('songs');
         return true;
       }
-      if (searchQuery || selectedStyle !== 'All' || selectedScale !== 'All' || activeSetlistFilter) {
+      if (searchQuery || selectedStyle !== 'All' || selectedScale !== 'All') {
         setSearchQuery('');
         setSelectedStyle('All');
         setSelectedScale('All');
-        setActiveSetlistFilter(null);
         return true;
       }
       return false;
@@ -238,13 +229,11 @@ export default function App() {
   }, [
     songDetailModal,
     modalVisible,
-    createSetlistModal,
     sidebarOpen,
     currentScreen,
     searchQuery,
     selectedStyle,
     selectedScale,
-    activeSetlistFilter,
   ]);
 
   const toggleSidebar = (open) => {
@@ -269,14 +258,12 @@ export default function App() {
       const savedSongs = await AsyncStorage.getItem(STORAGE_KEY);
       const savedStyles = await AsyncStorage.getItem(CUSTOM_STYLES_KEY);
       const savedScales = await AsyncStorage.getItem(CUSTOM_SCALES_KEY);
-      const savedSetlists = await AsyncStorage.getItem(SETLISTS_KEY);
       const savedStyleDict = await AsyncStorage.getItem(STYLE_DICT_KEY);
       const savedDarkMode = await AsyncStorage.getItem(DARK_MODE_KEY);
 
       if (savedSongs) setSongs(JSON.parse(savedSongs));
       if (savedStyles) setStyles(JSON.parse(savedStyles));
       if (savedScales) setScales(JSON.parse(savedScales));
-      if (savedSetlists) setSetlists(JSON.parse(savedSetlists));
       if (savedStyleDict) setStyleDict(JSON.parse(savedStyleDict));
       if (savedDarkMode !== null) setIsDarkMode(JSON.parse(savedDarkMode));
     } catch (e) {
@@ -357,27 +344,209 @@ export default function App() {
     });
   };
 
+  const renderColorCodedLyrics = (lyricsText, chordsText, semitones, isDark, themeState, showChordsState) => {
+    const CHORD_COLOR = isDark ? '#4DA6FF' : '#0066FF';
+    const HEADER_COLOR = isDark ? '#FFB74D' : '#E65100';
+
+    const isChordToken = (str) => {
+      const cleaned = str.replace(/[\[\],.:]/g, '').trim();
+      if (!cleaned) return false;
+      return /^[A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9|sus2|sus4|\/[A-G](?:#|b)?)?$/i.test(cleaned);
+    };
+
+    const elements = [];
+
+    if (showChordsState && chordsText && chordsText.trim()) {
+      elements.push(
+        <View key="top-chords" style={{ marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderColor: themeState.border }}>
+          <Text style={{ fontSize: 11, fontWeight: 'bold', color: themeState.subText, letterSpacing: 1, marginBottom: 2 }}>
+            MAIN CHORDS / INTRO
+          </Text>
+          <Text style={{ fontSize: 15, fontWeight: 'bold', color: CHORD_COLOR }}>
+            {transposeChordText(chordsText, semitones)}
+          </Text>
+        </View>
+      );
+    }
+
+    if (!lyricsText || !lyricsText.trim()) {
+      if (!chordsText) {
+        elements.push(
+          <Text key="empty" style={{ fontStyle: 'italic', color: themeState.subText, textAlign: 'center', marginVertical: 20 }}>
+            No lyrics or chords provided for this song.
+          </Text>
+        );
+      }
+      return elements;
+    }
+
+    const lines = lyricsText.split('\n');
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        elements.push(<View key={`empty-${index}`} style={{ height: 10 }} />);
+        return;
+      }
+
+      // Section Header check (e.g. Verse, [Verse], Chorus, Bridge, Intro, Outro)
+      const sectionMatch = trimmed.match(/^\[?(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus|Hook|Tag|Ending|Refrain)[\s\d]*\]?$/i);
+      if (sectionMatch) {
+        elements.push(
+          <View key={`sec-${index}`} style={{ marginTop: 12, marginBottom: 4 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: HEADER_COLOR, letterSpacing: 1.1 }}>
+              {trimmed.replace(/[\[\]]/g, '').toUpperCase()}
+            </Text>
+          </View>
+        );
+        return;
+      }
+
+      // Bracketed inline chords (e.g. [C] can we [Am] build this?)
+      if (trimmed.includes('[') && trimmed.includes(']')) {
+        const parts = line.split(/(\[[^\]]+\])/);
+        elements.push(
+          <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
+            {parts.map((part, pIdx) => {
+              if (part.startsWith('[') && part.endsWith(']')) {
+                const chordInner = part.slice(1, -1);
+                if (showChordsState) {
+                  return (
+                    <Text key={pIdx} style={{ color: CHORD_COLOR, fontWeight: 'bold', fontSize: 15 }}>
+                      {transposeChordText(chordInner, semitones)}{' '}
+                    </Text>
+                  );
+                }
+                return null;
+              }
+              return part;
+            })}
+          </Text>
+        );
+        return;
+      }
+
+      // Line is predominantly chords (e.g. "C   Am   F   G")
+      const words = trimmed.split(/\s+/);
+      const chordCount = words.filter((w) => isChordToken(w)).length;
+      const isPureChordLine = words.length > 0 && chordCount / words.length >= 0.5;
+
+      if (isPureChordLine) {
+        if (!showChordsState) return;
+        elements.push(
+          <Text
+            key={`line-${index}`}
+            style={{
+              fontSize: 15,
+              fontWeight: 'bold',
+              color: CHORD_COLOR,
+              marginVertical: 2,
+              fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+            }}>
+            {transposeChordText(line, semitones)}
+          </Text>
+        );
+        return;
+      }
+
+      // Leading chord on lyric line (e.g. "C, can we build this?")
+      const leadingChordMatch = line.match(/^([A-G](?:#|b)?(?:m|maj|min|7|m7|dim|aug|add9|sus2|sus4|\/[A-G](?:#|b)?)?)([\s,:\-].*)$/i);
+      if (leadingChordMatch && isChordToken(leadingChordMatch[1])) {
+        const chordPart = leadingChordMatch[1];
+        const restPart = leadingChordMatch[2];
+        elements.push(
+          <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
+            {showChordsState && (
+              <Text style={{ color: CHORD_COLOR, fontWeight: 'bold', fontSize: 16 }}>
+                {transposeChordText(chordPart, semitones)}
+              </Text>
+            )}
+            {restPart}
+          </Text>
+        );
+        return;
+      }
+
+      // Standard Lyric Line
+      elements.push(
+        <Text key={`line-${index}`} style={{ fontSize: 16, lineHeight: 26, color: themeState.text, marginVertical: 1 }}>
+          {line}
+        </Text>
+      );
+    });
+
+    return elements;
+  };
+
+  const handleEditSong = (song) => {
+    if (!song) return;
+    setEditingSongId(song.id);
+    setTitle(song.title || '');
+    setAuthor(song.author || '');
+    setStyle(song.style || 'Ballad (4/4)');
+    setScale(song.scale || '1st (C Major/Tizeta)');
+    setChords(song.chords || '');
+    setLyrics(song.lyrics || '');
+    setAudioUri(song.audioUri || null);
+    setSongDetailModal(null);
+    setModalVisible(true);
+  };
+
+  const handleDeleteSong = (songId) => {
+    Alert.alert(
+      'Delete Song',
+      'Are you sure you want to delete this song?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const updatedSongs = songs.filter((s) => s.id !== songId);
+            setSongs(updatedSongs);
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSongs));
+
+            if (songDetailModal?.id === songId) {
+              setSongDetailModal(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSaveSong = async () => {
     if (!title.trim() || !author.trim()) {
       Alert.alert('Missing Fields', 'Please enter a song title and author.');
       return;
     }
 
-    const newSong = {
-      id: Date.now().toString(),
-      title,
-      author,
-      style,
-      scale,
-      chords,
-      lyrics,
-      audioUri,
-    };
+    let updated;
+    if (editingSongId) {
+      updated = songs.map((s) =>
+        s.id === editingSongId
+          ? { ...s, title, author, style, scale, chords, lyrics, audioUri }
+          : s
+      );
+    } else {
+      const newSong = {
+        id: Date.now().toString(),
+        title,
+        author,
+        style,
+        scale,
+        chords,
+        lyrics,
+        audioUri,
+      };
+      updated = [newSong, ...songs];
+    }
 
-    const updated = [newSong, ...songs];
     setSongs(updated);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
+    setEditingSongId(null);
     setTitle('');
     setAuthor('');
     setStyle('Ballad (4/4)');
@@ -393,15 +562,37 @@ export default function App() {
       songs,
       styles,
       scales,
-      setlists,
       styleDict,
       exportedAt: new Date().toISOString(),
     };
 
     try {
+      if (Platform.OS === 'android') {
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+          const fileName = `SelahKignit_FullBackup_${Date.now()}`;
+          const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+            permissions.directoryUri,
+            fileName,
+            'application/json'
+          );
+          await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(backupData, null, 2));
+          Alert.alert('Backup Saved', 'Your backup file was saved directly to your device storage!');
+          return;
+        }
+      }
+
       const uri = `${FileSystem.documentDirectory}SelahKignit_FullBackup.json`;
       await FileSystem.writeAsStringAsync(uri, JSON.stringify(backupData, null, 2));
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Save Backup File to Device Storage',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Backup Saved', `Saved to device storage: ${uri}`);
+      }
     } catch (e) {
       Alert.alert('Export failed', e.message);
     }
@@ -427,10 +618,6 @@ export default function App() {
             setScales(parsed.scales);
             await AsyncStorage.setItem(CUSTOM_SCALES_KEY, JSON.stringify(parsed.scales));
           }
-          if (parsed.setlists) {
-            setSetlists(parsed.setlists);
-            await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(parsed.setlists));
-          }
           if (parsed.styleDict) {
             setStyleDict(parsed.styleDict);
             await AsyncStorage.setItem(STYLE_DICT_KEY, JSON.stringify(parsed.styleDict));
@@ -448,29 +635,6 @@ export default function App() {
     }
   };
 
-  const handleCreateSetlist = async () => {
-    if (!newSetlistName.trim()) return;
-    const newSetlist = { id: Date.now().toString(), name: newSetlistName, songIds: [] };
-    const updated = [...setlists, newSetlist];
-    setSetlists(updated);
-    await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(updated));
-    setNewSetlistName('');
-    setCreateSetlistModal(false);
-  };
-
-  const toggleSongInSetlist = async (setlistId, songId) => {
-    const updated = setlists.map((sl) => {
-      if (sl.id === setlistId) {
-        const exists = sl.songIds.includes(songId);
-        const newIds = exists ? sl.songIds.filter((id) => id !== songId) : [...sl.songIds, songId];
-        return { ...sl, songIds: newIds };
-      }
-      return sl;
-    });
-    setSetlists(updated);
-    await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(updated));
-  };
-
   const filteredSongs = songs.filter((s) => {
     const query = searchQuery.toLowerCase();
     const titleMatch = s.title.toLowerCase().includes(query);
@@ -481,13 +645,7 @@ export default function App() {
     const styleMatch = selectedStyle === 'All' || s.style === selectedStyle;
     const scaleMatch = selectedScale === 'All' || s.scale === selectedScale;
 
-    let setlistMatch = true;
-    if (activeSetlistFilter) {
-      const activeSl = setlists.find((sl) => sl.id === activeSetlistFilter);
-      setlistMatch = activeSl ? activeSl.songIds.includes(s.id) : true;
-    }
-
-    return searchMatch && styleMatch && scaleMatch && setlistMatch;
+    return searchMatch && styleMatch && scaleMatch;
   });
 
   return (
@@ -523,24 +681,6 @@ export default function App() {
                 onChangeText={setSearchQuery}
               />
             </View>
-
-            {setlists.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.setlistBar}>
-                <TouchableOpacity
-                  style={[stylesContainer.setlistChip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, !activeSetlistFilter && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
-                  onPress={() => setActiveSetlistFilter(null)}>
-                  <Text style={[stylesContainer.setlistText, { color: theme.chipText }, !activeSetlistFilter && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>All Songs</Text>
-                </TouchableOpacity>
-                {setlists.map((sl) => (
-                  <TouchableOpacity
-                    key={sl.id}
-                    style={[stylesContainer.setlistChip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, activeSetlistFilter === sl.id && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
-                    onPress={() => setActiveSetlistFilter(sl.id)}>
-                    <Text style={[stylesContainer.setlistText, { color: theme.chipText }, activeSetlistFilter === sl.id && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>📋 {sl.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
 
             <View style={[stylesContainer.filterContainer, { backgroundColor: theme.bg }]}>
               <Text style={[stylesContainer.filterLabel, { color: theme.subText }]}>STYLE</Text>
@@ -730,40 +870,7 @@ export default function App() {
                 }}>
                 <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>⚙️ Settings</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[stylesContainer.drawerItem, { marginTop: 20, borderTopWidth: 1, borderColor: theme.border }]}
-                onPress={() => {
-                  toggleSidebar(false);
-                  setCreateSetlistModal(true);
-                }}>
-                <Text style={[stylesContainer.drawerItemText, { color: theme.text }]}>➕ Create New Setlist</Text>
-              </TouchableOpacity>
             </Animated.View>
-          </View>
-        </Modal>
-
-        {/* CREATE SETLIST MODAL */}
-        <Modal visible={createSetlistModal} animationType="fade" transparent={true} onRequestClose={() => setCreateSetlistModal(false)}>
-          <View style={stylesContainer.drawerOverlay}>
-            <View style={[stylesContainer.drawerContainer, { backgroundColor: theme.cardBg, width: '85%', margin: 'auto', borderRadius: 12, height: 'auto', alignSelf: 'center', position: 'relative' }]}>
-              <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>Create Setlist</Text>
-              <TextInput
-                style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-                placeholder="Setlist Name (e.g. Sunday Service)"
-                placeholderTextColor={theme.subText}
-                value={newSetlistName}
-                onChangeText={setNewSetlistName}
-              />
-              <View style={stylesContainer.buttonRow}>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setCreateSetlistModal(false)}>
-                  <Text style={[stylesContainer.btnCancelText, { color: theme.text }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={handleCreateSetlist}>
-                  <Text style={[stylesContainer.btnSaveText, { color: isDarkMode ? '#000' : '#FFF' }]}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
         </Modal>
 
@@ -774,7 +881,7 @@ export default function App() {
             <View style={[stylesContainer.bottomSheetContent, { backgroundColor: theme.cardBg }]}>
               <View style={[stylesContainer.dragHandle, { backgroundColor: isDarkMode ? '#444' : '#DDD' }]} />
               <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-                <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>New Song</Text>
+                <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>{editingSongId ? 'Edit Song' : 'New Song'}</Text>
 
                 <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>TITLE *</Text>
                 <TextInput style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]} placeholder="Song Title" placeholderTextColor={theme.subText} value={title} onChangeText={setTitle} />
@@ -840,11 +947,23 @@ export default function App() {
                 />
 
                 <View style={stylesContainer.buttonRow}>
-                  <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border }]} onPress={() => setModalVisible(false)}>
+                  <TouchableOpacity
+                    style={[stylesContainer.btn, stylesContainer.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+                    onPress={() => {
+                      setEditingSongId(null);
+                      setTitle('');
+                      setAuthor('');
+                      setStyle('Ballad (4/4)');
+                      setScale('1st (C Major/Tizeta)');
+                      setChords('');
+                      setLyrics('');
+                      setAudioUri(null);
+                      setModalVisible(false);
+                    }}>
                     <Text style={[stylesContainer.btnCancelText, { color: theme.text }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[stylesContainer.btn, stylesContainer.btnSave, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={handleSaveSong}>
-                    <Text style={[stylesContainer.btnSaveText, { color: isDarkMode ? '#000' : '#FFF' }]}>Save Song</Text>
+                    <Text style={[stylesContainer.btnSaveText, { color: isDarkMode ? '#000' : '#FFF' }]}>{editingSongId ? 'Update Song' : 'Save Song'}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -862,14 +981,28 @@ export default function App() {
           }}>
           <SafeAreaView style={[stylesContainer.modalContainer, { backgroundColor: theme.bg }]}>
             <View style={{ padding: 16, flex: 1 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
                   <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>{songDetailModal?.title}</Text>
                   <Text style={[stylesContainer.detailAuthor, { color: theme.subText }]}>{songDetailModal?.author}</Text>
                 </View>
-                <TouchableOpacity onPress={() => setShowChords(!showChords)}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>{showChords ? 'Hide Chords' : 'Show Chords'}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <TouchableOpacity
+                    style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0' }}
+                    onPress={() => handleEditSong(songDetailModal)}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: theme.text }}>✏️ Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FF3B301A' }}
+                    onPress={() => handleDeleteSong(songDetailModal?.id)}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#FF3B30' }}>🗑️ Delete</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setShowChords(!showChords)}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: theme.text }}>{showChords ? 'Hide Chords' : 'Show Chords'}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={[stylesContainer.readerBar, { backgroundColor: theme.secondaryBg }]}>
@@ -891,27 +1024,7 @@ export default function App() {
                 </TouchableOpacity>
               </View>
 
-              {setlists.length > 0 && (
-                <View style={{ marginVertical: 6 }}>
-                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: theme.subText }}>ADD TO SETLIST:</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginTop: 2 }}>
-                    {setlists.map((sl) => {
-                      const inSetlist = sl.songIds.includes(songDetailModal?.id);
-                      return (
-                        <TouchableOpacity
-                          key={sl.id}
-                          style={[stylesContainer.chip, { backgroundColor: theme.chipBg, borderColor: theme.chipBorder }, inSetlist && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg }]}
-                          onPress={() => toggleSongInSetlist(sl.id, songDetailModal?.id)}>
-                          <Text style={[stylesContainer.chipText, { color: theme.chipText }, inSetlist && { color: theme.chipSelectedText, fontWeight: 'bold' }]}>
-                            {inSetlist ? '✓ ' : '+ '}
-                            {sl.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
+
 
               {songDetailModal?.audioUri && (
                 <TouchableOpacity
@@ -922,10 +1035,7 @@ export default function App() {
               )}
 
               <ScrollView ref={scrollRef} style={[stylesContainer.lyricsBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-                {showChords && songDetailModal?.chords && (
-                  <Text style={[stylesContainer.chordText, { color: theme.text }]}>Chords: {transposeChordText(songDetailModal.chords, transposeKey)}</Text>
-                )}
-                <Text style={[stylesContainer.lyricsText, { color: theme.text }]}>{transposeChordText(songDetailModal?.lyrics || '', transposeKey)}</Text>
+                {renderColorCodedLyrics(songDetailModal?.lyrics || '', songDetailModal?.chords || '', transposeKey, isDarkMode, theme, showChords)}
               </ScrollView>
 
               <TouchableOpacity
