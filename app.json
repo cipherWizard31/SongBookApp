@@ -4,7 +4,7 @@
     "slug": "selah-kignit",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/music-note.png",
+    "icon": "./assets/music-player.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -12,9 +12,9 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/music-note.png",
-        "backgroundImage": "./assets/music-note.png",
-        "monochromeImage": "./assets/music-note.png"
+        "foregroundImage": "./assets/music-player.png",
+        "backgroundImage": "./assets/music-player.png",
+        "monochromeImage": "./assets/music-player.png"
       },
       "package": "com.cipherwizard31.selahkignit",
       "permissions": [
@@ -25,7 +25,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/music-note.png"
+      "favicon": "./assets/music-player.png"
     },
     "extra": {
       "eas": {
