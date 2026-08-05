@@ -76,23 +76,6 @@ export const SidebarDrawer = ({
           <TouchableOpacity
             style={[
               styles.drawerItem,
-              currentScreen === "styledict" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("styledict");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              🥁 Style Dictionary
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
               currentScreen === "dictionary" && {
                 backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
               },

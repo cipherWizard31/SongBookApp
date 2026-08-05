@@ -3,7 +3,14 @@ import { Alert, Animated, Dimensions, BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAudioRecorder, useAudioRecorderState, AudioModule, RecordingPresets, setAudioModeAsync, createAudioPlayer } from 'expo-audio';
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  createAudioPlayer,
+} from 'expo-audio';
 
 import {
   DEFAULT_STYLES,
@@ -18,15 +25,15 @@ import {
 import { getTheme } from './src/theme';
 import { migrateSongToInline } from './src/chordParser';
 
-import { Header } from './src/Header';
-import { SidebarDrawer } from './src/SidebarDrawer';
-import { SongsScreen } from './src/SongsScreen';
-import { StyleDictScreen } from './src/StyleDictScreen';
-import { ScaleDictScreen } from './src/ScaleDictScreen';
-import { SettingsScreen } from './src/SettingsScreen';
-import { SetlistsScreen } from './src/SetlistsScreen'; // Imported SetlistsScreen
-import { SongEditModal } from './src/SongEditModal';
-import { SongDetailModal } from './src/SongDetailModal';
+// --- REMOVED CURLY BRACES FROM COMPONENT IMPORTS ---
+import {Header} from './src/Header';
+import {SidebarDrawer} from './src/SidebarDrawer';
+import {SongsScreen} from './src/SongsScreen';
+import {ScaleDictScreen} from './src/ScaleDictScreen';
+import {SettingsScreen} from './src/SettingsScreen';
+import {SetlistsScreen} from './src/SetlistsScreen';
+import {SongEditModal} from './src/SongEditModal';
+import {SongDetailModal} from './src/SongDetailModal';
 
 const SETLISTS_KEY = '@songbook_setlists';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -34,7 +41,7 @@ const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 
 export default function App() {
   const [songs, setSongs] = useState([]);
-  const [setlists, setSetlists] = useState([]); // Setlists state
+  const [setlists, setSetlists] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
   const [scales, setScales] = useState(DEFAULT_SCALES);
   const [styleDict, setStyleDict] = useState(STYLE_DICTIONARY_INITIAL);
@@ -123,16 +130,27 @@ export default function App() {
       return false;
     };
 
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
     return () => backHandler.remove();
   }, [songDetailModal, modalVisible, sidebarOpen, currentScreen]);
 
   const toggleSidebar = (open) => {
     if (open) {
       setSidebarOpen(true);
-      Animated.timing(slideAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
     } else {
-      Animated.timing(slideAnim, { toValue: -DRAWER_WIDTH, duration: 200, useNativeDriver: true }).start(() => setSidebarOpen(false));
+      Animated.timing(slideAnim, {
+        toValue: -DRAWER_WIDTH,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setSidebarOpen(false));
     }
   };
 
@@ -147,7 +165,9 @@ export default function App() {
 
       if (savedSongs) {
         const rawSongs = JSON.parse(savedSongs);
-        setSongs(rawSongs.map((s) => ({ ...s, content: migrateSongToInline(s) })));
+        setSongs(
+          rawSongs.map((s) => ({ ...s, content: migrateSongToInline(s) }))
+        );
       }
       if (savedSetlists) setSetlists(JSON.parse(savedSetlists));
       if (savedStyles) setStyles(JSON.parse(savedStyles));
@@ -164,7 +184,9 @@ export default function App() {
     const index = setlists.findIndex((s) => s.id === updatedSetlist.id);
     let updated = [];
     if (index >= 0) {
-      updated = setlists.map((s) => (s.id === updatedSetlist.id ? updatedSetlist : s));
+      updated = setlists.map((s) =>
+        s.id === updatedSetlist.id ? updatedSetlist : s
+      );
     } else {
       updated = [updatedSetlist, ...setlists];
     }
@@ -181,8 +203,15 @@ export default function App() {
   const startRecording = async (styleTargetName = null) => {
     try {
       const status = await AudioModule.requestRecordingPermissionsAsync();
-      if (!status.granted) return Alert.alert('Permission required', 'Microphone access is needed to record audio.');
-      await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true });
+      if (!status.granted)
+        return Alert.alert(
+          'Permission required',
+          'Microphone access is needed to record audio.'
+        );
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
       setRecordingStyleName(styleTargetName);
       await audioRecorder.prepareToRecordAsync();
       audioRecorder.record();
@@ -197,7 +226,9 @@ export default function App() {
     const uri = audioRecorder.uri;
 
     if (recordingStyleName) {
-      const updatedDict = styleDict.map((s) => (s.name === recordingStyleName ? { ...s, audioUri: uri } : s));
+      const updatedDict = styleDict.map((s) =>
+        s.name === recordingStyleName ? { ...s, audioUri: uri } : s
+      );
       setStyleDict(updatedDict);
       await AsyncStorage.setItem(STYLE_DICT_KEY, JSON.stringify(updatedDict));
       setRecordingStyleName(null);
@@ -228,7 +259,9 @@ export default function App() {
     setAuthor(song.author || '');
     setStyle(song.style || 'Ballad (4/4)');
     setScale(song.scale || '1st (C Major/Tizeta)');
-    setContent(song.content !== undefined ? song.content : migrateSongToInline(song));
+    setContent(
+      song.content !== undefined ? song.content : migrateSongToInline(song)
+    );
     setAudioUri(song.audioUri || null);
     setSongDetailModal(null);
     setModalVisible(true);
@@ -243,7 +276,10 @@ export default function App() {
         onPress: async () => {
           const updatedSongs = songs.filter((s) => s.id !== songId);
           setSongs(updatedSongs);
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSongs));
+          await AsyncStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(updatedSongs)
+          );
           if (songDetailModal?.id === songId) {
             setSongDetailModal(null);
           }
@@ -260,9 +296,21 @@ export default function App() {
 
     let updated;
     if (editingSongId) {
-      updated = songs.map((s) => (s.id === editingSongId ? { ...s, title, author, style, scale, content, audioUri } : s));
+      updated = songs.map((s) =>
+        s.id === editingSongId
+          ? { ...s, title, author, style, scale, content, audioUri }
+          : s
+      );
     } else {
-      const newSong = { id: Date.now().toString(), title, author, style, scale, content, audioUri };
+      const newSong = {
+        id: Date.now().toString(),
+        title,
+        author,
+        style,
+        scale,
+        content,
+        audioUri,
+      };
       updated = [newSong, ...songs];
     }
 
@@ -308,18 +356,6 @@ export default function App() {
             onDeleteSetlist={handleDeleteSetlist}
             theme={theme}
             isDarkMode={isDarkMode}
-          />
-        )}
-
-        {currentScreen === 'styledict' && (
-          <StyleDictScreen
-            styleDict={styleDict}
-            recorderState={recorderState}
-            recordingStyleName={recordingStyleName}
-            startRecording={startRecording}
-            stopRecording={stopRecording}
-            playSound={playSound}
-            theme={theme}
           />
         )}
 
