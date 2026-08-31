@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,16 +10,24 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Dimensions,
+  Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import { SongContentViewer } from './SongContentViewer';
+import { migrateSongToInline } from './chordParser';
+import { AudioPreviewBanner } from './AudioPreviewBanner';
 
 export const SetlistsScreen = ({
   setlists = [],
   songs = [],
   onSaveSetlist,
   onDeleteSetlist,
+  onClearImportedSetlists,
+  onSaveSongsBatch,
   theme,
   isDarkMode = false,
 }) => {
@@ -29,6 +37,13 @@ export const SetlistsScreen = ({
   // Modal states
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [addSongsModalVisible, setAddSongsModalVisible] = useState(false);
+
+  // Performance Mode states
+  const [performanceModeVisible, setPerformanceModeVisible] = useState(false);
+  const [currentPerfIndex, setCurrentPerfIndex] = useState(0);
+  const [perfTransposeKey, setPerfTransposeKey] = useState(0);
+  const [perfShowChords, setPerfShowChords] = useState(true);
+  const perfFlatListRef = useRef(null);
 
   // Form & Search states
   const [setlistTitle, setSetlistTitle] = useState('');
@@ -149,10 +164,17 @@ export const SetlistsScreen = ({
 
       const importedSetlist = {
         id: Date.now().toString(),
-        title: `${parsedData.setlist.title} (Imported)`,
+        title: parsedData.setlist.title.includes('(Imported)')
+          ? parsedData.setlist.title
+          : `${parsedData.setlist.title} (Imported)`,
         description: parsedData.setlist.description || 'Imported Setlist',
         songIds: (parsedData.songs || []).map((s) => s.id),
+        isImported: true,
       };
+
+      if (parsedData.songs && parsedData.songs.length > 0 && onSaveSongsBatch) {
+        onSaveSongsBatch(parsedData.songs.map((s) => ({ ...s, isImported: true })));
+      }
 
       onSaveSetlist(importedSetlist);
       Alert.alert('Success', `Setlist "${importedSetlist.title}" imported successfully!`);
@@ -208,6 +230,22 @@ export const SetlistsScreen = ({
 
         {/* Action Controls */}
         <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[
+              styles.btn,
+              { backgroundColor: '#FF9500', flex: 1.2 },
+            ]}
+            disabled={activeSetlistSongs.length === 0}
+            onPress={() => {
+              setCurrentPerfIndex(0);
+              setPerfTransposeKey(0);
+              setPerformanceModeVisible(true);
+            }}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
+              ⚡ Performance Mode
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.btn,
@@ -349,6 +387,202 @@ export const SetlistsScreen = ({
             </View>
           </View>
         </Modal>
+
+        {/* PERFORMANCE MODE MODAL */}
+        <Modal
+          visible={performanceModeVisible}
+          animationType="slide"
+          onRequestClose={() => setPerformanceModeVisible(false)}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+            {/* Top Toolbar */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.border,
+              }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#FF9500' }}>⚡ PERFORMANCE MODE</Text>
+                </View>
+                <Text style={{ fontSize: 12, color: theme.subText, marginTop: 2 }}>
+                  Song {currentPerfIndex + 1} of {activeSetlistSongs.length} • {selectedSetlist?.title}
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0',
+                    paddingHorizontal: 8,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                  }}
+                  onPress={() => setPerfShowChords(!perfShowChords)}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
+                    {perfShowChords ? 'Hide Chords' : 'Show Chords'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: isDarkMode ? '#FFF' : '#000',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                  }}
+                  onPress={() => setPerformanceModeVisible(false)}>
+                  <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: '800', fontSize: 12 }}>
+                    ✕ Exit
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Sub Bar: Transpose & Navigation Buttons */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                backgroundColor: theme.secondaryBg,
+              }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: theme.text }}>KEY:</Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: isDarkMode ? '#444' : '#DDD',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 4,
+                  }}
+                  onPress={() => setPerfTransposeKey((k) => k - 1)}>
+                  <Text style={{ fontWeight: 'bold', color: theme.text }}>-1</Text>
+                </TouchableOpacity>
+                <Text style={{ fontWeight: '800', color: theme.text }}>
+                  {perfTransposeKey > 0 ? `+${perfTransposeKey}` : perfTransposeKey}
+                </Text>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: isDarkMode ? '#444' : '#DDD',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 4,
+                  }}
+                  onPress={() => setPerfTransposeKey((k) => k + 1)}>
+                  <Text style={{ fontWeight: 'bold', color: theme.text }}>+1</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TouchableOpacity
+                  disabled={currentPerfIndex === 0}
+                  style={{
+                    opacity: currentPerfIndex === 0 ? 0.4 : 1,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 4,
+                    backgroundColor: theme.cardBg,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                  }}
+                  onPress={() => {
+                    if (currentPerfIndex > 0) {
+                      const next = currentPerfIndex - 1;
+                      setCurrentPerfIndex(next);
+                      perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
+                    }
+                  }}>
+                  <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>‹ Prev</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  disabled={currentPerfIndex >= activeSetlistSongs.length - 1}
+                  style={{
+                    opacity: currentPerfIndex >= activeSetlistSongs.length - 1 ? 0.4 : 1,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 4,
+                    backgroundColor: theme.cardBg,
+                    borderWidth: 1,
+                    borderColor: theme.border,
+                  }}
+                  onPress={() => {
+                    if (currentPerfIndex < activeSetlistSongs.length - 1) {
+                      const next = currentPerfIndex + 1;
+                      setCurrentPerfIndex(next);
+                      perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
+                    }
+                  }}>
+                  <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>Next ›</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Horizontal Swipeable Songs FlatList */}
+            <FlatList
+              ref={perfFlatListRef}
+              data={activeSetlistSongs}
+              keyExtractor={(item) => item.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => {
+                const width = Dimensions.get('window').width;
+                const index = Math.round(e.nativeEvent.contentOffset.x / width);
+                setCurrentPerfIndex(index);
+              }}
+              renderItem={({ item, index }) => {
+                const windowWidth = Dimensions.get('window').width;
+                return (
+                  <View style={{ width: windowWidth, flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <View style={{ flex: 1, paddingRight: 10 }}>
+                        <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text }}>
+                          {index + 1}. {item.title}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: theme.subText, marginTop: 2 }}>
+                          {item.author} {item.album ? `• ${item.album}` : ''}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text, backgroundColor: isDarkMode ? '#333' : '#EFEFEF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 }}>
+                          {item.scale}
+                        </Text>
+                        {item.style ? (
+                          <Text style={{ fontSize: 10, color: theme.subText }}>{item.style}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    <AudioPreviewBanner
+                      audioUrl={item.audioUrl || item.audioUri}
+                      onPressPlay={(url) => Linking.openURL(url).catch(() => Alert.alert('Unable to open URL', url))}
+                      isDarkMode={isDarkMode}
+                      theme={theme}
+                    />
+
+                    <ScrollView style={{ flex: 1, backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                      <SongContentViewer
+                        content={item.content !== undefined ? item.content : migrateSongToInline(item)}
+                        semitones={perfTransposeKey}
+                        showChords={perfShowChords}
+                        themeState={theme}
+                        isDarkMode={isDarkMode}
+                      />
+                    </ScrollView>
+                  </View>
+                );
+              }}
+            />
+          </SafeAreaView>
+        </Modal>
       </View>
     );
   }
@@ -367,7 +601,15 @@ export const SetlistsScreen = ({
           </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          {onClearImportedSetlists && setlists.some((s) => s.isImported || s.title?.includes('(Imported)')) ? (
+            <TouchableOpacity
+              style={[styles.headerIconBtn, { borderColor: '#FF3B30', backgroundColor: '#FF3B3011' }]}
+              onPress={onClearImportedSetlists}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF3B30' }}>🗑️ Clear Imported</Text>
+            </TouchableOpacity>
+          ) : null}
+
           <TouchableOpacity
             style={[styles.headerIconBtn, { borderColor: theme.border }]}
             onPress={handleImportSetlist}>
@@ -404,33 +646,59 @@ export const SetlistsScreen = ({
         }
         renderItem={({ item }) => {
           const songCount = item.songIds ? item.songIds.length : 0;
+          const isImported = item.isImported || item.title?.includes('(Imported)');
 
           return (
             <TouchableOpacity
               activeOpacity={0.7}
               style={[
                 styles.card,
-                { backgroundColor: theme.cardBg, borderColor: theme.border },
+                { backgroundColor: theme.cardBg, borderColor: isImported ? '#FF950066' : theme.border },
               ]}
               onPress={() => setSelectedSetlist(item)}>
               <View style={{ flex: 1, paddingRight: 10 }}>
-                <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
+                  {isImported ? (
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF9500', backgroundColor: '#FF950022', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                      📥 IMPORTED
+                    </Text>
+                  ) : null}
+                </View>
                 <Text style={[styles.cardSub, { color: theme.subText }]} numberOfLines={1}>
                   {item.description}
                 </Text>
               </View>
 
               <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                <View
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0',
-                    },
-                  ]}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
-                    {songCount} {songCount === 1 ? 'song' : 'songs'}
-                  </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View
+                    style={[
+                      styles.badge,
+                      {
+                        backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0',
+                      },
+                    ]}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
+                      {songCount} {songCount === 1 ? 'song' : 'songs'}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={{ padding: 4 }}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      Alert.alert(
+                        'Delete Setlist',
+                        `Are you sure you want to delete "${item.title}"?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteSetlist(item.id) },
+                        ]
+                      );
+                    }}>
+                    <Text style={{ fontSize: 14 }}>🗑️</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <Text style={{ fontSize: 12, fontWeight: '700', color: '#0066FF' }}>View →</Text>

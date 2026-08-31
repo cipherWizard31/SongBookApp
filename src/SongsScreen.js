@@ -1,20 +1,36 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 
-export const SongsScreen = ({ songs, styles, scales, onSelectSong, onOpenNewSongModal, theme, isDarkMode }) => {
+export const SongsScreen = ({
+  songs,
+  styles,
+  scales,
+  onSelectSong,
+  onOpenNewSongModal,
+  onClearImportedSongs,
+  onDeleteSong,
+  theme,
+  isDarkMode,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('All');
   const [selectedScale, setSelectedScale] = useState('All');
+
+  const hasImportedSongs = songs.some((s) => s.isImported || s.title?.includes('(Imported)'));
 
   const filteredSongs = songs.filter((s) => {
     const query = searchQuery.toLowerCase();
     const titleMatch = (s.title || '').toLowerCase().includes(query);
     const authorMatch = (s.author || '').toLowerCase().includes(query);
+    const albumMatch = (s.album || '').toLowerCase().includes(query);
     const contentMatch = (s.content || s.lyrics || '').toLowerCase().includes(query);
-    const searchMatch = titleMatch || authorMatch || contentMatch;
+    const searchMatch = titleMatch || authorMatch || albumMatch || contentMatch;
 
-    const styleMatch = selectedStyle === 'All' || s.style === selectedStyle;
-    const scaleMatch = selectedScale === 'All' || s.scale === selectedScale;
+    const songStyle = s.style || 'Uncategorized';
+    const songScale = s.scale || 'Uncategorized';
+
+    const styleMatch = selectedStyle === 'All' || songStyle === selectedStyle;
+    const scaleMatch = selectedScale === 'All' || songScale === selectedScale;
 
     return searchMatch && styleMatch && scaleMatch;
   });
@@ -22,13 +38,15 @@ export const SongsScreen = ({ songs, styles, scales, onSelectSong, onOpenNewSong
   return (
     <View style={{ flex: 1 }}>
       <View style={stylesContainer.searchBox}>
-        <TextInput
-          style={[stylesContainer.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-          placeholder="Search title, artist or lyrics..."
-          placeholderTextColor={theme.subText}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <TextInput
+            style={[stylesContainer.searchInput, { flex: 1, backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+            placeholder="Search title, artist, album or lyrics..."
+            placeholderTextColor={theme.subText}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
       </View>
 
       <View style={[stylesContainer.filterContainer, { backgroundColor: theme.bg }]}>
@@ -84,21 +102,33 @@ export const SongsScreen = ({ songs, styles, scales, onSelectSong, onOpenNewSong
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         ListEmptyComponent={<Text style={[stylesContainer.emptyText, { color: theme.subText }]}>No songs found.</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[stylesContainer.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.7}
-            onPress={() => onSelectSong(item)}>
-            <View style={{ flex: 1, paddingRight: 10 }}>
-              <Text style={[stylesContainer.cardTitle, { color: theme.text }]}>{item.title}</Text>
-              <Text style={[stylesContainer.cardAuthor, { color: theme.subText }]}>{item.author}</Text>
-            </View>
-            <View style={stylesContainer.tagContainer}>
-              <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.style}</Text>
-              <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.scale}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const isImported = item.isImported || item.title?.includes('(Imported)');
+          return (
+            <TouchableOpacity
+              style={[stylesContainer.card, { backgroundColor: theme.cardBg, borderColor: isImported ? '#FF950066' : theme.border }]}
+              activeOpacity={0.7}
+              onPress={() => onSelectSong(item)}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[stylesContainer.cardTitle, { color: theme.text }]}>{item.title}</Text>
+                  {isImported ? (
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#FF9500', backgroundColor: '#FF950022', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
+                      📥 IMPORTED
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={[stylesContainer.cardAuthor, { color: theme.subText }]}>
+                  {item.author}{item.album ? ` • ${item.album}` : ''}
+                </Text>
+              </View>
+              <View style={stylesContainer.tagContainer}>
+                <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.style}</Text>
+                <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.scale}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <TouchableOpacity style={[stylesContainer.fab, { backgroundColor: theme.fabBg }]} activeOpacity={0.8} onPress={onOpenNewSongModal}>

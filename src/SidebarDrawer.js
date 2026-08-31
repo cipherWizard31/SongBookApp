@@ -76,6 +76,40 @@ export const SidebarDrawer = ({
           <TouchableOpacity
             style={[
               styles.drawerItem,
+              currentScreen === "albums" && {
+                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
+              },
+            ]}
+            onPress={() => {
+              setCurrentScreen("albums");
+              toggleSidebar(false);
+            }}
+          >
+            <Text style={[styles.drawerItemText, { color: theme.text }]}>
+              💿 Albums
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.drawerItem,
+              currentScreen === "artists" && {
+                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
+              },
+            ]}
+            onPress={() => {
+              setCurrentScreen("artists");
+              toggleSidebar(false);
+            }}
+          >
+            <Text style={[styles.drawerItemText, { color: theme.text }]}>
+              👤 Artists
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.drawerItem,
               currentScreen === "dictionary" && {
                 backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
               },

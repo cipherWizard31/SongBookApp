@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Modal, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Modal, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 
 export const SongEditModal = ({
   modalVisible,
@@ -10,6 +10,8 @@ export const SongEditModal = ({
   setTitle,
   author,
   setAuthor,
+  album,
+  setAlbum,
   style,
   setStyle,
   styles,
@@ -18,34 +20,36 @@ export const SongEditModal = ({
   scales,
   content,
   setContent,
-  audioUri,
-  setAudioUri,
-  recorderState,
-  recordingStyleName,
-  startRecording,
-  stopRecording,
+  audioUrl,
+  setAudioUrl,
   handleSaveSong,
   theme,
   isDarkMode,
 }) => {
+  const [contentHeight, setContentHeight] = useState(100);
+
   const resetAndClose = () => {
     setEditingSongId(null);
     setTitle('');
     setAuthor('');
-    setStyle('Ballad (4/4)');
-    setScale('1st (C Major/Tizeta)');
+    setAlbum('');
+    setStyle('Uncategorized');
+    setScale('Uncategorized');
     setContent('');
-    setAudioUri(null);
+    setAudioUrl('');
     setModalVisible(false);
   };
 
   return (
     <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
-      <View style={stylesContainer.bottomSheetOverlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={stylesContainer.bottomSheetOverlay}
+      >
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setModalVisible(false)} />
         <View style={[stylesContainer.bottomSheetContent, { backgroundColor: theme.cardBg }]}>
           <View style={[stylesContainer.dragHandle, { backgroundColor: isDarkMode ? '#444' : '#DDD' }]} />
-          <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={[stylesContainer.modalHeader, { color: theme.text }]}>{editingSongId ? 'Edit Song' : 'New Song'}</Text>
 
             <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>TITLE *</Text>
@@ -66,8 +70,17 @@ export const SongEditModal = ({
               onChangeText={setAuthor}
             />
 
+            <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>ALBUM / COLLECTION</Text>
+            <TextInput
+              style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+              placeholder="Album Name (Optional)"
+              placeholderTextColor={theme.subText}
+              value={album}
+              onChangeText={setAlbum}
+            />
+
             <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>RHYTHM / STYLE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }} keyboardShouldPersistTaps="handled">
               {styles.filter((st) => st !== 'All').map((st) => (
                 <TouchableOpacity
                   key={st}
@@ -79,7 +92,7 @@ export const SongEditModal = ({
             </ScrollView>
 
             <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>SCALE (QENET)</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row', marginVertical: 4 }} keyboardShouldPersistTaps="handled">
               {scales.filter((sc) => sc !== 'All').map((sc) => (
                 <TouchableOpacity
                   key={sc}
@@ -90,25 +103,37 @@ export const SongEditModal = ({
               ))}
             </ScrollView>
 
-            <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>AUDIO MEMO</Text>
-            <View style={stylesContainer.customInputRow}>
-              {recorderState.isRecording && !recordingStyleName ? (
-                <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: 'red' }]} onPress={stopRecording}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Stop Recording</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={[stylesContainer.btn, { backgroundColor: isDarkMode ? '#FFF' : '#000' }]} onPress={() => startRecording()}>
-                  <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: 'bold' }}>{audioUri ? 'Re-record Memo' : '🎙️ Record Memo'}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>AUDIO URL (MP3 / STREAM LINK)</Text>
+            <TextInput
+              style={[stylesContainer.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+              placeholder="https://example.com/song.mp3"
+              placeholderTextColor={theme.subText}
+              value={audioUrl}
+              onChangeText={setAudioUrl}
+            />
 
             <Text style={[stylesContainer.inputLabel, { color: theme.subText }]}>SONG CONTENT (INLINE BRACKET CHORDS)</Text>
             <TextInput
-              style={[stylesContainer.input, stylesContainer.textArea, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
+              style={[
+                stylesContainer.input,
+                stylesContainer.textArea,
+                {
+                  height: Math.min(Math.max(100, contentHeight), 220),
+                  backgroundColor: theme.inputBg,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+              ]}
               placeholder={'[C]Amazing [G]grace\nHow [Am]sweet the [F]sound'}
               placeholderTextColor={theme.subText}
               multiline
+              scrollEnabled
+              nestedScrollEnabled
+              onContentSizeChange={(e) => {
+                if (e.nativeEvent && e.nativeEvent.contentSize) {
+                  setContentHeight(e.nativeEvent.contentSize.height);
+                }
+              }}
               value={content}
               onChangeText={setContent}
             />
@@ -123,7 +148,7 @@ export const SongEditModal = ({
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -143,7 +168,7 @@ const stylesContainer = StyleSheet.create({
   modalHeader: { fontSize: 22, fontWeight: '800' },
   inputLabel: { fontSize: 11, fontWeight: '700', marginTop: 14, marginBottom: 4, letterSpacing: 1.1 },
   input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15 },
-  textArea: { height: 160, textAlignVertical: 'top' },
+  textArea: { minHeight: 100, maxHeight: 220, textAlignVertical: 'top' },
   customInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, marginRight: 6, borderWidth: 1 },
   chipText: { fontSize: 13 },

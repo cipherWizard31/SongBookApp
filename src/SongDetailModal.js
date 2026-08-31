@@ -3,6 +3,7 @@ import { View, Text, Modal, ScrollView, TouchableOpacity, StyleSheet } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
+import { AudioPreviewBanner } from './AudioPreviewBanner';
 
 export const SongDetailModal = ({
   songDetailModal,
@@ -11,29 +12,28 @@ export const SongDetailModal = ({
   setTransposeKey,
   showChords,
   setShowChords,
-  isAutoScrolling,
-  setIsAutoScrolling,
-  scrollRef,
   playSound,
   handleEditSong,
   handleDeleteSong,
   theme,
   isDarkMode,
 }) => {
+  const audioUrl = songDetailModal?.audioUrl || songDetailModal?.audioUri;
   return (
     <Modal
       visible={!!songDetailModal}
       animationType="slide"
       onRequestClose={() => {
         setSongDetailModal(null);
-        setIsAutoScrolling(false);
       }}>
       <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.bg }]}>
         <View style={{ padding: 16, flex: 1 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <View style={{ flex: 1, paddingRight: 10 }}>
               <Text style={[styles.modalHeader, { color: theme.text }]}>{songDetailModal?.title}</Text>
-              <Text style={[styles.detailAuthor, { color: theme.subText }]}>{songDetailModal?.author}</Text>
+              <Text style={[styles.detailAuthor, { color: theme.subText }]}>
+                {songDetailModal?.author}{songDetailModal?.album ? ` • ${songDetailModal.album}` : ''}
+              </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <TouchableOpacity
@@ -65,23 +65,16 @@ export const SongDetailModal = ({
                 <Text style={{ color: isDarkMode ? '#000' : '#FFF' }}>+1</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[styles.smallBtn, { backgroundColor: isAutoScrolling ? (isDarkMode ? '#FFF' : '#000') : '#666' }]}
-              onPress={() => setIsAutoScrolling(!isAutoScrolling)}>
-              <Text style={{ color: isAutoScrolling && isDarkMode ? '#000' : '#FFF' }}>{isAutoScrolling ? 'Pause Scroll' : 'Auto Scroll'}</Text>
-            </TouchableOpacity>
           </View>
 
-          {songDetailModal?.audioUri && (
-            <TouchableOpacity
-              style={{ backgroundColor: isDarkMode ? '#FFF' : '#000', padding: 8, borderRadius: 6, marginVertical: 6 }}
-              onPress={() => playSound(songDetailModal.audioUri)}>
-              <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: 'bold', textAlign: 'center', fontSize: 12 }}>▶ Play Audio Memo</Text>
-            </TouchableOpacity>
-          )}
+          <AudioPreviewBanner
+            audioUrl={audioUrl}
+            onPressPlay={(url) => playSound(url)}
+            isDarkMode={isDarkMode}
+            theme={theme}
+          />
 
-          <ScrollView ref={scrollRef} style={[styles.lyricsBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+          <ScrollView style={[styles.lyricsBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
             <SongContentViewer
               content={songDetailModal?.content !== undefined ? songDetailModal.content : migrateSongToInline(songDetailModal || {})}
               semitones={transposeKey}
@@ -95,7 +88,6 @@ export const SongDetailModal = ({
             style={[styles.btnCancel, { backgroundColor: theme.cardBg, borderColor: theme.border, paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 10 }]}
             onPress={() => {
               setSongDetailModal(null);
-              setIsAutoScrolling(false);
             }}>
             <Text style={{ color: theme.text, fontWeight: '600', fontSize: 15 }}>Close</Text>
           </TouchableOpacity>

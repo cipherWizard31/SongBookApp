@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, Animated, Dimensions, BackHandler } from 'react-native';
+import { Alert, Animated, Dimensions, BackHandler, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   useAudioRecorder,
   useAudioRecorderState,
@@ -15,11 +18,9 @@ import {
 import {
   DEFAULT_STYLES,
   DEFAULT_SCALES,
-  STYLE_DICTIONARY_INITIAL,
   STORAGE_KEY,
   CUSTOM_STYLES_KEY,
   CUSTOM_SCALES_KEY,
-  STYLE_DICT_KEY,
   DARK_MODE_KEY,
 } from './src/constants';
 import { getTheme } from './src/theme';
@@ -32,6 +33,8 @@ import {SongsScreen} from './src/SongsScreen';
 import {ScaleDictScreen} from './src/ScaleDictScreen';
 import {SettingsScreen} from './src/SettingsScreen';
 import {SetlistsScreen} from './src/SetlistsScreen';
+import {AlbumsScreen} from './src/AlbumsScreen';
+import {ArtistsScreen} from './src/ArtistsScreen';
 import {SongEditModal} from './src/SongEditModal';
 import {SongDetailModal} from './src/SongDetailModal';
 
@@ -44,7 +47,6 @@ export default function App() {
   const [setlists, setSetlists] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
   const [scales, setScales] = useState(DEFAULT_SCALES);
-  const [styleDict, setStyleDict] = useState(STYLE_DICTIONARY_INITIAL);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('songs');
@@ -56,22 +58,17 @@ export default function App() {
 
   const [transposeKey, setTransposeKey] = useState(0);
   const [showChords, setShowChords] = useState(true);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const scrollRef = useRef(null);
 
   // Form State
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [style, setStyle] = useState('Ballad (4/4)');
-  const [scale, setScale] = useState('1st (C Major/Tizeta)');
+  const [album, setAlbum] = useState('');
+  const [style, setStyle] = useState('Uncategorized');
+  const [scale, setScale] = useState('Uncategorized');
   const [content, setContent] = useState('');
-  const [audioUri, setAudioUri] = useState(null);
+  const [audioUrl, setAudioUrl] = useState('');
   const [editingSongId, setEditingSongId] = useState(null);
 
-  // Audio recording
-  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(audioRecorder);
-  const [recordingStyleName, setRecordingStyleName] = useState(null);
   const currentPlayerRef = useRef(null);
 
   const theme = getTheme(isDarkMode);
@@ -94,24 +91,9 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let scrollInterval = null;
-    if (isAutoScrolling) {
-      scrollInterval = setInterval(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTo({ y: 100, animated: true });
-        }
-      }, 1000);
-    } else {
-      clearInterval(scrollInterval);
-    }
-    return () => clearInterval(scrollInterval);
-  }, [isAutoScrolling]);
-
-  useEffect(() => {
     const handleBackPress = () => {
       if (songDetailModal) {
         setSongDetailModal(null);
-        setIsAutoScrolling(false);
         return true;
       }
       if (modalVisible) {
@@ -160,7 +142,6 @@ export default function App() {
       const savedSetlists = await AsyncStorage.getItem(SETLISTS_KEY);
       const savedStyles = await AsyncStorage.getItem(CUSTOM_STYLES_KEY);
       const savedScales = await AsyncStorage.getItem(CUSTOM_SCALES_KEY);
-      const savedStyleDict = await AsyncStorage.getItem(STYLE_DICT_KEY);
       const savedDarkMode = await AsyncStorage.getItem(DARK_MODE_KEY);
 
       if (savedSongs) {
@@ -170,13 +151,239 @@ export default function App() {
         );
       }
       if (savedSetlists) setSetlists(JSON.parse(savedSetlists));
-      if (savedStyles) setStyles(JSON.parse(savedStyles));
-      if (savedScales) setScales(JSON.parse(savedScales));
-      if (savedStyleDict) setStyleDict(JSON.parse(savedStyleDict));
+      if (savedStyles) {
+        const parsed = JSON.parse(savedStyles);
+        const filtered = parsed.filter((st) => st !== 'Uncategorized');
+        filtered.push('Uncategorized');
+        setStyles(filtered);
+      }
+      if (savedScales) {
+        const parsed = JSON.parse(savedScales);
+        const filtered = parsed.filter((sc) => sc !== 'Uncategorized');
+        filtered.push('Uncategorized');
+        setScales(filtered);
+      }
       if (savedDarkMode !== null) setIsDarkMode(JSON.parse(savedDarkMode));
     } catch (e) {
       console.error('Data load error', e);
     }
+  };
+
+  // Export Full Backup Handler
+  const handleExportSongs = async () => {
+    try {
+      const backupData = {
+        version: 1,
+        exportDate: new Date().toISOString(),
+        songs,
+        setlists,
+        styles,
+        scales,
+      };
+      const jsonString = JSON.stringify(backupData, null, 2);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selah_kignit_backup_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('Export Successful', 'Backup file downloaded successfully.');
+        return;
+      }
+
+      const fileUri = `${FileSystem.documentDirectory}selah_kignit_backup.json`;
+      await FileSystem.writeAsStringAsync(fileUri, jsonString, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export Backup Data',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Export Saved', `Backup saved to ${fileUri}`);
+      }
+    } catch (error) {
+      console.error('Export Error:', error);
+      Alert.alert('Export Failed', error.message || 'An error occurred while exporting data.');
+    }
+  };
+
+  // Import Full Backup Handler
+  const handleImportSongs = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'text/plain', '*/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const fileUri = result.assets[0].uri;
+      let jsonContent = '';
+
+      if (Platform.OS === 'web') {
+        const response = await fetch(fileUri);
+        jsonContent = await response.text();
+      } else {
+        jsonContent = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+      }
+
+      const backupData = JSON.parse(jsonContent);
+
+      if (!backupData || (!backupData.songs && !Array.isArray(backupData))) {
+        Alert.alert('Invalid Backup', 'The selected file is not a valid Selah Kignit backup JSON.');
+        return;
+      }
+
+      const importedSongs = Array.isArray(backupData) ? backupData : (backupData.songs || []);
+      const importedSetlists = backupData.setlists || [];
+      const importedStyles = backupData.styles || [];
+      const importedScales = backupData.scales || [];
+
+      Alert.alert(
+        'Confirm Import',
+        `This backup contains ${importedSongs.length} song(s) and ${importedSetlists.length} setlist(s). Do you want to restore this data?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Import & Restore',
+            style: 'destructive',
+            onPress: async () => {
+              if (importedSongs.length > 0) {
+                const migrated = importedSongs.map((s) => ({
+                  ...s,
+                  isImported: true,
+                  content: migrateSongToInline(s),
+                }));
+                setSongs(migrated);
+                await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+              }
+
+              if (importedSetlists.length > 0) {
+                const taggedSetlists = importedSetlists.map((st) => ({
+                  ...st,
+                  isImported: true,
+                }));
+                setSetlists(taggedSetlists);
+                await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(taggedSetlists));
+              }
+
+              if (importedStyles.length > 0) {
+                const filtered = importedStyles.filter((st) => st !== 'Uncategorized');
+                filtered.push('Uncategorized');
+                setStyles(filtered);
+                await AsyncStorage.setItem(CUSTOM_STYLES_KEY, JSON.stringify(filtered));
+              }
+
+              if (importedScales.length > 0) {
+                const filtered = importedScales.filter((sc) => sc !== 'Uncategorized');
+                filtered.push('Uncategorized');
+                setScales(filtered);
+                await AsyncStorage.setItem(CUSTOM_SCALES_KEY, JSON.stringify(filtered));
+              }
+
+              Alert.alert('Import Successful', 'Your data has been successfully restored!');
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Import Error:', error);
+      Alert.alert('Import Failed', 'Failed to parse or import the backup file. ' + error.message);
+    }
+  };
+
+  // Batch Save Songs Handler (for Setlist Song imports)
+  const handleSaveSongsBatch = async (newSongs) => {
+    const existingIds = new Set(songs.map((s) => s.id));
+    const uniqueNewSongs = newSongs.filter((s) => !existingIds.has(s.id));
+    if (uniqueNewSongs.length > 0) {
+      const updated = [...uniqueNewSongs, ...songs];
+      setSongs(updated);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+  };
+
+  // Handlers to Clear Imported Data
+  const handleClearImportedSetlists = async () => {
+    Alert.alert(
+      'Remove Imported Setlists',
+      'Are you sure you want to delete all imported setlists?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const remaining = setlists.filter(
+              (s) => !s.isImported && !s.title?.includes('(Imported)')
+            );
+            setSetlists(remaining);
+            await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(remaining));
+            Alert.alert('Success', 'All imported setlists have been removed.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearImportedSongs = async () => {
+    Alert.alert(
+      'Remove Imported Songs',
+      'Are you sure you want to delete all imported songs?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const remaining = songs.filter(
+              (s) => !s.isImported && !s.title?.includes('(Imported)')
+            );
+            setSongs(remaining);
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+            Alert.alert('Success', 'All imported songs have been removed.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearAllImportedData = async () => {
+    Alert.alert(
+      'Clear All Imported Data',
+      'Are you sure you want to delete all imported songs and setlists?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete All Imported',
+          style: 'destructive',
+          onPress: async () => {
+            const remSetlists = setlists.filter(
+              (s) => !s.isImported && !s.title?.includes('(Imported)')
+            );
+            const remSongs = songs.filter(
+              (s) => !s.isImported && !s.title?.includes('(Imported)')
+            );
+            setSetlists(remSetlists);
+            setSongs(remSongs);
+            await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(remSetlists));
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remSongs));
+            Alert.alert('Success', 'All imported songs and setlists have been removed.');
+          },
+        },
+      ]
+    );
   };
 
   // Save/Delete handler functions for setlists
@@ -200,7 +407,7 @@ export default function App() {
     await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(updated));
   };
 
-  const startRecording = async (styleTargetName = null) => {
+  const startRecording = async () => {
     try {
       const status = await AudioModule.requestRecordingPermissionsAsync();
       if (!status.granted)
@@ -212,7 +419,6 @@ export default function App() {
         playsInSilentMode: true,
         allowsRecording: true,
       });
-      setRecordingStyleName(styleTargetName);
       await audioRecorder.prepareToRecordAsync();
       audioRecorder.record();
     } catch (err) {
@@ -224,17 +430,7 @@ export default function App() {
     if (!recorderState.isRecording) return;
     await audioRecorder.stop();
     const uri = audioRecorder.uri;
-
-    if (recordingStyleName) {
-      const updatedDict = styleDict.map((s) =>
-        s.name === recordingStyleName ? { ...s, audioUri: uri } : s
-      );
-      setStyleDict(updatedDict);
-      await AsyncStorage.setItem(STYLE_DICT_KEY, JSON.stringify(updatedDict));
-      setRecordingStyleName(null);
-    } else {
-      setAudioUri(uri);
-    }
+    setAudioUri(uri);
   };
 
   const playSound = async (uri) => {
@@ -257,12 +453,13 @@ export default function App() {
     setEditingSongId(song.id);
     setTitle(song.title || '');
     setAuthor(song.author || '');
-    setStyle(song.style || 'Ballad (4/4)');
-    setScale(song.scale || '1st (C Major/Tizeta)');
+    setAlbum(song.album || '');
+    setStyle(song.style || 'Uncategorized');
+    setScale(song.scale || 'Uncategorized');
     setContent(
       song.content !== undefined ? song.content : migrateSongToInline(song)
     );
-    setAudioUri(song.audioUri || null);
+    setAudioUrl(song.audioUrl || song.audioUri || '');
     setSongDetailModal(null);
     setModalVisible(true);
   };
@@ -298,7 +495,7 @@ export default function App() {
     if (editingSongId) {
       updated = songs.map((s) =>
         s.id === editingSongId
-          ? { ...s, title, author, style, scale, content, audioUri }
+          ? { ...s, title, author, album, style, scale, content, audioUrl: audioUrl.trim() }
           : s
       );
     } else {
@@ -306,10 +503,11 @@ export default function App() {
         id: Date.now().toString(),
         title,
         author,
+        album,
         style,
         scale,
         content,
-        audioUri,
+        audioUrl: audioUrl.trim(),
       };
       updated = [newSong, ...songs];
     }
@@ -320,10 +518,11 @@ export default function App() {
     setEditingSongId(null);
     setTitle('');
     setAuthor('');
-    setStyle('Ballad (4/4)');
-    setScale('1st (C Major/Tizeta)');
+    setAlbum('');
+    setStyle('Uncategorized');
+    setScale('Uncategorized');
     setContent('');
-    setAudioUri(null);
+    setAudioUrl('');
     setModalVisible(false);
   };
 
@@ -343,6 +542,32 @@ export default function App() {
               setTransposeKey(0);
             }}
             onOpenNewSongModal={() => setModalVisible(true)}
+            onClearImportedSongs={handleClearImportedSongs}
+            onDeleteSong={handleDeleteSong}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        )}
+
+        {currentScreen === 'albums' && (
+          <AlbumsScreen
+            songs={songs}
+            onSelectSong={(song) => {
+              setSongDetailModal(song);
+              setTransposeKey(0);
+            }}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        )}
+
+        {currentScreen === 'artists' && (
+          <ArtistsScreen
+            songs={songs}
+            onSelectSong={(song) => {
+              setSongDetailModal(song);
+              setTransposeKey(0);
+            }}
             theme={theme}
             isDarkMode={isDarkMode}
           />
@@ -354,6 +579,8 @@ export default function App() {
             songs={songs}
             onSaveSetlist={handleSaveSetlist}
             onDeleteSetlist={handleDeleteSetlist}
+            onClearImportedSetlists={handleClearImportedSetlists}
+            onSaveSongsBatch={handleSaveSongsBatch}
             theme={theme}
             isDarkMode={isDarkMode}
           />
@@ -365,12 +592,16 @@ export default function App() {
           <SettingsScreen
             songs={songs}
             setSongs={setSongs}
+            setlists={setlists}
             styles={styles}
             setStyles={setStyles}
             scales={scales}
             setScales={setScales}
-            styleDict={styleDict}
-            setStyleDict={setStyleDict}
+            handleExportSongs={handleExportSongs}
+            handleImportSongs={handleImportSongs}
+            handleClearImportedSetlists={handleClearImportedSetlists}
+            handleClearImportedSongs={handleClearImportedSongs}
+            handleClearAllImportedData={handleClearAllImportedData}
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
             theme={theme}
@@ -397,6 +628,8 @@ export default function App() {
           setTitle={setTitle}
           author={author}
           setAuthor={setAuthor}
+          album={album}
+          setAlbum={setAlbum}
           style={style}
           setStyle={setStyle}
           styles={styles}
@@ -405,12 +638,8 @@ export default function App() {
           scales={scales}
           content={content}
           setContent={setContent}
-          audioUri={audioUri}
-          setAudioUri={setAudioUri}
-          recorderState={recorderState}
-          recordingStyleName={recordingStyleName}
-          startRecording={startRecording}
-          stopRecording={stopRecording}
+          audioUrl={audioUrl}
+          setAudioUrl={setAudioUrl}
           handleSaveSong={handleSaveSong}
           theme={theme}
           isDarkMode={isDarkMode}
@@ -423,9 +652,6 @@ export default function App() {
           setTransposeKey={setTransposeKey}
           showChords={showChords}
           setShowChords={setShowChords}
-          isAutoScrolling={isAutoScrolling}
-          setIsAutoScrolling={setIsAutoScrolling}
-          scrollRef={scrollRef}
           playSound={playSound}
           handleEditSong={handleEditSong}
           handleDeleteSong={handleDeleteSong}
