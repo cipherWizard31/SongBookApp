@@ -1,162 +1,94 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  Image,
-  Animated,
-  StyleSheet,
-} from "react-native";
+import React from 'react';
+import { View, Text, TouchableOpacity, Modal, Image, Animated, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+const NAV_ITEMS = [
+  { key: 'songs',      label: 'Songs',            icon: 'musical-notes', outlineIcon: 'musical-notes-outline' },
+  { key: 'albums',     label: 'Albums',           icon: 'disc',          outlineIcon: 'disc-outline'          },
+  { key: 'artists',    label: 'Artists',          icon: 'person',        outlineIcon: 'person-outline'        },
+  { key: 'setlists',   label: 'Setlists',         icon: 'list',          outlineIcon: 'list-outline'          },
+  { key: 'dictionary', label: 'Scale Dictionary', icon: 'book',          outlineIcon: 'book-outline'          },
+  { key: 'settings',   label: 'Settings',         icon: 'settings',      outlineIcon: 'settings-outline'      },
+];
 
 export const SidebarDrawer = ({
-  sidebarOpen,
-  toggleSidebar,
-  slideAnim,
-  currentScreen,
-  setCurrentScreen,
-  theme,
-  isDarkMode,
-  drawerWidth,
+  sidebarOpen, toggleSidebar, slideAnim,
+  currentScreen, setCurrentScreen,
+  theme, isDarkMode, drawerWidth,
 }) => {
   return (
     <Modal
       visible={sidebarOpen}
-      transparent={true}
+      transparent
       animationType="none"
-      onRequestClose={() => toggleSidebar(false)}
-    >
-      <View style={styles.drawerOverlay}>
+      onRequestClose={() => toggleSidebar(false)}>
+
+      <View style={styles.overlay}>
+        {/* Scrim — tap to close */}
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
           onPress={() => toggleSidebar(false)}
+          accessibilityLabel="Close navigation menu"
+          accessibilityRole="button"
         />
 
         <Animated.View
           style={[
-            styles.drawerContainer,
+            styles.drawer,
             {
               width: drawerWidth,
-              backgroundColor: theme.cardBg,
+              backgroundColor: theme.secondaryBg,
+              borderRightColor: theme.border,
               transform: [{ translateX: slideAnim }],
             },
-          ]}
-        >
-          <View
-            style={[styles.drawerHeader, { borderBottomColor: theme.border }]}
-          >
+          ]}>
+
+          {/* Drawer header */}
+          <View style={[styles.drawerHeader, { borderBottomColor: theme.divider }]}>
             <Image
-              source={require("../assets/music-player.png")}
-              style={styles.drawerLogo}
+              source={require('../assets/music-player.png')}
+              style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={[styles.drawerTitle, { color: theme.text }]}>
-              Selah Kignit
-            </Text>
+            <Text style={[styles.drawerTitle, { color: theme.text }]}>Selah Kignit</Text>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "songs" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("songs");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              🎵 Songs Feed
-            </Text>
-          </TouchableOpacity>
+          {/* Nav items — vector icon destinations */}
+          <View style={styles.navList}>
+            {NAV_ITEMS.map((item) => {
+              const active = currentScreen === item.key;
+              const iconName = active ? item.icon : item.outlineIcon;
+              const iconColor = active ? theme.text : theme.subText;
 
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "albums" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("albums");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              💿 Albums
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "artists" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("artists");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              👤 Artists
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "dictionary" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("dictionary");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              📖 Scale Dictionary
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "setlists" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("setlists");
-              toggleSidebar(false);
-            }}
-          >
-            <Text
-              style={[styles.drawerItemText, { color: theme.text }]}
-            >
-              📋 Setlists
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.drawerItem,
-              currentScreen === "settings" && {
-                backgroundColor: isDarkMode ? "#2C2C2C" : "#F5F5F5",
-              },
-            ]}
-            onPress={() => {
-              setCurrentScreen("settings");
-              toggleSidebar(false);
-            }}
-          >
-            <Text style={[styles.drawerItemText, { color: theme.text }]}>
-              ⚙️ Settings
-            </Text>
-          </TouchableOpacity>
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.navItem,
+                    active && { backgroundColor: theme.activeItem },
+                  ]}
+                  onPress={() => {
+                    setCurrentScreen(item.key);
+                    toggleSidebar(false);
+                  }}
+                  accessibilityRole="menuitem"
+                  accessibilityState={{ selected: active }}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name={iconName} size={22} color={iconColor} />
+                  </View>
+                  <Text
+                    style={[
+                      styles.navLabel,
+                      { color: iconColor },
+                      active && styles.navLabelActive,
+                    ]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -164,34 +96,47 @@ export const SidebarDrawer = ({
 };
 
 const styles = StyleSheet.create({
-  drawerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
-  drawerContainer: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    padding: 20,
-    paddingTop: 40,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  drawer: {
+    position: 'absolute',
+    left: 0, top: 0, bottom: 0,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   drawerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 24,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 52,
+    paddingBottom: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  drawerLogo: { width: 28, height: 28 },
-  drawerTitle: { fontSize: 20, fontWeight: "800" },
-  drawerItem: {
-    paddingVertical: 13,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 2,
+  logo: { width: 22, height: 22 },
+  drawerTitle: { fontSize: 17, fontWeight: '600', letterSpacing: 0.1 },
+  navList: { paddingHorizontal: 8, paddingTop: 12 },
+  navItem: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 26,
+    marginBottom: 4,
   },
-  drawerItemText: { fontSize: 15, fontWeight: "600" },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  navLabel: { fontSize: 15, fontWeight: '400', letterSpacing: 0.1 },
+  navLabelActive: { fontWeight: '600' },
 });

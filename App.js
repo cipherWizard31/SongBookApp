@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, Animated, Dimensions, BackHandler, Platform } from 'react-native';
+import { Alert, Animated, Dimensions, BackHandler, Platform, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -435,6 +435,16 @@ export default function App() {
 
   const playSound = async (uri) => {
     if (!uri) return;
+    const isWebOrAppUrl = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|open\.spotify\.com|spotify\.link|soundcloud\.com)/i.test(uri);
+    const isDirectAudio = /\.(mp3|m4a|wav|aac|flac|ogg)(\?.*)?$/i.test(uri) || uri.startsWith('file://');
+
+    if (isWebOrAppUrl || !isDirectAudio) {
+      Linking.openURL(uri).catch(() => {
+        Alert.alert('Unable to open link', uri);
+      });
+      return;
+    }
+
     try {
       if (currentPlayerRef.current) {
         currentPlayerRef.current.release();
@@ -444,7 +454,9 @@ export default function App() {
       currentPlayerRef.current = player;
       player.play();
     } catch (err) {
-      Alert.alert('Playback failed', err.message);
+      Linking.openURL(uri).catch(() => {
+        Alert.alert('Playback failed', err.message);
+      });
     }
   };
 

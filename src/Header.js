@@ -3,36 +3,60 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 
 export const Header = ({ theme, onOpenSidebar }) => {
   return (
-    <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+    <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+      {/* Leading: menu button — 48×48 touch target */}
       <TouchableOpacity
         onPress={onOpenSidebar}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        style={styles.hamburgerBtn}>
-        <Text style={[styles.hamburgerIcon, { color: theme.text }]}>☰</Text>
+        style={styles.iconBtn}
+        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+        accessibilityLabel="Open navigation menu"
+        accessibilityRole="button">
+        <View style={styles.hamburger}>
+          <View style={[styles.line, { backgroundColor: theme.text }]} />
+          <View style={[styles.line, { backgroundColor: theme.text }]} />
+          <View style={[styles.line, { backgroundColor: theme.text }]} />
+        </View>
       </TouchableOpacity>
 
+      {/* Center: app identity */}
       <View style={styles.titleRow}>
-        <Image source={require('../assets/music-player.png')} style={styles.appLogo} resizeMode="contain" />
-        <Text style={[styles.headerTitle, { color: theme.text }]}>SELAH KIGNIT</Text>
+        <Image
+          source={require('../assets/music-player.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={[styles.title, { color: theme.text }]}>Selah Kignit</Text>
       </View>
 
-      <View style={{ width: 24 }} />
+      {/* Trailing spacer keeps title centered */}
+      <View style={styles.iconBtn} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+  appBar: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  hamburgerBtn: { padding: 8 },
-  hamburgerIcon: { fontSize: 22 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  appLogo: { width: 20, height: 20 },
-  headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: 1.5 },
+  iconBtn: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hamburger: { gap: 5 },
+  line: { width: 22, height: 1.5, borderRadius: 1 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logo: { width: 20, height: 20 },
+  // MD3 Title Large: 22sp, weight 400
+  title: { fontSize: 18, fontWeight: '500', letterSpacing: 0.1 },
 });

@@ -1,22 +1,13 @@
 import React, { useState, useMemo, useRef } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  FlatList,
-  Modal,
-  TextInput,
-  ScrollView,
-  Alert,
-  Platform,
-  Dimensions,
-  Linking,
+  StyleSheet, Text, View, TouchableOpacity, FlatList,
+  Modal, TextInput, ScrollView, Alert, Platform, Dimensions, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
@@ -55,7 +46,7 @@ export const SetlistsScreen = ({
   // ----------------------------------------------------
   const handleCreateSetlist = () => {
     if (!setlistTitle.trim()) {
-      Alert.alert('Validation Error', 'Please enter a setlist title.');
+      Alert.alert('Required field', 'Please enter a setlist title.');
       return;
     }
 
@@ -70,7 +61,7 @@ export const SetlistsScreen = ({
     setSetlistTitle('');
     setSetlistDesc('');
     setCreateModalVisible(false);
-    setSelectedSetlist(newSetlist); // Open immediately upon creation
+    setSelectedSetlist(newSetlist);
   };
 
   // ----------------------------------------------------
@@ -93,7 +84,6 @@ export const SetlistsScreen = ({
     onSaveSetlist(updatedSetlist);
   };
 
-  // Filter songs based on search query inside the modal
   const filteredSongs = useMemo(() => {
     if (!songSearchQuery.trim()) return songs;
     const q = songSearchQuery.toLowerCase();
@@ -111,7 +101,6 @@ export const SetlistsScreen = ({
   const handleExportSetlist = async (setlist) => {
     const setlistSongs = songs.filter((s) => setlist.songIds.includes(s.id));
 
-    // Structured JSON Payload
     const exportData = {
       version: '1.0',
       type: 'songbook_setlist',
@@ -177,7 +166,7 @@ export const SetlistsScreen = ({
       }
 
       onSaveSetlist(importedSetlist);
-      Alert.alert('Success', `Setlist "${importedSetlist.title}" imported successfully!`);
+      Alert.alert('Success', `Setlist "${importedSetlist.title}" imported successfully.`);
     } catch (error) {
       Alert.alert('Import Failed', 'Unable to parse the imported JSON file.');
     }
@@ -190,21 +179,29 @@ export const SetlistsScreen = ({
     const activeSetlistSongs = songs.filter((s) => selectedSetlist.songIds.includes(s.id));
 
     return (
-      <View style={[styles.container, { backgroundColor: theme.bg }]}>
-        {/* Detail Header / Action Toolbar */}
-        <View style={styles.detailHeader}>
+      <View style={[styles.root, { backgroundColor: theme.bg }]}>
+        {/* Top navigation row */}
+        <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
           <TouchableOpacity
-            style={[styles.backBtn, { borderColor: theme.border }]}
-            onPress={() => setSelectedSetlist(null)}>
-            <Text style={[styles.backBtnText, { color: theme.text }]}>← Back</Text>
+            style={styles.barBtn}
+            onPress={() => setSelectedSetlist(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Back to setlists">
+            <Text style={[styles.barBtnText, { color: theme.text }]}>‹ Setlists</Text>
           </TouchableOpacity>
 
+          <View style={styles.barCenter}>
+            <Text style={[styles.barTitle, { color: theme.text }]} numberOfLines={1}>
+              {selectedSetlist.title}
+            </Text>
+          </View>
+
           <TouchableOpacity
-            style={[styles.deleteBtn, { backgroundColor: '#FF3B301A' }]}
+            style={styles.barBtn}
             onPress={() => {
               Alert.alert(
                 'Delete Setlist',
-                `Are you sure you want to delete "${selectedSetlist.title}"?`,
+                `Delete "${selectedSetlist.title}"?`,
                 [
                   { text: 'Cancel', style: 'cancel' },
                   {
@@ -218,172 +215,159 @@ export const SetlistsScreen = ({
                 ]
               );
             }}>
-            <Text style={{ color: '#FF3B30', fontSize: 13, fontWeight: '700' }}>🗑️ Delete</Text>
+            <Text style={styles.destructiveText}>Delete</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Setlist Info */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={[styles.detailTitle, { color: theme.text }]}>{selectedSetlist.title}</Text>
-          <Text style={[styles.detailSub, { color: theme.subText }]}>{selectedSetlist.description}</Text>
+        {/* Setlist info header */}
+        <View style={[styles.detailHeader, { borderBottomColor: theme.divider }]}>
+          <Text style={[styles.detailDesc, { color: theme.subText }]}>
+            {selectedSetlist.description} · {activeSetlistSongs.length} {activeSetlistSongs.length === 1 ? 'song' : 'songs'}
+          </Text>
+
+          {/* Action row */}
+          <View style={styles.actionRow}>
+            {activeSetlistSongs.length > 0 && (
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: theme.fabBg }]}
+                onPress={() => {
+                  setCurrentPerfIndex(0);
+                  setPerfTransposeKey(0);
+                  setPerformanceModeVisible(true);
+                }}>
+                <Text style={[styles.actionBtnText, { color: theme.fabText }]}>
+                  Performance mode
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}
+              onPress={() => {
+                setSongSearchQuery('');
+                setAddSongsModalVisible(true);
+              }}>
+              <Text style={[styles.actionBtnText, { color: theme.text }]}>
+                + Add songs
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}
+              onPress={() => handleExportSetlist(selectedSetlist)}>
+              <Text style={[styles.actionBtnText, { color: theme.text }]}>
+                Export
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Action Controls */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={[
-              styles.btn,
-              { backgroundColor: '#FF9500', flex: 1.2 },
-            ]}
-            disabled={activeSetlistSongs.length === 0}
-            onPress={() => {
-              setCurrentPerfIndex(0);
-              setPerfTransposeKey(0);
-              setPerformanceModeVisible(true);
-            }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>
-              ⚡ Performance Mode
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.btn,
-              { backgroundColor: isDarkMode ? '#FFFFFF' : '#000000', flex: 1 },
-            ]}
-            onPress={() => {
-              setSongSearchQuery('');
-              setAddSongsModalVisible(true);
-            }}>
-            <Text style={{ color: isDarkMode ? '#000000' : '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
-              + Add Songs
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: '#0066FF', flex: 1 }]}
-            onPress={() => handleExportSetlist(selectedSetlist)}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>📤 Export JSON</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Songs List Section */}
-        <Text style={[styles.sectionLabel, { color: theme.subText }]}>
-          SONGS IN SET ({activeSetlistSongs.length})
-        </Text>
-
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
-          {activeSetlistSongs.length === 0 ? (
-            <Text style={[styles.emptyText, { color: theme.subText }]}>
-              No songs in this setlist yet. Tap "+ Add Songs" to populate.
-            </Text>
-          ) : (
-            activeSetlistSongs.map((song, index) => (
-              <View
-                key={song.id}
-                style={[
-                  styles.songRow,
-                  {
-                    backgroundColor: theme.cardBg,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Text style={[styles.songIndex, { color: theme.subText }]}>{index + 1}.</Text>
-                <View style={{ flex: 1, paddingHorizontal: 10 }}>
-                  <Text style={[styles.songTitle, { color: theme.text }]}>{song.title}</Text>
-                  <Text style={[styles.songSub, { color: theme.subText }]}>
-                    {song.author} • {song.scale}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.removeIconBtn}
-                  onPress={() => toggleSongInSetlist(song.id)}>
-                  <Text style={{ color: '#FF3B30', fontSize: 14, fontWeight: '700' }}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))
+        {/* Songs List */}
+        <FlatList
+          data={activeSetlistSongs}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 48 }}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={[styles.emptyTitle, { color: theme.subText }]}>Setlist is empty</Text>
+              <Text style={[styles.emptyHint, { color: theme.subText }]}>
+                Tap "+ Add songs" to select songs for this setlist
+              </Text>
+            </View>
+          }
+          ItemSeparatorComponent={() => (
+            <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 52 }]} />
           )}
-        </ScrollView>
+          renderItem={({ item, index }) => (
+            <View style={[styles.songRow, { backgroundColor: theme.bg }]}>
+              <Text style={[styles.songNum, { color: theme.subText }]}>{index + 1}</Text>
+              <View style={styles.songText}>
+                <Text style={[styles.songTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.songSub, { color: theme.subText }]} numberOfLines={1}>
+                  {[item.author, item.scale, item.style].filter(Boolean).join(' · ')}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.removeBtn}
+                onPress={() => toggleSongInSetlist(item.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityLabel="Remove song from setlist">
+                <Text style={[styles.removeGlyph, { color: theme.subText }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
 
         {/* ADD SONGS MODAL */}
         <Modal
           visible={addSongsModalVisible}
           animationType="slide"
-          transparent={true}
+          transparent
           onRequestClose={() => setAddSongsModalVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={styles.sheetOverlay}>
             <TouchableOpacity
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={() => setAddSongsModalVisible(false)}
             />
-            <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-              <View style={[styles.dragHandle, { backgroundColor: isDarkMode ? '#444' : '#DDD' }]} />
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Add Songs to Setlist</Text>
+            <View style={[styles.sheet, { backgroundColor: theme.bg }]}>
+              <View style={[styles.handle, { backgroundColor: theme.border }]} />
+
+              <View style={[styles.sheetHeader, { borderBottomColor: theme.divider }]}>
+                <Text style={[styles.sheetTitle, { color: theme.text }]}>Add Songs</Text>
+                <TouchableOpacity onPress={() => setAddSongsModalVisible(false)}>
+                  <Text style={[styles.sheetDone, { color: theme.text }]}>Done</Text>
+                </TouchableOpacity>
+              </View>
 
               {/* Search Bar */}
-              <TextInput
-                style={[
-                  styles.searchInput,
-                  { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text },
-                ]}
-                placeholder="🔍 Search songs by title or author..."
-                placeholderTextColor={theme.subText}
-                value={songSearchQuery}
-                onChangeText={setSongSearchQuery}
-              />
+              <View style={styles.modalSearchWrap}>
+                <View style={[styles.modalSearchBar, { backgroundColor: theme.cardBg }]}>
+                  <Text style={[styles.searchGlyph, { color: theme.subText }]}>⌕</Text>
+                  <TextInput
+                    style={[styles.modalSearchInput, { color: theme.text }]}
+                    placeholder="Search title, artist, or style…"
+                    placeholderTextColor={theme.subText}
+                    value={songSearchQuery}
+                    onChangeText={setSongSearchQuery}
+                    returnKeyType="search"
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
 
               <FlatList
                 data={filteredSongs}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 12 }}
+                contentContainerStyle={{ paddingBottom: 24 }}
+                ItemSeparatorComponent={() => (
+                  <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 16 }]} />
+                )}
                 renderItem={({ item }) => {
                   const isSelected = selectedSetlist.songIds.includes(item.id);
 
                   return (
                     <TouchableOpacity
-                      activeOpacity={0.7}
-                      style={[
-                        styles.songSelectRow,
-                        {
-                          backgroundColor: isSelected
-                            ? isDarkMode
-                              ? '#003366'
-                              : '#E6F0FF'
-                            : theme.cardBg,
-                          borderColor: isSelected ? '#0066FF' : theme.border,
-                        },
-                      ]}
+                      activeOpacity={0.6}
+                      style={[styles.selectRow, { backgroundColor: theme.bg }]}
                       onPress={() => toggleSongInSetlist(item.id)}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.songTitle, { color: theme.text }]}>{item.title}</Text>
-                        <Text style={[styles.songSub, { color: theme.subText }]}>
-                          {item.author} • {item.style}
+                      <View style={{ flex: 1, paddingRight: 12 }}>
+                        <Text style={[styles.songTitle, { color: theme.text }]} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.songSub, { color: theme.subText }]} numberOfLines={1}>
+                          {[item.author, item.style].filter(Boolean).join(' · ')}
                         </Text>
                       </View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '800',
-                          color: isSelected ? '#0066FF' : theme.subText,
-                        }}>
+                      <Text style={[styles.checkGlyph, { color: isSelected ? theme.text : theme.subText }]}>
                         {isSelected ? '✓' : '+'}
                       </Text>
                     </TouchableOpacity>
                   );
                 }}
               />
-
-              <TouchableOpacity
-                style={[
-                  styles.btn,
-                  { backgroundColor: isDarkMode ? '#FFFFFF' : '#000000', marginTop: 10 },
-                ]}
-                onPress={() => setAddSongsModalVisible(false)}>
-                <Text style={{ color: isDarkMode ? '#000000' : '#FFFFFF', fontWeight: '700' }}>
-                  Done
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -392,106 +376,61 @@ export const SetlistsScreen = ({
         <Modal
           visible={performanceModeVisible}
           animationType="slide"
+          statusBarTranslucent
           onRequestClose={() => setPerformanceModeVisible(false)}>
+          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
           <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
             {/* Top Toolbar */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderBottomWidth: 1,
-                borderBottomColor: theme.border,
-              }}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#FF9500' }}>⚡ PERFORMANCE MODE</Text>
-                </View>
-                <Text style={{ fontSize: 12, color: theme.subText, marginTop: 2 }}>
-                  Song {currentPerfIndex + 1} of {activeSetlistSongs.length} • {selectedSetlist?.title}
+            <View style={[styles.perfTopBar, { borderBottomColor: theme.divider }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.perfTitle, { color: theme.text }]}>
+                  {currentPerfIndex + 1} of {activeSetlistSongs.length}
+                </Text>
+                <Text style={[styles.perfSub, { color: theme.subText }]} numberOfLines={1}>
+                  {selectedSetlist?.title}
                 </Text>
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0',
-                    paddingHorizontal: 8,
-                    paddingVertical: 6,
-                    borderRadius: 6,
-                  }}
+                  style={[styles.toggleBtn, { borderColor: theme.border }]}
                   onPress={() => setPerfShowChords(!perfShowChords)}>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
-                    {perfShowChords ? 'Hide Chords' : 'Show Chords'}
+                  <Text style={[styles.toggleLabel, { color: theme.text }]}>
+                    {perfShowChords ? 'Hide chords' : 'Show chords'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: isDarkMode ? '#FFF' : '#000',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                  }}
-                  onPress={() => setPerformanceModeVisible(false)}>
-                  <Text style={{ color: isDarkMode ? '#000' : '#FFF', fontWeight: '800', fontSize: 12 }}>
-                    ✕ Exit
-                  </Text>
+                  onPress={() => setPerformanceModeVisible(false)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={[styles.barBtnText, { color: theme.text }]}>Exit</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Sub Bar: Transpose & Navigation Buttons */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                backgroundColor: theme.secondaryBg,
-              }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: theme.text }}>KEY:</Text>
+            {/* Sub Bar: Transpose Key Controls */}
+            <View style={[styles.perfSubBar, { backgroundColor: theme.secondaryBg, borderBottomColor: theme.divider }]}>
+              <View style={styles.keyControls}>
+                <Text style={[styles.toolbarLabel, { color: theme.subText }]}>Key</Text>
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: isDarkMode ? '#444' : '#DDD',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 4,
-                  }}
+                  style={[styles.stepBtn, { backgroundColor: theme.cardBg }]}
                   onPress={() => setPerfTransposeKey((k) => k - 1)}>
-                  <Text style={{ fontWeight: 'bold', color: theme.text }}>-1</Text>
+                  <Text style={[styles.stepBtnLabel, { color: theme.text }]}>−</Text>
                 </TouchableOpacity>
-                <Text style={{ fontWeight: '800', color: theme.text }}>
+                <Text style={[styles.keyValue, { color: theme.text }]}>
                   {perfTransposeKey > 0 ? `+${perfTransposeKey}` : perfTransposeKey}
                 </Text>
                 <TouchableOpacity
-                  style={{
-                    backgroundColor: isDarkMode ? '#444' : '#DDD',
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 4,
-                  }}
+                  style={[styles.stepBtn, { backgroundColor: theme.cardBg }]}
                   onPress={() => setPerfTransposeKey((k) => k + 1)}>
-                  <Text style={{ fontWeight: 'bold', color: theme.text }}>+1</Text>
+                  <Text style={[styles.stepBtnLabel, { color: theme.text }]}>+</Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
                   disabled={currentPerfIndex === 0}
-                  style={{
-                    opacity: currentPerfIndex === 0 ? 0.4 : 1,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 4,
-                    backgroundColor: theme.cardBg,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                  }}
+                  style={[styles.navStepBtn, { opacity: currentPerfIndex === 0 ? 0.3 : 1 }]}
                   onPress={() => {
                     if (currentPerfIndex > 0) {
                       const next = currentPerfIndex - 1;
@@ -499,20 +438,12 @@ export const SetlistsScreen = ({
                       perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
                     }
                   }}>
-                  <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>‹ Prev</Text>
+                  <Text style={[styles.navStepLabel, { color: theme.text }]}>‹ Prev</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   disabled={currentPerfIndex >= activeSetlistSongs.length - 1}
-                  style={{
-                    opacity: currentPerfIndex >= activeSetlistSongs.length - 1 ? 0.4 : 1,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    borderRadius: 4,
-                    backgroundColor: theme.cardBg,
-                    borderWidth: 1,
-                    borderColor: theme.border,
-                  }}
+                  style={[styles.navStepBtn, { opacity: currentPerfIndex >= activeSetlistSongs.length - 1 ? 0.3 : 1 }]}
                   onPress={() => {
                     if (currentPerfIndex < activeSetlistSongs.length - 1) {
                       const next = currentPerfIndex + 1;
@@ -520,7 +451,7 @@ export const SetlistsScreen = ({
                       perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
                     }
                   }}>
-                  <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13 }}>Next ›</Text>
+                  <Text style={[styles.navStepLabel, { color: theme.text }]}>Next ›</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -540,26 +471,18 @@ export const SetlistsScreen = ({
               }}
               renderItem={({ item, index }) => {
                 const windowWidth = Dimensions.get('window').width;
+                const sub = [item.author, item.scale, item.style].filter(Boolean).join(' · ');
+
                 return (
-                  <View style={{ width: windowWidth, flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <View style={{ flex: 1, paddingRight: 10 }}>
-                        <Text style={{ fontSize: 22, fontWeight: '800', color: theme.text }}>
-                          {index + 1}. {item.title}
-                        </Text>
-                        <Text style={{ fontSize: 14, color: theme.subText, marginTop: 2 }}>
-                          {item.author} {item.album ? `• ${item.album}` : ''}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text, backgroundColor: isDarkMode ? '#333' : '#EFEFEF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 }}>
-                          {item.scale}
-                        </Text>
-                        {item.style ? (
-                          <Text style={{ fontSize: 10, color: theme.subText }}>{item.style}</Text>
-                        ) : null}
-                      </View>
-                    </View>
+                  <View style={{ width: windowWidth, flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+                    <Text style={[styles.perfSongTitle, { color: theme.text }]}>
+                      {index + 1}. {item.title}
+                    </Text>
+                    {sub ? (
+                      <Text style={[styles.perfSongSub, { color: theme.subText }]}>
+                        {sub}
+                      </Text>
+                    ) : null}
 
                     <AudioPreviewBanner
                       audioUrl={item.audioUrl || item.audioUri}
@@ -568,7 +491,9 @@ export const SetlistsScreen = ({
                       theme={theme}
                     />
 
-                    <ScrollView style={{ flex: 1, backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                    <ScrollView
+                      style={{ flex: 1, marginTop: 8 }}
+                      contentContainerStyle={{ paddingBottom: 48 }}>
                       <SongContentViewer
                         content={item.content !== undefined ? item.content : migrateSongToInline(item)}
                         semitones={perfTransposeKey}
@@ -591,118 +516,65 @@ export const SetlistsScreen = ({
   // MAIN SCREEN: SETLISTS OVERVIEW LIST
   // ----------------------------------------------------
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Top Header */}
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.screenTitle, { color: theme.text }]}>Setlists</Text>
-          <Text style={[styles.screenSub, { color: theme.subText }]}>
-            Organize worship sessions and live sets.
-          </Text>
-        </View>
+    <View style={[styles.root, { backgroundColor: theme.bg }]}>
+      {/* Top action bar */}
+      <View style={[styles.headerRow, { borderBottomColor: theme.divider }]}>
+        <Text style={[styles.screenTitle, { color: theme.text }]}>Setlists</Text>
 
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          {onClearImportedSetlists && setlists.some((s) => s.isImported || s.title?.includes('(Imported)')) ? (
-            <TouchableOpacity
-              style={[styles.headerIconBtn, { borderColor: '#FF3B30', backgroundColor: '#FF3B3011' }]}
-              onPress={onClearImportedSetlists}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF3B30' }}>🗑️ Clear Imported</Text>
-            </TouchableOpacity>
-          ) : null}
-
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <TouchableOpacity
-            style={[styles.headerIconBtn, { borderColor: theme.border }]}
-            onPress={handleImportSetlist}>
-            <Text style={{ fontSize: 13, fontWeight: '600', color: theme.text }}>📥 Import</Text>
+            onPress={handleImportSetlist}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={[styles.headerAction, { color: theme.text }]}>Import</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.addBtn,
-              { backgroundColor: isDarkMode ? '#FFFFFF' : '#000000' },
-            ]}
-            onPress={() => setCreateModalVisible(true)}>
-            <Text
-              style={{
-                color: isDarkMode ? '#000000' : '#FFFFFF',
-                fontWeight: '700',
-                fontSize: 13,
-              }}>
+            onPress={() => setCreateModalVisible(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={[styles.headerAction, styles.headerActionPrimary, { color: theme.text }]}>
               + New Set
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Setlists Cards List */}
+      {/* Setlists List */}
       <FlatList
         data={setlists}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 30, paddingTop: 4 }}
+        contentContainerStyle={{ paddingBottom: 48 }}
         ListEmptyComponent={
-          <Text style={[styles.emptyText, { color: theme.subText }]}>
-            No setlists created yet. Tap "+ New Set" or "Import" to get started.
-          </Text>
+          <View style={styles.empty}>
+            <Text style={[styles.emptyTitle, { color: theme.subText }]}>No setlists</Text>
+            <Text style={[styles.emptyHint, { color: theme.subText }]}>
+              Tap "+ New Set" or "Import" to create your first setlist
+            </Text>
+          </View>
         }
+        ItemSeparatorComponent={() => (
+          <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 16 }]} />
+        )}
         renderItem={({ item }) => {
           const songCount = item.songIds ? item.songIds.length : 0;
           const isImported = item.isImported || item.title?.includes('(Imported)');
 
           return (
             <TouchableOpacity
-              activeOpacity={0.7}
-              style={[
-                styles.card,
-                { backgroundColor: theme.cardBg, borderColor: isImported ? '#FF950066' : theme.border },
-              ]}
+              activeOpacity={0.55}
+              style={[styles.setlistRow, { backgroundColor: theme.bg }]}
               onPress={() => setSelectedSetlist(item)}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
-                  {isImported ? (
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF9500', backgroundColor: '#FF950022', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-                      📥 IMPORTED
-                    </Text>
-                  ) : null}
-                </View>
-                <Text style={[styles.cardSub, { color: theme.subText }]} numberOfLines={1}>
-                  {item.description}
+              <View style={styles.setlistText}>
+                <Text style={[styles.setlistTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.setlistSub, { color: theme.subText }]} numberOfLines={1}>
+                  {songCount} {songCount === 1 ? 'song' : 'songs'}
+                  {item.description ? ` · ${item.description}` : ''}
+                  {isImported ? ' · imported' : ''}
                 </Text>
               </View>
 
-              <View style={{ alignItems: 'flex-end', gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <View
-                    style={[
-                      styles.badge,
-                      {
-                        backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F0F0',
-                      },
-                    ]}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: theme.text }}>
-                      {songCount} {songCount === 1 ? 'song' : 'songs'}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={{ padding: 4 }}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      Alert.alert(
-                        'Delete Setlist',
-                        `Are you sure you want to delete "${item.title}"?`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteSetlist(item.id) },
-                        ]
-                      );
-                    }}>
-                    <Text style={{ fontSize: 14 }}>🗑️</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#0066FF' }}>View →</Text>
-              </View>
+              <Text style={[styles.chevron, { color: theme.subText }]}>›</Text>
             </TouchableOpacity>
           );
         }}
@@ -712,60 +584,54 @@ export const SetlistsScreen = ({
       <Modal
         visible={createModalVisible}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => setCreateModalVisible(false)}>
-        <View style={styles.modalOverlay}>
+        <View style={styles.sheetOverlay}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => setCreateModalVisible(false)}
           />
-          <View style={[styles.modalContent, { backgroundColor: theme.cardBg }]}>
-            <View style={[styles.dragHandle, { backgroundColor: isDarkMode ? '#444' : '#DDD' }]} />
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Create New Setlist</Text>
+          <View style={[styles.sheet, { backgroundColor: theme.bg }]}>
+            <View style={[styles.handle, { backgroundColor: theme.border }]} />
 
-            <Text style={[styles.inputLabel, { color: theme.subText }]}>TITLE *</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text },
-              ]}
-              placeholder="e.g., Sunday Service"
-              placeholderTextColor={theme.subText}
-              value={setlistTitle}
-              onChangeText={setSetlistTitle}
-            />
-
-            <Text style={[styles.inputLabel, { color: theme.subText }]}>DATE / NOTES</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text },
-              ]}
-              placeholder="e.g., Main Hall, 10:00 AM"
-              placeholderTextColor={theme.subText}
-              value={setlistDesc}
-              onChangeText={setSetlistDesc}
-            />
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.btn, styles.btnCancel, { borderColor: theme.border }]}
-                onPress={() => setCreateModalVisible(false)}>
-                <Text style={{ color: theme.text, fontWeight: '600' }}>Cancel</Text>
+            <View style={[styles.sheetHeader, { borderBottomColor: theme.divider }]}>
+              <TouchableOpacity onPress={() => setCreateModalVisible(false)}>
+                <Text style={[styles.sheetCancel, { color: theme.subText }]}>Cancel</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.btn,
-                  { backgroundColor: isDarkMode ? '#FFFFFF' : '#000000', flex: 1 },
-                ]}
-                onPress={handleCreateSetlist}>
-                <Text style={{ color: isDarkMode ? '#000000' : '#FFFFFF', fontWeight: '700' }}>
-                  Save Setlist
-                </Text>
+              <Text style={[styles.sheetTitle, { color: theme.text }]}>New Setlist</Text>
+              <TouchableOpacity onPress={handleCreateSetlist}>
+                <Text style={[styles.sheetDone, { color: theme.text }]}>Save</Text>
               </TouchableOpacity>
             </View>
+
+            <ScrollView contentContainerStyle={styles.formPadding} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.label, { color: theme.subText }]}>Title *</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
+                placeholder="e.g. Sunday Morning Worship"
+                placeholderTextColor={theme.subText}
+                value={setlistTitle}
+                onChangeText={setSetlistTitle}
+                returnKeyType="next"
+              />
+
+              <Text style={[styles.label, { color: theme.subText }]}>Notes / Date</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
+                placeholder="e.g. Main Sanctuary, 10:00 AM"
+                placeholderTextColor={theme.subText}
+                value={setlistDesc}
+                onChangeText={setSetlistDesc}
+                returnKeyType="done"
+              />
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: theme.fabBg }]}
+                onPress={handleCreateSetlist}>
+                <Text style={[styles.saveBtnText, { color: theme.fabText }]}>Create Setlist</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -774,132 +640,158 @@ export const SetlistsScreen = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  root: { flex: 1 },
 
-  // Main Header
+  // Top header row
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  screenTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
-  screenSub: { fontSize: 13, marginTop: 2 },
-  addBtn: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8 },
-  headerIconBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    justifyContent: 'center',
-  },
+  screenTitle: { fontSize: 18, fontWeight: '600' },
+  headerAction: { fontSize: 15, fontWeight: '400' },
+  headerActionPrimary: { fontWeight: '600' },
 
-  // Cards
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+  // List rows
+  sep: { height: StyleSheet.hairlineWidth },
+  setlistRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 64,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700' },
-  cardSub: { fontSize: 12, marginTop: 4 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 13 },
+  setlistText: { flex: 1, paddingRight: 12 },
+  setlistTitle: { fontSize: 15, fontWeight: '500' },
+  setlistSub: { fontSize: 13, marginTop: 2 },
+  chevron: { fontSize: 22, fontWeight: '300' },
+
+  // Empty state
+  empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
+  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
 
   // Setlist Detail View
-  detailHeader: {
+  topBar: {
+    height: 52,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backBtn: {
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  barBtn: { width: 80, height: 48, justifyContent: 'center', alignItems: 'center' },
+  barBtnText: { fontSize: 15, fontWeight: '400' },
+  barCenter: { flex: 1, alignItems: 'center' },
+  barTitle: { fontSize: 15, fontWeight: '600' },
+  destructiveText: { fontSize: 15, fontWeight: '400', color: '#C0392B' },
+
+  detailHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  detailDesc: { fontSize: 13, marginBottom: 12 },
+  actionRow: { flexDirection: 'row', gap: 8 },
+  actionBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 8,
   },
-  backBtnText: { fontSize: 13, fontWeight: '600' },
-  deleteBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  detailTitle: { fontSize: 22, fontWeight: '800' },
-  detailSub: { fontSize: 13, marginTop: 2 },
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 10,
-  },
+  actionBtnText: { fontSize: 13, fontWeight: '500' },
 
-  // Songs Rows
+  // Songs list inside setlist
   songRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 56,
   },
-  songIndex: { fontSize: 13, fontWeight: '700' },
-  songTitle: { fontSize: 14, fontWeight: '700' },
-  songSub: { fontSize: 12, marginTop: 2 },
-  removeIconBtn: { padding: 6 },
+  songNum: { width: 28, fontSize: 14, fontWeight: '400', textAlign: 'center' },
+  songText: { flex: 1, paddingHorizontal: 8 },
+  songTitle: { fontSize: 15, fontWeight: '500' },
+  songSub: { fontSize: 13, marginTop: 2 },
+  removeBtn: { padding: 8 },
+  removeGlyph: { fontSize: 14 },
 
-  // Modals & Forms
-  modalOverlay: {
+  // Sheet modals
+  sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    maxHeight: '85%',
+  sheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '88%',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
-  dragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
+  handle: {
+    width: 36, height: 4, borderRadius: 2,
+    alignSelf: 'center', marginTop: 10, marginBottom: 2,
   },
-  modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 12 },
-  inputLabel: { fontSize: 11, fontWeight: '800', marginTop: 12, marginBottom: 6, letterSpacing: 0.8 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+  sheetHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  searchInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  buttonRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  btn: {
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnCancel: { borderWidth: 1, flex: 1 },
-  songSelectRow: {
+  sheetTitle: { fontSize: 15, fontWeight: '600' },
+  sheetCancel: { fontSize: 15, fontWeight: '400' },
+  sheetDone: { fontSize: 15, fontWeight: '600' },
+
+  // Form
+  formPadding: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
+  label: { fontSize: 12, fontWeight: '500', marginTop: 12, marginBottom: 6, letterSpacing: 0.4 },
+  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15 },
+  saveBtn: { marginTop: 24, height: 48, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  saveBtnText: { fontSize: 15, fontWeight: '600' },
+
+  // Add songs modal search
+  modalSearchWrap: { paddingHorizontal: 16, paddingVertical: 8 },
+  modalSearchBar: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 12, height: 44 },
+  searchGlyph: { fontSize: 18, marginRight: 8 },
+  modalSearchInput: { flex: 1, fontSize: 16, padding: 0 },
+  selectRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  checkGlyph: { fontSize: 18, fontWeight: '600' },
+
+  // Performance mode
+  perfTopBar: {
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 6,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  perfTitle: { fontSize: 15, fontWeight: '600' },
+  perfSub: { fontSize: 12, marginTop: 1 },
+  toggleBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1 },
+  toggleLabel: { fontSize: 12, fontWeight: '500' },
+
+  perfSubBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  keyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  toolbarLabel: { fontSize: 12, fontWeight: '500' },
+  stepBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  stepBtnLabel: { fontSize: 18, fontWeight: '300' },
+  keyValue: { fontSize: 15, fontWeight: '600', minWidth: 24, textAlign: 'center' },
+  navStepBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+  navStepLabel: { fontSize: 14, fontWeight: '500' },
+
+  perfSongTitle: { fontSize: 20, fontWeight: '600', marginBottom: 4 },
+  perfSongSub: { fontSize: 13, marginBottom: 12 },
 });

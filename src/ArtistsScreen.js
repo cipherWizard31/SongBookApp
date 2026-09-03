@@ -1,29 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 
 export const ArtistsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
 
-  // Group songs by artist / author
   const artistMap = {};
   songs.forEach((song) => {
-    const artistName = song.author?.trim() || 'Unknown Artist';
-    if (!artistMap[artistName]) {
-      artistMap[artistName] = [];
-    }
-    artistMap[artistName].push(song);
+    const name = song.author?.trim() || 'Unknown Artist';
+    if (!artistMap[name]) artistMap[name] = [];
+    artistMap[name].push(song);
   });
 
   const artistsList = Object.keys(artistMap)
     .map((name) => ({
       name,
       songs: artistMap[name],
-      albums: Array.from(new Set(artistMap[name].map((s) => s.album).filter(Boolean))),
+      albums: [...new Set(artistMap[name].map((s) => s.album).filter(Boolean))],
     }))
-    .filter((artist) => artist.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter((a) => a.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Selected Artist Song List View
+  // ── Artist detail view ──
   if (selectedArtist) {
     const artistObj = artistsList.find((a) => a.name === selectedArtist) || {
       name: selectedArtist,
@@ -32,44 +30,55 @@ export const ArtistsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
     };
 
     return (
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={[st.root, { backgroundColor: theme.bg }]}>
+        {/* Back navigation */}
         <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          onPress={() => setSelectedArtist(null)}>
-          <Text style={{ color: theme.text, fontWeight: '600', fontSize: 13 }}>← Back to Artists</Text>
+          style={[st.backRow, { borderBottomColor: theme.divider }]}
+          onPress={() => setSelectedArtist(null)}
+          accessibilityRole="button"
+          accessibilityLabel="Back to artists">
+          <Text style={[st.backLabel, { color: theme.text }]}>‹ Artists</Text>
         </TouchableOpacity>
 
-        <View style={[styles.artistHeaderCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <View style={[styles.avatarCircle, { backgroundColor: isDarkMode ? '#2C2C2C' : '#E8EEFF' }]}>
-            <Text style={{ fontSize: 32 }}>👤</Text>
+        {/* Artist header */}
+        <View style={[st.artistHeader, { borderBottomColor: theme.divider }]}>
+          <View style={[st.avatarCircle, { backgroundColor: theme.cardBg }]}>
+            <Text style={[st.avatarInitial, { color: theme.text }]}>
+              {artistObj.name.charAt(0).toUpperCase()}
+            </Text>
           </View>
-          <Text style={[styles.artistHeaderTitle, { color: theme.text }]}>{artistObj.name}</Text>
-          <Text style={[styles.artistHeaderSub, { color: theme.subText }]}>
-            {artistObj.songs.length} {artistObj.songs.length === 1 ? 'Song' : 'Songs'}
-            {artistObj.albums.length > 0 ? ` • ${artistObj.albums.length} ${artistObj.albums.length === 1 ? 'Album' : 'Albums'}` : ''}
+          <Text style={[st.artistName, { color: theme.text }]}>{artistObj.name}</Text>
+          <Text style={[st.artistMeta, { color: theme.subText }]}>
+            {artistObj.songs.length} {artistObj.songs.length === 1 ? 'song' : 'songs'}
+            {artistObj.albums.length > 0
+              ? ` · ${artistObj.albums.length} ${artistObj.albums.length === 1 ? 'album' : 'albums'}`
+              : ''}
           </Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.subText }]}>DISCOGRAPHY</Text>
+        {/* Discography list */}
         <FlatList
           data={artistObj.songs}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
+          ItemSeparatorComponent={() => (
+            <View style={[st.sep, { backgroundColor: theme.divider, marginLeft: 52 }]} />
+          )}
           renderItem={({ item, index }) => (
             <TouchableOpacity
-              style={[styles.songCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-              activeOpacity={0.7}
+              style={[st.trackRow, { backgroundColor: theme.bg }]}
+              activeOpacity={0.55}
               onPress={() => onSelectSong(item)}>
-              <Text style={[styles.trackIndex, { color: theme.subText }]}>{index + 1}</Text>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={[styles.songTitle, { color: theme.text }]}>{item.title}</Text>
-                <Text style={[styles.songSub, { color: theme.subText }]}>
-                  {item.album ? `Album: ${item.album}` : item.style}
+              <Text style={[st.trackNum, { color: theme.subText }]}>{index + 1}</Text>
+              <View style={st.trackText}>
+                <Text style={[st.trackTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={[st.trackSub, { color: theme.subText }]} numberOfLines={1}>
+                  {item.album ? `Album: ${item.album}` : item.style || 'Uncategorized'}
                 </Text>
               </View>
-              <Text style={[styles.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>
-                {item.scale}
-              </Text>
+              <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
             </TouchableOpacity>
           )}
         />
@@ -77,39 +86,61 @@ export const ArtistsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
     );
   }
 
+  // ── Artists list ──
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.searchBox}>
-        <TextInput
-          style={[styles.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-          placeholder="Search artists..."
-          placeholderTextColor={theme.subText}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+    <View style={[st.root, { backgroundColor: theme.bg }]}>
+      {/* Search */}
+      <View style={[st.searchWrap, { borderBottomColor: theme.divider }]}>
+        <View style={[st.searchBar, { backgroundColor: theme.cardBg }]}>
+          <Text style={[st.searchGlyph, { color: theme.subText }]}>⌕</Text>
+          <TextInput
+            style={[st.searchInput, { color: theme.text }]}
+            placeholder="Search artists…"
+            placeholderTextColor={theme.subText}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+          />
+        </View>
       </View>
 
       <FlatList
         data={artistsList}
         keyExtractor={(item) => item.name}
-        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
-        ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No artists found.</Text>}
+        contentContainerStyle={{ paddingBottom: 48 }}
+        ListEmptyComponent={
+          <View style={st.empty}>
+            <Text style={[st.emptyTitle, { color: theme.subText }]}>No artists</Text>
+            <Text style={[st.emptyHint, { color: theme.subText }]}>
+              Add an artist name to your songs to see them here
+            </Text>
+          </View>
+        }
+        ItemSeparatorComponent={() => (
+          <View style={[st.sep, { backgroundColor: theme.divider, marginLeft: 68 }]} />
+        )}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.artistCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.7}
+            style={[st.artistRow, { backgroundColor: theme.bg }]}
+            activeOpacity={0.55}
             onPress={() => setSelectedArtist(item.name)}>
-            <View style={[styles.artistAvatar, { backgroundColor: isDarkMode ? '#2C2C2C' : '#E8EEFF' }]}>
-              <Text style={{ fontSize: 22 }}>👤</Text>
-            </View>
-            <View style={{ flex: 1, paddingHorizontal: 12 }}>
-              <Text style={[styles.artistTitle, { color: theme.text }]}>{item.name}</Text>
-              <Text style={[styles.artistSub, { color: theme.subText }]}>
-                {item.songs.length} {item.songs.length === 1 ? 'song' : 'songs'}
-                {item.albums.length > 0 ? ` • ${item.albums.slice(0, 2).join(', ')}` : ''}
+            <View style={[st.artistAvatar, { backgroundColor: theme.cardBg }]}>
+              <Text style={[st.artistInitial, { color: theme.text }]}>
+                {item.name.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <Text style={{ color: theme.subText, fontSize: 16 }}>›</Text>
+            <View style={st.artistText}>
+              <Text style={[st.artistTitle, { color: theme.text }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={[st.artistSub, { color: theme.subText }]} numberOfLines={1}>
+                {item.songs.length} {item.songs.length === 1 ? 'song' : 'songs'}
+                {item.albums.length > 0 ? ` · ${item.albums.slice(0, 2).join(', ')}` : ''}
+              </Text>
+            </View>
+            <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
           </TouchableOpacity>
         )}
       />
@@ -117,65 +148,73 @@ export const ArtistsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  searchBox: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
-  searchInput: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1 },
-  artistCard: {
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
+const st = StyleSheet.create({
+  root: { flex: 1 },
+
+  // Search
+  searchWrap: {
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 10, paddingHorizontal: 12, height: 44,
+  },
+  searchGlyph: { fontSize: 18, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+
+  // Artist list rows
+  sep: { height: StyleSheet.hairlineWidth },
+  artistRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10, minHeight: 64,
   },
   artistAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 44, height: 44, borderRadius: 22,
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
-  artistTitle: { fontSize: 16, fontWeight: '700' },
+  artistInitial: { fontSize: 18, fontWeight: '600' },
+  artistText: { flex: 1, paddingRight: 8 },
+  artistTitle: { fontSize: 15, fontWeight: '500' },
   artistSub: { fontSize: 13, marginTop: 2 },
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 15 },
-  backBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 12,
+  chevron: { fontSize: 22, fontWeight: '300' },
+
+  // Empty
+  empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
+  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
+  // Artist detail
+  backRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, height: 48,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  artistHeaderCard: {
-    padding: 20,
-    borderRadius: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    marginBottom: 16,
+  backLabel: { fontSize: 15, fontWeight: '400' },
+
+  artistHeader: {
+    alignItems: 'center', paddingVertical: 24,
+    paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
-  artistHeaderTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center' },
-  artistHeaderSub: { fontSize: 13, marginTop: 4 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1, marginBottom: 8 },
-  songCard: {
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
+  avatarInitial: { fontSize: 28, fontWeight: '600' },
+  artistName: { fontSize: 20, fontWeight: '600', textAlign: 'center', marginBottom: 4 },
+  artistMeta: { fontSize: 13 },
+
+  // Track rows
+  trackRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10, minHeight: 56,
   },
-  trackIndex: { fontSize: 13, fontWeight: '700', width: 24 },
-  songTitle: { fontSize: 15, fontWeight: '700' },
-  songSub: { fontSize: 12, marginTop: 2 },
-  tag: { fontSize: 10, fontWeight: '600', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, textTransform: 'uppercase' },
+  trackNum: {
+    width: 28, fontSize: 14, fontWeight: '400', textAlign: 'center',
+  },
+  trackText: { flex: 1, paddingHorizontal: 8 },
+  trackTitle: { fontSize: 15, fontWeight: '500' },
+  trackSub: { fontSize: 13, marginTop: 2 },
 });
 
 export default ArtistsScreen;

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import {
+  View, Text, TextInput, ScrollView, FlatList,
+  TouchableOpacity, StyleSheet, Platform,
+} from 'react-native';
 
 export const SongsScreen = ({
   songs,
-  styles,
+  styles: rhythmStyles,
   scales,
   onSelectSong,
   onOpenNewSongModal,
@@ -13,155 +16,303 @@ export const SongsScreen = ({
   isDarkMode,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('All');
-  const [selectedScale, setSelectedScale] = useState('All');
+  const [selectedStyleFilter, setSelectedStyleFilter] = useState('All');
+  const [selectedScaleFilter, setSelectedScaleFilter] = useState('All');
 
-  const hasImportedSongs = songs.some((s) => s.isImported || s.title?.includes('(Imported)'));
+  // Filter logic
+  const filteredSongs = songs.filter((song) => {
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch =
+      !q ||
+      song.title?.toLowerCase().includes(q) ||
+      song.author?.toLowerCase().includes(q) ||
+      song.content?.toLowerCase().includes(q);
 
-  const filteredSongs = songs.filter((s) => {
-    const query = searchQuery.toLowerCase();
-    const titleMatch = (s.title || '').toLowerCase().includes(query);
-    const authorMatch = (s.author || '').toLowerCase().includes(query);
-    const albumMatch = (s.album || '').toLowerCase().includes(query);
-    const contentMatch = (s.content || s.lyrics || '').toLowerCase().includes(query);
-    const searchMatch = titleMatch || authorMatch || albumMatch || contentMatch;
+    const matchesStyle =
+      selectedStyleFilter === 'All' || song.style === selectedStyleFilter;
 
-    const songStyle = s.style || 'Uncategorized';
-    const songScale = s.scale || 'Uncategorized';
+    const matchesScale =
+      selectedScaleFilter === 'All' || song.scale === selectedScaleFilter;
 
-    const styleMatch = selectedStyle === 'All' || songStyle === selectedStyle;
-    const scaleMatch = selectedScale === 'All' || songScale === selectedScale;
-
-    return searchMatch && styleMatch && scaleMatch;
+    return matchesSearch && matchesStyle && matchesScale;
   });
 
+  const importedCount = songs.filter(
+    (s) => s.isImported || s.title?.includes('(Imported)')
+  ).length;
+
   return (
-    <View style={{ flex: 1 }}>
-      <View style={stylesContainer.searchBox}>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+    <View style={[st.root, { backgroundColor: theme.bg }]}>
+
+      {/* ── Search Bar ── */}
+      <View style={[st.searchWrap, { borderBottomColor: theme.divider }]}>
+        <View style={[st.searchBar, { backgroundColor: theme.cardBg }]}>
+          <Text style={[st.searchGlyph, { color: theme.subText }]}>⌕</Text>
           <TextInput
-            style={[stylesContainer.searchInput, { flex: 1, backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-            placeholder="Search title, artist, album or lyrics..."
+            style={[st.searchInput, { color: theme.text }]}
+            placeholder="Search songs, artists, or lyrics…"
             placeholderTextColor={theme.subText}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
           />
+          {searchQuery.length > 0 && Platform.OS !== 'ios' ? (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={[st.clearBtn, { color: theme.subText }]}>✕</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
-      <View style={[stylesContainer.filterContainer, { backgroundColor: theme.bg }]}>
-        <Text style={[stylesContainer.filterLabel, { color: theme.subText }]}>STYLE</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
-          {styles.map((st) => (
-            <TouchableOpacity
-              key={st}
-              style={[
-                stylesContainer.chip,
-                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-                selectedStyle === st && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg },
-              ]}
-              onPress={() => setSelectedStyle(st)}>
-              <Text
-                style={[
-                  stylesContainer.chipText,
-                  { color: theme.chipText },
-                  selectedStyle === st && { color: theme.chipSelectedText, fontWeight: 'bold' },
-                ]}>
-                {st}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      {/* ── Separate Filter Rows ── */}
+      <View style={[st.filtersBlock, { borderBottomColor: theme.divider }]}>
+        {/* Row 1: Rhythm / Style Filters */}
+        <View style={st.filterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={st.chipScroll}>
+            {rhythmStyles.map((style) => {
+              const active = selectedStyleFilter === style;
+              return (
+                <TouchableOpacity
+                  key={`style-${style}`}
+                  style={[
+                    st.chip,
+                    {
+                      backgroundColor: active ? theme.chipSelectedBg : theme.chipBg,
+                      borderColor: active ? theme.chipSelectedBg : theme.chipBorder
+                    },
+                  ]}
+                  onPress={() => setSelectedStyleFilter(style)}>
+                  <Text style={[
+                    st.chipText,
+                    { color: active ? theme.chipSelectedText : theme.chipText },
+                    active && st.chipTextActive,
+                  ]}>
+                    {style === 'All' ? 'All' : style}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-        <Text style={[stylesContainer.filterLabel, { color: theme.subText }]}>SCALE</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stylesContainer.chipRow}>
-          {scales.map((sc) => (
-            <TouchableOpacity
-              key={sc}
-              style={[
-                stylesContainer.chip,
-                { backgroundColor: theme.chipBg, borderColor: theme.chipBorder },
-                selectedScale === sc && { backgroundColor: theme.chipSelectedBg, borderColor: theme.chipSelectedBg },
-              ]}
-              onPress={() => setSelectedScale(sc)}>
-              <Text
-                style={[
-                  stylesContainer.chipText,
-                  { color: theme.chipText },
-                  selectedScale === sc && { color: theme.chipSelectedText, fontWeight: 'bold' },
-                ]}>
-                {sc}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Row 2: Kignit / Scale Filters */}
+        <View style={[st.filterRow, { marginTop: 6 }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={st.chipScroll}>
+            {scales.map((scale) => {
+              const active = selectedScaleFilter === scale;
+              return (
+                <TouchableOpacity
+                  key={`scale-${scale}`}
+                  style={[
+                    st.chip,
+                    {
+                      backgroundColor: active ? theme.chipSelectedBg : theme.chipBg,
+                      borderColor: active ? theme.chipSelectedBg : theme.chipBorder
+                    },
+                  ]}
+                  onPress={() => setSelectedScaleFilter(scale)}>
+                  <Text style={[
+                    st.chipText,
+                    { color: active ? theme.chipSelectedText : theme.chipText },
+                    active && st.chipTextActive,
+                  ]}>
+                    {scale === 'All' ? 'All' : scale}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </View>
 
+      {/* ── Imported Songs Clear Banner ── */}
+      {importedCount > 0 && onClearImportedSongs ? (
+        <TouchableOpacity
+          style={[st.importedBanner, { borderBottomColor: theme.divider }]}
+          onPress={onClearImportedSongs}>
+          <Text style={[st.importedBannerText, { color: theme.subText }]} numberOfLines={1}>
+            {importedCount} imported {importedCount === 1 ? 'song' : 'songs'} in library · Tap to remove
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {/* ── Songs List ── */}
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-        ListEmptyComponent={<Text style={[stylesContainer.emptyText, { color: theme.subText }]}>No songs found.</Text>}
+        contentContainerStyle={st.listContent}
+        ItemSeparatorComponent={() => (
+          <View style={[st.sep, { backgroundColor: theme.divider, marginLeft: 16 }]} />
+        )}
+        ListEmptyComponent={
+          <View style={st.empty}>
+            <Text style={[st.emptyTitle, { color: theme.subText }]}>No songs found</Text>
+            <Text style={[st.emptyHint, { color: theme.subText }]}>
+              {searchQuery
+                ? `No results for "${searchQuery}"`
+                : 'Tap + to add your first song to Selah Kignit'}
+            </Text>
+          </View>
+        }
         renderItem={({ item }) => {
+          const author = item.author?.trim();
+          const subtitle = [author, item.style].filter(Boolean).join(' · ');
           const isImported = item.isImported || item.title?.includes('(Imported)');
+
           return (
             <TouchableOpacity
-              style={[stylesContainer.card, { backgroundColor: theme.cardBg, borderColor: isImported ? '#FF950066' : theme.border }]}
-              activeOpacity={0.7}
-              onPress={() => onSelectSong(item)}>
-              <View style={{ flex: 1, paddingRight: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[stylesContainer.cardTitle, { color: theme.text }]}>{item.title}</Text>
+              style={[st.row, { backgroundColor: theme.bg }]}
+              activeOpacity={0.55}
+              onPress={() => onSelectSong(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.title}, ${subtitle || 'song'}`}>
+              <View style={st.rowText}>
+                <View style={st.titleLine}>
+                  <Text style={[st.songTitle, { color: theme.text }]} numberOfLines={1}>
+                    {item.title}
+                  </Text>
                   {isImported ? (
-                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#FF9500', backgroundColor: '#FF950022', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
-                      📥 IMPORTED
-                    </Text>
+                    <Text style={[st.importedBadge, { color: theme.subText }]}>imported</Text>
                   ) : null}
                 </View>
-                <Text style={[stylesContainer.cardAuthor, { color: theme.subText }]}>
-                  {item.author}{item.album ? ` • ${item.album}` : ''}
-                </Text>
+                {subtitle ? (
+                  <Text style={[st.songSub, { color: theme.subText }]} numberOfLines={1}>
+                    {subtitle}
+                  </Text>
+                ) : null}
               </View>
-              <View style={stylesContainer.tagContainer}>
-                <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.style}</Text>
-                <Text style={[stylesContainer.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>{item.scale}</Text>
-              </View>
+
+              {/* Scale / Key badge */}
+              {item.scale && item.scale !== 'Uncategorized' ? (
+                <View style={[st.scaleBadge, { backgroundColor: theme.secondaryBg }]}>
+                  <Text style={[st.scaleText, { color: theme.subText }]}>
+                    {item.scale}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Chevron */}
+              <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
             </TouchableOpacity>
           );
         }}
       />
 
-      <TouchableOpacity style={[stylesContainer.fab, { backgroundColor: theme.fabBg }]} activeOpacity={0.8} onPress={onOpenNewSongModal}>
-        <Text style={[stylesContainer.fabText, { color: theme.fabText }]}>+</Text>
+      {/* ── Floating Action Button (New Song) ── */}
+      <TouchableOpacity
+        style={[st.fab, { backgroundColor: theme.fabBg }]}
+        activeOpacity={0.8}
+        onPress={onOpenNewSongModal}
+        accessibilityRole="button"
+        accessibilityLabel="Add new song">
+        <Text style={[st.fabGlyph, { color: theme.fabText }]}>+</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
-const stylesContainer = StyleSheet.create({
-  searchBox: { paddingHorizontal: 16, paddingTop: 10 },
-  searchInput: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1 },
-  filterContainer: { paddingVertical: 4 },
-  filterLabel: { fontSize: 11, fontWeight: '700', marginLeft: 16, marginTop: 4, letterSpacing: 1.1 },
-  chipRow: { flexDirection: 'row', paddingHorizontal: 12, marginVertical: 4 },
-  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, marginRight: 6, borderWidth: 1 },
+const st = StyleSheet.create({
+  root: { flex: 1 },
+
+  // Search
+  searchWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchGlyph: { fontSize: 18, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 17, padding: 0 },
+  clearBtn: { fontSize: 14, paddingLeft: 8 },
+
+  // Dual filter rows block
+  filtersBlock: {
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  filterRow: {},
+  chipScroll: { paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  chip: {
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   chipText: { fontSize: 13 },
-  card: { padding: 16, borderRadius: 12, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1 },
-  cardTitle: { fontSize: 16, fontWeight: '700' },
-  cardAuthor: { fontSize: 13, marginTop: 3 },
-  tagContainer: { alignItems: 'flex-end', gap: 4 },
-  tag: { fontSize: 10, fontWeight: '600', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, textTransform: 'uppercase' },
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 15 },
+  chipTextActive: { fontWeight: '600' },
+
+  // Imported banner
+  importedBanner: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  importedBannerText: { fontSize: 13, textAlign: 'center' },
+
+  // List
+  listContent: { paddingBottom: 88 },
+  sep: { height: StyleSheet.hairlineWidth },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 60,
+  },
+  rowText: { flex: 1, paddingRight: 12 },
+  titleLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  songTitle: { fontSize: 17, fontWeight: '400', flexShrink: 1 },
+  importedBadge: { fontSize: 11, fontWeight: '400' },
+  songSub: { fontSize: 15, marginTop: 2 },
+  scaleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  scaleText: { fontSize: 12, fontWeight: '400' },
+  chevron: { fontSize: 20, fontWeight: '300' },
+
+  // Empty state
+  empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
+  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
+  // FAB
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: Platform.OS === 'android' ? 30 : 20,
+    right: 16,
+    bottom: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  fabText: { fontSize: 34, fontWeight: '300', textAlign: 'center', lineHeight: 56, includeFontPadding: false },
+  fabGlyph: { fontSize: 28, fontWeight: '300', marginTop: -2 },
 });
+
+export default SongsScreen;

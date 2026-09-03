@@ -1,29 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 
 export const AlbumsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState(null);
 
-  // Group songs by album
   const albumMap = {};
   songs.forEach((song) => {
-    const albumName = song.album?.trim() || 'Uncategorized Albums';
-    if (!albumMap[albumName]) {
-      albumMap[albumName] = [];
-    }
-    albumMap[albumName].push(song);
+    const name = song.album?.trim() || 'No Album';
+    if (!albumMap[name]) albumMap[name] = [];
+    albumMap[name].push(song);
   });
 
   const albumsList = Object.keys(albumMap)
     .map((name) => ({
       name,
       songs: albumMap[name],
-      artists: Array.from(new Set(albumMap[name].map((s) => s.author).filter(Boolean))),
+      artists: [...new Set(albumMap[name].map((s) => s.author).filter(Boolean))],
     }))
-    .filter((album) => album.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter((a) => a.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Selected Album Song List View
+  // ── Album detail view ──
   if (selectedAlbum) {
     const albumObj = albumsList.find((a) => a.name === selectedAlbum) || {
       name: selectedAlbum,
@@ -31,39 +29,52 @@ export const AlbumsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
     };
 
     return (
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={[st.root, { backgroundColor: theme.bg }]}>
+        {/* Back row */}
         <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          onPress={() => setSelectedAlbum(null)}>
-          <Text style={{ color: theme.text, fontWeight: '600', fontSize: 13 }}>← Back to Albums</Text>
+          style={[st.backRow, { borderBottomColor: theme.divider }]}
+          onPress={() => setSelectedAlbum(null)}
+          accessibilityRole="button"
+          accessibilityLabel="Back to albums">
+          <Text style={[st.backLabel, { color: theme.text }]}>‹ Albums</Text>
         </TouchableOpacity>
 
-        <View style={[styles.albumHeaderCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <Text style={{ fontSize: 36, marginBottom: 8 }}>💿</Text>
-          <Text style={[styles.albumHeaderTitle, { color: theme.text }]}>{albumObj.name}</Text>
-          <Text style={[styles.albumHeaderSub, { color: theme.subText }]}>
-            {albumObj.songs.length} {albumObj.songs.length === 1 ? 'Song' : 'Songs'}
+        {/* Album header */}
+        <View style={[st.albumHeader, { borderBottomColor: theme.divider }]}>
+          <View style={[st.albumArt, { backgroundColor: theme.cardBg }]}>
+            <Text style={st.albumArtGlyph}>♪</Text>
+          </View>
+          <Text style={[st.albumName, { color: theme.text }]}>{albumObj.name}</Text>
+          <Text style={[st.albumMeta, { color: theme.subText }]}>
+            {albumObj.songs.length} {albumObj.songs.length === 1 ? 'song' : 'songs'}
           </Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.subText }]}>TRACKS</Text>
+        {/* Track list */}
         <FlatList
           data={albumObj.songs}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
+          ItemSeparatorComponent={() => (
+            <View style={[st.sep, { backgroundColor: theme.divider, marginLeft: 52 }]} />
+          )}
           renderItem={({ item, index }) => (
             <TouchableOpacity
-              style={[styles.songCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-              activeOpacity={0.7}
+              style={[st.trackRow, { backgroundColor: theme.bg }]}
+              activeOpacity={0.55}
               onPress={() => onSelectSong(item)}>
-              <Text style={[styles.trackIndex, { color: theme.subText }]}>{index + 1}</Text>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={[styles.songTitle, { color: theme.text }]}>{item.title}</Text>
-                <Text style={[styles.songSub, { color: theme.subText }]}>{item.author}</Text>
+              <Text style={[st.trackNum, { color: theme.subText }]}>{index + 1}</Text>
+              <View style={st.trackText}>
+                <Text style={[st.trackTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                {item.author ? (
+                  <Text style={[st.trackSub, { color: theme.subText }]} numberOfLines={1}>
+                    {item.author}
+                  </Text>
+                ) : null}
               </View>
-              <Text style={[styles.tag, { backgroundColor: isDarkMode ? '#2A2A2A' : '#F0F0F0', color: theme.text }]}>
-                {item.style}
-              </Text>
+              <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
             </TouchableOpacity>
           )}
         />
@@ -71,39 +82,60 @@ export const AlbumsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
     );
   }
 
+  // ── Album grid / list ──
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.searchBox}>
-        <TextInput
-          style={[styles.searchInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
-          placeholder="Search albums..."
-          placeholderTextColor={theme.subText}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+    <View style={[st.root, { backgroundColor: theme.bg }]}>
+      {/* Search */}
+      <View style={[st.searchWrap, { borderBottomColor: theme.divider }]}>
+        <View style={[st.searchBar, { backgroundColor: theme.cardBg }]}>
+          <Text style={[st.searchGlyph, { color: theme.subText }]}>⌕</Text>
+          <TextInput
+            style={[st.searchInput, { color: theme.text }]}
+            placeholder="Search albums…"
+            placeholderTextColor={theme.subText}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+          />
+        </View>
       </View>
 
       <FlatList
         data={albumsList}
         keyExtractor={(item) => item.name}
-        contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
-        ListEmptyComponent={<Text style={[styles.emptyText, { color: theme.subText }]}>No albums found.</Text>}
+        contentContainerStyle={{ paddingBottom: 48 }}
+        ListEmptyComponent={
+          <View style={st.empty}>
+            <Text style={[st.emptyTitle, { color: theme.subText }]}>No albums</Text>
+            <Text style={[st.emptyHint, { color: theme.subText }]}>
+              Add an album name to your songs to see them here
+            </Text>
+          </View>
+        }
+        ItemSeparatorComponent={() => (
+          <View style={[st.sep, { backgroundColor: theme.divider, marginLeft: 68 }]} />
+        )}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={[styles.albumCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.7}
+            style={[st.albumRow, { backgroundColor: theme.bg }]}
+            activeOpacity={0.55}
             onPress={() => setSelectedAlbum(item.name)}>
-            <View style={[styles.albumCover, { backgroundColor: isDarkMode ? '#2C2C2C' : '#F0F5FF' }]}>
-              <Text style={{ fontSize: 24 }}>💿</Text>
+            {/* Album art placeholder */}
+            <View style={[st.albumThumb, { backgroundColor: theme.cardBg }]}>
+              <Text style={st.albumThumbGlyph}>♪</Text>
             </View>
-            <View style={{ flex: 1, paddingHorizontal: 12 }}>
-              <Text style={[styles.albumTitle, { color: theme.text }]}>{item.name}</Text>
-              <Text style={[styles.albumSub, { color: theme.subText }]}>
+            <View style={st.albumText}>
+              <Text style={[st.albumTitle, { color: theme.text }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={[st.albumSub, { color: theme.subText }]} numberOfLines={1}>
                 {item.songs.length} {item.songs.length === 1 ? 'song' : 'songs'}
-                {item.artists.length > 0 ? ` • ${item.artists.slice(0, 2).join(', ')}` : ''}
+                {item.artists.length > 0 ? ` · ${item.artists.slice(0, 2).join(', ')}` : ''}
               </Text>
             </View>
-            <Text style={{ color: theme.subText, fontSize: 16 }}>›</Text>
+            <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
           </TouchableOpacity>
         )}
       />
@@ -111,57 +143,73 @@ export const AlbumsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  searchBox: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
-  searchInput: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, borderWidth: 1 },
-  albumCard: {
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
+const st = StyleSheet.create({
+  root: { flex: 1 },
+
+  // Search
+  searchWrap: {
+    paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  albumCover: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+  searchBar: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 10, paddingHorizontal: 12, height: 44,
   },
-  albumTitle: { fontSize: 16, fontWeight: '700' },
+  searchGlyph: { fontSize: 18, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+
+  // Album list rows
+  sep: { height: StyleSheet.hairlineWidth },
+  albumRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10, minHeight: 64,
+  },
+  albumThumb: {
+    width: 44, height: 44, borderRadius: 6,
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  albumThumbGlyph: { fontSize: 20, color: '#999' },
+  albumText: { flex: 1, paddingRight: 8 },
+  albumTitle: { fontSize: 15, fontWeight: '500' },
   albumSub: { fontSize: 13, marginTop: 2 },
-  emptyText: { textAlign: 'center', marginTop: 40, fontSize: 15 },
-  backBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 12,
+  chevron: { fontSize: 22, fontWeight: '300' },
+
+  // Empty
+  empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
+  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
+  // Album detail
+  backRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, height: 48,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  albumHeaderCard: {
-    padding: 20,
-    borderRadius: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    marginBottom: 16,
+  backLabel: { fontSize: 15, fontWeight: '400' },
+
+  albumHeader: {
+    alignItems: 'center', paddingVertical: 24,
+    paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  albumHeaderTitle: { fontSize: 20, fontWeight: '800', textAlign: 'center' },
-  albumHeaderSub: { fontSize: 13, marginTop: 4 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1, marginBottom: 8 },
-  songCard: {
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
+  albumArt: {
+    width: 80, height: 80, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
-  trackIndex: { fontSize: 13, fontWeight: '700', width: 24 },
-  songTitle: { fontSize: 15, fontWeight: '700' },
-  songSub: { fontSize: 12, marginTop: 2 },
-  tag: { fontSize: 10, fontWeight: '600', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, textTransform: 'uppercase' },
+  albumArtGlyph: { fontSize: 36, color: '#999' },
+  albumName: { fontSize: 20, fontWeight: '600', textAlign: 'center', marginBottom: 4 },
+  albumMeta: { fontSize: 13 },
+
+  // Track rows
+  trackRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 10, minHeight: 56,
+  },
+  trackNum: {
+    width: 28, fontSize: 14, fontWeight: '400', textAlign: 'center',
+  },
+  trackText: { flex: 1, paddingHorizontal: 8 },
+  trackTitle: { fontSize: 15, fontWeight: '500' },
+  trackSub: { fontSize: 13, marginTop: 2 },
 });
 
 export default AlbumsScreen;
