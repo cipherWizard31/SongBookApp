@@ -1,68 +1,79 @@
-// Apple Human Interface Guidelines (HIG) & Material Design 3 unified semantic tokens
+// Selah Kignit Design System ("Reverent Liturgical Modernism")
+// Configured from Stitch Project ID: 2364343143090962598
 export const getTheme = (isDarkMode) => {
   if (isDarkMode) {
     return {
-      // iOS Dark Mode System Colors
-      bg: '#000000',                  // System Background (Pure Black)
-      secondaryBg: '#1C1C1E',         // Secondary System Background (Sheets, Toolbars, Inset Groups)
-      cardBg: '#2C2C2E',              // Tertiary System Background (Inputs, Selected rows, Cards)
-      inputBg: '#1C1C1E',             // Input Background
-      headerBg: '#000000',            // Navigation Bar Fill
+      // Dark Mode (Midnight Sanctuary)
+      bg: '#101319',                  // Base Obsidian Canvas
+      secondaryBg: '#141821',         // Elevated Stage Surface
+      cardBg: '#1D2026',              // Acoustic Chamber Card Container
+      inputBg: '#191C22',             // Input Fill
+      headerBg: '#101319',            // Navigation Bar
 
       // Typography
-      text: '#FFFFFF',                // Primary Label
-      subText: '#8E8E93',             // Secondary Label
-      tertiaryText: '#636366',         // Tertiary Label
+      text: '#E1E2EB',                // Primary Fidel & English Text (High Emphasis)
+      subText: '#94A3B8',             // Muted Stave / Subtitle Text
+      tertiaryText: '#64748B',         // Dimmed Metadata Label
 
       // Separators & Borders
-      border: '#38383A',              // Opaque Separator
-      divider: '#2C2C2E',             // Hairline Separator
+      border: '#32353C',              // Surface Rim Border
+      divider: '#272A31',             // Hairline Divider
 
-      // Interactive Chips
-      chipBg: '#1C1C1E',
-      chipBorder: '#38383A',
-      chipText: '#8E8E93',
-      chipSelectedBg: '#FFFFFF',
-      chipSelectedText: '#000000',
+      // Accents & Specialized Colors
+      tint: '#E5A93C',                // Imperial Amber Gold (Primary Accent)
+      chord: '#38BDF8',               // Sanctuary Cyan (Stage Chord Callouts)
+      tertiary: '#862633',            // Liturgical Burgundy
+      goldDim: '#FABC4D',
 
-      // System Accent & Buttons
-      tint: '#0A84FF',                // System Blue (Dark)
-      fabBg: '#FFFFFF',
-      fabText: '#000000',
-      activeItem: '#2C2C2E',
-      destructive: '#FF453A',         // System Red
+      // Chips & Interactive Components
+      chipBg: '#191C22',
+      chipBorder: '#32353C',
+      chipText: '#94A3B8',
+      chipSelectedBg: '#E5A93C',
+      chipSelectedText: '#101319',
+
+      // Actions & FAB
+      fabBg: '#E5A93C',
+      fabText: '#101319',
+      activeItem: '#272A31',
+      destructive: '#FFB4AB',         // Crimson Error/Delete
     };
   }
 
   return {
-    // iOS Light Mode System Colors
-    bg: '#FFFFFF',                    // System Background
-    secondaryBg: '#F2F2F7',           // Secondary System Background (Sheets, Toolbars, Inset Groups)
-    cardBg: '#EFEFF4',                // Tertiary System Background (Inputs, Cards)
-    inputBg: '#E9E9EE',               // Input Fill
-    headerBg: '#FFFFFF',              // Navigation Bar Fill
+    // Light Mode (Warm Parchment Reader)
+    bg: '#FBF7EE',                    // Warm Liturgical Parchment
+    secondaryBg: '#F5EFE0',           // Parchment Surface
+    cardBg: '#EDE6D5',                // Acoustic Chamber Card (Light)
+    inputBg: '#F3ECE0',               // Input Fill
+    headerBg: '#FBF7EE',              // Navigation Bar
 
     // Typography
-    text: '#000000',                  // Primary Label
-    subText: '#6C6C70',               // Secondary Label
-    tertiaryText: '#C7C7CC',           // Tertiary Label
+    text: '#1C1917',                  // Deep Liturgical Ink
+    subText: '#78716C',               // Muted Stave / Subtitle Text
+    tertiaryText: '#A8A29E',           // Dimmed Metadata Label
 
     // Separators & Borders
-    border: '#C6C6C8',                // Opaque Separator
-    divider: '#E5E5EA',               // Hairline Separator
+    border: '#E7E0D3',                // Surface Rim Border
+    divider: '#EFE8DB',               // Hairline Divider
 
-    // Interactive Chips
-    chipBg: '#F2F2F7',
-    chipBorder: '#E5E5EA',
-    chipText: '#6C6C70',
-    chipSelectedBg: '#000000',
-    chipSelectedText: '#FFFFFF',
+    // Accents & Specialized Colors
+    tint: '#D97706',                  // Imperial Gold Amber (Primary Accent)
+    chord: '#0284C7',                 // Sanctuary Cyan/Blue (Light Chords)
+    tertiary: '#862633',              // Liturgical Burgundy
+    goldDim: '#B45309',
 
-    // System Accent & Buttons
-    tint: '#007AFF',                  // System Blue (Light)
-    fabBg: '#000000',
-    fabText: '#FFFFFF',
-    activeItem: '#E5E5EA',
-    destructive: '#FF3B30',           // System Red
+    // Chips & Interactive Components
+    chipBg: '#F5EFE0',
+    chipBorder: '#E7E0D3',
+    chipText: '#78716C',
+    chipSelectedBg: '#1C1917',
+    chipSelectedText: '#FBF7EE',
+
+    // Actions & FAB
+    fabBg: '#1C1917',
+    fabText: '#FBF7EE',
+    activeItem: '#EFE8DB',
+    destructive: '#DC2626',           // Crimson Error/Delete
   };
 };
