@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,11 +19,35 @@ export const DashboardScreen = ({
   theme,
   isDarkMode,
 }) => {
-  // Recent songs (first 4 or top songs)
+  // Recent songs (top 5)
   const recentSongs = songs.slice(0, 5);
 
-  // Active setlist (first setlist or default)
+  // Recent setlists (top 4)
+  const recentSetlists = setlists.slice(0, 4);
+
+  // Active setlist (first available setlist)
   const activeSetlist = setlists.length > 0 ? setlists[0] : null;
+
+  // Resolve actual song objects inside active setlist
+  let activeSetlistSongs = [];
+  if (activeSetlist) {
+    if (activeSetlist.songs && Array.isArray(activeSetlist.songs)) {
+      activeSetlistSongs = activeSetlist.songs;
+    } else if (activeSetlist.songIds && Array.isArray(activeSetlist.songIds)) {
+      activeSetlistSongs = activeSetlist.songIds
+        .map((id) => songs.find((s) => s.id === id))
+        .filter(Boolean);
+    }
+  }
+
+  // Time-aware greeting generator
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return { main: 'መልካም ጧት', sub: 'Good Morning ☀️' };
+    if (hour < 17) return { main: 'መልካም ቀን', sub: 'Good Afternoon 🌤️' };
+    return { main: 'መልካም ምሽት', sub: 'Good Evening 🌙' };
+  };
+  const greeting = getGreeting();
 
   return (
     <ScrollView
@@ -32,53 +55,126 @@ export const DashboardScreen = ({
       contentContainerStyle={st.contentPadding}
       showsVerticalScrollIndicator={false}>
 
-      {/* ── HERO BANNER: Worship Service Roster Card ── */}
-      <View style={[st.heroCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-        <View style={st.heroHeaderRow}>
-          <View style={st.heroBadgePill}>
-            <View style={st.pulsingDot} />
-            <Text style={st.heroBadgeText}>LIVE SERVICE ROSTER</Text>
-          </View>
-          <Text style={[st.heroDateText, { color: theme.subText }]}>Sunday Worship</Text>
+      {/* ── TOP GREETING HEADER ── */}
+      <View style={st.greetingHeader}>
+        <View>
+          <Text style={[st.greetingSub, { color: theme.subText }]}>
+            {greeting.main} • {greeting.sub}
+          </Text>
+          <Text style={[st.greetingTitle, { color: theme.text }]}>
+            Selah Kignit
+          </Text>
         </View>
-
-        <Text style={[st.heroTitle, { color: theme.text }]}>የእሁድ ፕሮግራም</Text>
-        <Text style={[st.heroSubtitle, { color: theme.subText }]}>
-          Sanctuary Team A • Main Sanctuary Worship
-        </Text>
-
-        {/* Hero Quick Stats Row */}
-        <View style={st.heroStatsRow}>
-          <View style={[st.heroStatItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Ionicons name="musical-notes-outline" size={16} color={theme.tint} />
-            <Text style={[st.heroStatVal, { color: theme.text }]}>{songs.length}</Text>
-            <Text style={[st.heroStatLbl, { color: theme.subText }]}>Total Songs</Text>
-          </View>
-
-          <View style={[st.heroStatItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Ionicons name="list-outline" size={16} color={theme.tint} />
-            <Text style={[st.heroStatVal, { color: theme.text }]}>{setlists.length}</Text>
-            <Text style={[st.heroStatLbl, { color: theme.subText }]}>Setlists</Text>
-          </View>
-
-          <View style={[st.heroStatItem, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Ionicons name="key-outline" size={16} color={theme.tint} />
-            <Text style={[st.heroStatVal, { color: theme.text }]}>{scales.length - 1}</Text>
-            <Text style={[st.heroStatLbl, { color: theme.subText }]}>Kignit Scales</Text>
-          </View>
-        </View>
+        <TouchableOpacity
+          style={[st.quickAddHeaderBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+          onPress={onOpenNewSongModal}
+          activeOpacity={0.7}>
+          <Ionicons name="add" size={22} color={theme.tint} />
+        </TouchableOpacity>
       </View>
+
+      {/* ── HERO BANNER: Active Setlist OR Empty Banner State ── */}
+      {activeSetlist ? (
+        /* Active Setlist Banner */
+        <View style={[st.heroCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+          <View style={st.heroHeaderRow}>
+            <View style={st.heroBadgePill}>
+              <View style={st.pulsingDot} />
+              <Text style={st.heroBadgeText}>ACTIVE SETLIST</Text>
+            </View>
+            <Text style={[st.heroDateText, { color: theme.subText }]}>
+              {activeSetlist.description || 'Sunday Worship'}
+            </Text>
+          </View>
+
+          <Text style={[st.heroTitle, { color: theme.text }]} numberOfLines={1}>
+            {activeSetlist.title}
+          </Text>
+          <Text style={[st.heroSubtitle, { color: theme.subText }]} numberOfLines={1}>
+            {activeSetlistSongs.length > 0
+              ? `${activeSetlistSongs.length} Songs • Prepared for Worship`
+              : 'Sanctuary Team A • Main Worship'}
+          </Text>
+
+          {/* Songs Preview List */}
+          {activeSetlistSongs.length > 0 && (
+            <View style={[st.heroSongPreviewBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              {activeSetlistSongs.slice(0, 3).map((song, idx) => (
+                <TouchableOpacity
+                  key={song.id || `setlist-s-${idx}`}
+                  style={[
+                    st.heroSongRow,
+                    idx === Math.min(activeSetlistSongs.length, 3) - 1 && { borderBottomWidth: 0 },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => onSelectSong(song)}>
+                  <Text style={[st.heroSongNum, { color: theme.tint }]}>0{idx + 1}</Text>
+                  <Text style={[st.heroSongTitle, { color: theme.text }]} numberOfLines={1}>
+                    {song.title}
+                  </Text>
+                  {song.scale && song.scale !== 'Uncategorized' ? (
+                    <View style={[st.heroScaleBadge, { borderColor: theme.border }]}>
+                      <Text style={[st.heroScaleText, { color: theme.tint }]}>{song.scale}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              ))}
+              {activeSetlistSongs.length > 3 && (
+                <Text style={[st.moreSongsText, { color: theme.subText }]}>
+                  + {activeSetlistSongs.length - 3} more songs in setlist
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Start Service Button */}
+          <TouchableOpacity
+            style={[st.startServiceBtn, { backgroundColor: theme.tint }]}
+            onPress={() => onNavigateToScreen('setlists')}
+            activeOpacity={0.85}>
+            <Ionicons name="play" size={18} color={theme.fabText || '#101319'} />
+            <Text style={[st.startServiceBtnText, { color: theme.fabText || '#101319' }]}>
+              Start Worship Service
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* Empty Setlist Banner State */
+        <View style={[st.heroCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+          <View style={st.heroHeaderRow}>
+            <View style={[st.heroBadgePill, { backgroundColor: 'rgba(148, 163, 184, 0.15)' }]}>
+              <Ionicons name="calendar-outline" size={12} color={theme.subText} style={{ marginRight: 4 }} />
+              <Text style={[st.heroBadgeText, { color: theme.subText }]}>NO UPCOMING SETLIST</Text>
+            </View>
+            <Text style={[st.heroDateText, { color: theme.subText }]}>Worship Schedule</Text>
+          </View>
+
+          <View style={st.emptyBannerContent}>
+            <View style={[st.emptyIconCircle, { backgroundColor: theme.cardBg }]}>
+              <Ionicons name="list-outline" size={28} color={theme.tint} />
+            </View>
+            <Text style={[st.emptyHeroTitle, { color: theme.text }]}>
+              No Setlist Scheduled
+            </Text>
+            <Text style={[st.emptyHeroSub, { color: theme.subText }]}>
+              Create your first setlist for upcoming worship services to organize songs and chords.
+            </Text>
+
+            <TouchableOpacity
+              style={[st.startServiceBtn, { backgroundColor: theme.tint }]}
+              onPress={() => onNavigateToScreen('setlists')}
+              activeOpacity={0.85}>
+              <Ionicons name="add" size={20} color={theme.fabText || '#101319'} />
+              <Text style={[st.startServiceBtnText, { color: theme.fabText || '#101319' }]}>
+                Create New Setlist
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* ── QUICK ACTION SHORTCUTS ── */}
       <View style={st.quickActionsRow}>
-        <TouchableOpacity
-          style={[st.actionBtn, { backgroundColor: theme.tint }]}
-          onPress={onOpenNewSongModal}
-          activeOpacity={0.8}>
-          <Ionicons name="add" size={20} color={theme.fabText || '#101319'} />
-          <Text style={[st.actionBtnText, { color: theme.fabText || '#101319' }]}>New Song</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[st.actionBtnOutline, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
           onPress={() => onNavigateToScreen('songs')}
@@ -92,37 +188,9 @@ export const DashboardScreen = ({
           onPress={() => onNavigateToScreen('dictionary')}
           activeOpacity={0.7}>
           <Ionicons name="book-outline" size={18} color={theme.text} />
-          <Text style={[st.actionBtnOutlineText, { color: theme.text }]}>Scales</Text>
+          <Text style={[st.actionBtnOutlineText, { color: theme.text }]}>Kignit Scales</Text>
         </TouchableOpacity>
       </View>
-
-      {/* ── UPCOMING SETLIST PREVIEW ── */}
-      {activeSetlist && (
-        <View style={st.sectionBlock}>
-          <View style={st.sectionHeader}>
-            <Text style={[st.sectionTitle, { color: theme.text }]}>Active Worship Setlist</Text>
-            <TouchableOpacity onPress={() => onNavigateToScreen('setlists')}>
-              <Text style={[st.seeAllLink, { color: theme.tint }]}>View Setlists →</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[st.setlistCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-            <View style={st.setlistTopRow}>
-              <View style={[st.setlistIconWrap, { backgroundColor: theme.cardBg }]}>
-                <Ionicons name="list" size={20} color={theme.tint} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[st.setlistTitle, { color: theme.text }]} numberOfLines={1}>
-                  {activeSetlist.title || 'Sunday Morning Setlist'}
-                </Text>
-                <Text style={[st.setlistMeta, { color: theme.subText }]}>
-                  {activeSetlist.songIds?.length || 0} Songs • Prepared for Worship
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
 
       {/* ── RECENT SONGS LIST ── */}
       <View style={st.sectionBlock}>
@@ -196,35 +264,50 @@ export const DashboardScreen = ({
         )}
       </View>
 
-      {/* ── ETHIOPIAN KIGNIT MODAL SCALES QUICK OVERVIEW ── */}
+      {/* ── RECENT SETLISTS LIST ── */}
       <View style={st.sectionBlock}>
         <View style={st.sectionHeader}>
-          <Text style={[st.sectionTitle, { color: theme.text }]}>Ethiopian Kignit Scales</Text>
-          <TouchableOpacity onPress={() => onNavigateToScreen('dictionary')}>
-            <Text style={[st.seeAllLink, { color: theme.tint }]}>Dictionary →</Text>
+          <Text style={[st.sectionTitle, { color: theme.text }]}>Recent Setlists</Text>
+          <TouchableOpacity onPress={() => onNavigateToScreen('setlists')}>
+            <Text style={[st.seeAllLink, { color: theme.tint }]}>View All ({setlists.length}) →</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.kignitScroll}>
-          {[
-            { name: 'Tizita Major', desc: 'Pentatonic Major (1-2-3-5-6)' },
-            { name: 'Tizita Minor', desc: 'Pentatonic Minor (1-b3-4-5-b7)' },
-            { name: 'Bati', desc: 'Lydian Pentatonic (1-3-4#-5-7)' },
-            { name: 'Ambassel', desc: 'Phrygian Pentatonic (1-b2-4-5-b6)' },
-            { name: 'Anchihoye', desc: 'Diminished Pentatonic (1-b2-4-b5-6)' },
-          ].map((k, i) => (
-            <TouchableOpacity
-              key={`kignit-card-${i}`}
-              style={[st.kignitCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-              onPress={() => onNavigateToScreen('dictionary')}>
-              <View style={[st.kignitPill, { backgroundColor: theme.cardBg }]}>
-                <Ionicons name="pulse" size={12} color={theme.tint} style={{ marginRight: 4 }} />
-                <Text style={[st.kignitName, { color: theme.text }]}>{k.name}</Text>
-              </View>
-              <Text style={[st.kignitDesc, { color: theme.subText }]}>{k.desc}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {recentSetlists.length === 0 ? (
+          <View style={[st.emptyBox, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+            <Ionicons name="list-outline" size={24} color={theme.subText} />
+            <Text style={[st.emptyText, { color: theme.subText }]}>No setlists created yet.</Text>
+          </View>
+        ) : (
+          recentSetlists.map((setlist) => {
+            const songCount = setlist.songs?.length || setlist.songIds?.length || 0;
+            return (
+              <TouchableOpacity
+                key={setlist.id}
+                style={[st.recentSongCard, { backgroundColor: theme.secondaryBg, borderColor: theme.divider }]}
+                activeOpacity={0.7}
+                onPress={() => onNavigateToScreen('setlists')}>
+
+                {/* Left Icon Tile */}
+                <View style={[st.songAvatarTile, { backgroundColor: theme.cardBg }]}>
+                  <Ionicons name="list" size={18} color={theme.tint} />
+                </View>
+
+                {/* Setlist Info */}
+                <View style={st.songMainInfo}>
+                  <Text style={[st.recentTitle, { color: theme.text }]} numberOfLines={1}>
+                    {setlist.title}
+                  </Text>
+                  <Text style={[st.recentSubtitle, { color: theme.subText }]} numberOfLines={1}>
+                    {songCount} Songs • {setlist.description || 'Worship Setlist'}
+                  </Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
 
     </ScrollView>
@@ -237,6 +320,33 @@ const st = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 96,
+  },
+
+  // Greeting Header
+  greetingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  greetingSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  greetingTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginTop: 2,
+  },
+  quickAddHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Hero Worship Card
@@ -278,36 +388,109 @@ const st = StyleSheet.create({
     fontWeight: '500',
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
-    marginBottom: 16,
+    marginBottom: 6,
   },
-  heroStatsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  heroStatItem: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+
+  // Empty Banner Content
+  emptyBannerContent: {
     alignItems: 'center',
+    paddingVertical: 8,
   },
-  heroStatVal: {
-    fontSize: 16,
+  emptyIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyHeroTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    marginTop: 2,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  heroStatLbl: {
+  emptyHeroSub: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+
+  // Hero Songs Preview Box
+  heroSongPreviewBox: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  heroSongRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(150, 150, 150, 0.15)',
+  },
+  heroSongNum: {
+    fontSize: 11,
+    fontWeight: '700',
+    width: 22,
+  },
+  heroSongTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  heroScaleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginLeft: 8,
+  },
+  heroScaleText: {
     fontSize: 10,
-    fontWeight: '500',
-    marginTop: 1,
+    fontWeight: '600',
+  },
+  moreSongsText: {
+    fontSize: 11,
+    marginTop: 6,
+    marginBottom: 2,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // Start Service CTA Button
+  startServiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 46,
+    borderRadius: 23,
+    paddingHorizontal: 20,
+    marginTop: 6,
+    gap: 8,
+    shadowColor: '#E5A93C',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  startServiceBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 
   // Quick Action Buttons
@@ -315,19 +498,6 @@ const st = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 24,
-  },
-  actionBtn: {
-    flex: 1,
-    height: 42,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    gap: 6,
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
   },
   actionBtnOutline: {
     flex: 1,
@@ -364,33 +534,6 @@ const st = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Active Setlist Card
-  setlistCard: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  setlistTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  setlistIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  setlistTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  setlistMeta: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-
   // Recent Song Card
   recentSongCard: {
     flexDirection: 'row',
@@ -398,15 +541,15 @@ const st = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: 8,
+    marginBottom: 10,
     gap: 12,
   },
   songAvatarTile: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 10,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   songMainInfo: {
     flex: 1,
@@ -416,13 +559,13 @@ const st = StyleSheet.create({
     fontWeight: '600',
   },
   recentSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
   },
   recentTagsRow: {
     flexDirection: 'row',
     gap: 6,
-    marginTop: 6,
+    marginTop: 4,
   },
   recentTagPill: {
     paddingHorizontal: 6,
@@ -435,43 +578,17 @@ const st = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Empty Box
   emptyBox: {
     padding: 24,
-    alignItems: 'center',
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   emptyText: {
     fontSize: 13,
-    marginTop: 8,
-  },
-
-  // Kignit Scroll Cards
-  kignitScroll: {
-    gap: 10,
-  },
-  kignitCard: {
-    width: 170,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  kignitPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  kignitName: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  kignitDesc: {
-    fontSize: 11,
-    lineHeight: 15,
   },
 });
 
