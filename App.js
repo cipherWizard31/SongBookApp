@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, Animated, Dimensions, BackHandler, Platform, Linking } from 'react-native';
+import { View, Alert, Animated, Dimensions, BackHandler, Platform, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,15 +28,17 @@ import { migrateSongToInline } from './src/chordParser';
 
 // --- REMOVED CURLY BRACES FROM COMPONENT IMPORTS ---
 import {Header} from './src/Header';
-import {SidebarDrawer} from './src/SidebarDrawer';
+import {DashboardScreen} from './src/DashboardScreen';
 import {SongsScreen} from './src/SongsScreen';
+import {SetlistsScreen} from './src/SetlistsScreen';
+import {ProfileScreen} from './src/ProfileScreen';
 import {ScaleDictScreen} from './src/ScaleDictScreen';
 import {SettingsScreen} from './src/SettingsScreen';
-import {SetlistsScreen} from './src/SetlistsScreen';
 import {AlbumsScreen} from './src/AlbumsScreen';
 import {ArtistsScreen} from './src/ArtistsScreen';
 import {SongEditModal} from './src/SongEditModal';
 import {SongDetailModal} from './src/SongDetailModal';
+import {BottomNavBar} from './src/BottomNavBar';
 
 const SETLISTS_KEY = '@songbook_setlists';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -49,7 +51,7 @@ export default function App() {
   const [scales, setScales] = useState(DEFAULT_SCALES);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  const [currentScreen, setCurrentScreen] = useState('songs');
+  const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
 
@@ -542,93 +544,134 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-        <Header theme={theme} onOpenSidebar={() => toggleSidebar(true)} />
+        <Header theme={theme} onOpenNewSongModal={() => setModalVisible(true)} />
 
-        {currentScreen === 'songs' && (
-          <SongsScreen
-            songs={songs}
-            styles={styles}
-            scales={scales}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            onOpenNewSongModal={() => setModalVisible(true)}
-            onClearImportedSongs={handleClearImportedSongs}
-            onDeleteSong={handleDeleteSong}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+        <View style={{ flex: 1 }}>
+          {currentScreen === 'dashboard' && (
+            <DashboardScreen
+              songs={songs}
+              setlists={setlists}
+              scales={scales}
+              styles={styles}
+              onSelectSong={(song) => {
+                setSongDetailModal(song);
+                setTransposeKey(0);
+              }}
+              onOpenNewSongModal={() => setModalVisible(true)}
+              onNavigateToScreen={(scr) => setCurrentScreen(scr)}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
 
-        {currentScreen === 'albums' && (
-          <AlbumsScreen
-            songs={songs}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+          {currentScreen === 'songs' && (
+            <SongsScreen
+              songs={songs}
+              styles={styles}
+              scales={scales}
+              onSelectSong={(song) => {
+                setSongDetailModal(song);
+                setTransposeKey(0);
+              }}
+              onOpenNewSongModal={() => setModalVisible(true)}
+              onClearImportedSongs={handleClearImportedSongs}
+              onDeleteSong={handleDeleteSong}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
 
-        {currentScreen === 'artists' && (
-          <ArtistsScreen
-            songs={songs}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+          {currentScreen === 'setlists' && (
+            <SetlistsScreen
+              setlists={setlists}
+              songs={songs}
+              onSaveSetlist={handleSaveSetlist}
+              onDeleteSetlist={handleDeleteSetlist}
+              onClearImportedSetlists={handleClearImportedSetlists}
+              onSaveSongsBatch={handleSaveSongsBatch}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
 
-        {currentScreen === 'setlists' && (
-          <SetlistsScreen
-            setlists={setlists}
-            songs={songs}
-            onSaveSetlist={handleSaveSetlist}
-            onDeleteSetlist={handleDeleteSetlist}
-            onClearImportedSetlists={handleClearImportedSetlists}
-            onSaveSongsBatch={handleSaveSongsBatch}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+          {currentScreen === 'profile' && (
+            <ProfileScreen
+              songs={songs}
+              setlists={setlists}
+              styles={styles}
+              scales={scales}
+              setSongs={setSongs}
+              setStyles={setStyles}
+              setScales={setScales}
+              onSelectSong={(song) => {
+                setSongDetailModal(song);
+                setTransposeKey(0);
+              }}
+              onOpenNewSongModal={() => setModalVisible(true)}
+              onClearImportedSongs={handleClearImportedSongs}
+              onClearImportedSetlists={handleClearImportedSetlists}
+              onClearAllImportedData={handleClearAllImportedData}
+              onDeleteSong={handleDeleteSong}
+              handleExportSongs={handleExportSongs}
+              handleImportSongs={handleImportSongs}
+              isDarkMode={isDarkMode}
+              setIsDarkMode={setIsDarkMode}
+              theme={theme}
+            />
+          )}
 
-        {currentScreen === 'dictionary' && <ScaleDictScreen theme={theme} />}
+          {currentScreen === 'dictionary' && <ScaleDictScreen theme={theme} />}
 
-        {currentScreen === 'settings' && (
-          <SettingsScreen
-            songs={songs}
-            setSongs={setSongs}
-            setlists={setlists}
-            styles={styles}
-            setStyles={setStyles}
-            scales={scales}
-            setScales={setScales}
-            handleExportSongs={handleExportSongs}
-            handleImportSongs={handleImportSongs}
-            handleClearImportedSetlists={handleClearImportedSetlists}
-            handleClearImportedSongs={handleClearImportedSongs}
-            handleClearAllImportedData={handleClearAllImportedData}
-            isDarkMode={isDarkMode}
-            setIsDarkMode={setIsDarkMode}
-            theme={theme}
-          />
-        )}
+          {currentScreen === 'albums' && (
+            <AlbumsScreen
+              songs={songs}
+              onSelectSong={(song) => {
+                setSongDetailModal(song);
+                setTransposeKey(0);
+              }}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
 
-        <SidebarDrawer
-          sidebarOpen={sidebarOpen}
-          toggleSidebar={toggleSidebar}
-          slideAnim={slideAnim}
-          currentScreen={currentScreen}
-          setCurrentScreen={setCurrentScreen}
+          {currentScreen === 'artists' && (
+            <ArtistsScreen
+              songs={songs}
+              onSelectSong={(song) => {
+                setSongDetailModal(song);
+                setTransposeKey(0);
+              }}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
+          {currentScreen === 'settings' && (
+            <SettingsScreen
+              songs={songs}
+              setSongs={setSongs}
+              setlists={setlists}
+              styles={styles}
+              setStyles={setStyles}
+              scales={scales}
+              setScales={setScales}
+              handleExportSongs={handleExportSongs}
+              handleImportSongs={handleImportSongs}
+              handleClearImportedSetlists={handleClearImportedSetlists}
+              handleClearImportedSongs={handleClearImportedSongs}
+              handleClearAllImportedData={handleClearAllImportedData}
+              isDarkMode={isDarkMode}
+              setIsDarkMode={setIsDarkMode}
+              theme={theme}
+            />
+          )}
+        </View>
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavBar
+          currentTab={currentScreen}
+          onSelectTab={(tab) => setCurrentScreen(tab)}
           theme={theme}
-          isDarkMode={isDarkMode}
-          drawerWidth={DRAWER_WIDTH}
         />
 
         <SongEditModal

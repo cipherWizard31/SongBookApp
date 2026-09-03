@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, Image, Animated, StyleSheet } from
 import { Ionicons } from '@expo/vector-icons';
 
 const NAV_ITEMS = [
+  { key: 'dashboard',  label: 'Dashboard',        icon: 'grid',          outlineIcon: 'grid-outline'          },
   { key: 'songs',      label: 'Songs',            icon: 'musical-notes', outlineIcon: 'musical-notes-outline' },
   { key: 'albums',     label: 'Albums',           icon: 'disc',          outlineIcon: 'disc-outline'          },
   { key: 'artists',    label: 'Artists',          icon: 'person',        outlineIcon: 'person-outline'        },
@@ -59,7 +60,7 @@ export const SidebarDrawer = ({
             {NAV_ITEMS.map((item) => {
               const active = currentScreen === item.key;
               const iconName = active ? item.icon : item.outlineIcon;
-              const iconColor = active ? theme.text : theme.subText;
+              const iconColor = active ? theme.tint : theme.subText;
 
               return (
                 <TouchableOpacity
@@ -80,7 +81,7 @@ export const SidebarDrawer = ({
                   <Text
                     style={[
                       styles.navLabel,
-                      { color: iconColor },
+                      { color: active ? theme.tint : theme.subText },
                       active && styles.navLabelActive,
                     ]}>
                     {item.label}

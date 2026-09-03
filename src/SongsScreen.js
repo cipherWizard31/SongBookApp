@@ -403,7 +403,7 @@ const st = StyleSheet.create({
   // List
   listContent: {
     paddingTop: 8,
-    paddingBottom: 88,
+    paddingBottom: 110,
   },
   card: {
     flexDirection: 'row',
@@ -527,7 +527,7 @@ const st = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 24,
+    bottom: 88,
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -542,7 +542,7 @@ export const SetlistsScreen = ({
       <FlatList
         data={setlists}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 48 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={[styles.emptyTitle, { color: theme.subText }]}>No setlists</Text>
