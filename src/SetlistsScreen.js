@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet, Text, View, TouchableOpacity, FlatList,
   Modal, TextInput, ScrollView, Alert, Platform, Dimensions, Linking,
@@ -19,6 +19,7 @@ export const SetlistsScreen = ({
   onDeleteSetlist,
   onClearImportedSetlists,
   onSaveSongsBatch,
+  autoStartPerformanceSetlistId = null,
   theme,
   isDarkMode = false,
 }) => {
@@ -40,6 +41,20 @@ export const SetlistsScreen = ({
   const [setlistTitle, setSetlistTitle] = useState('');
   const [setlistDesc, setSetlistDesc] = useState('');
   const [songSearchQuery, setSongSearchQuery] = useState('');
+
+  // Auto-start performance mode when triggered from dashboard
+  useEffect(() => {
+    if (!autoStartPerformanceSetlistId || setlists.length === 0) return;
+    const target = setlists.find((s) => s.id === autoStartPerformanceSetlistId);
+    if (!target) return;
+    const targetSongs = songs.filter((s) => (target.songIds || []).includes(s.id));
+    if (targetSongs.length === 0) return;
+    setSelectedSetlist(target);
+    setCurrentPerfIndex(0);
+    setPerfTransposeKey(0);
+    setPerformanceModeVisible(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartPerformanceSetlistId]);
 
   // ----------------------------------------------------
   // SETLIST CREATION & DELETION
@@ -569,7 +584,6 @@ export const SetlistsScreen = ({
                 </Text>
                 <Text style={[styles.setlistSub, { color: theme.subText }]} numberOfLines={1}>
                   {songCount} {songCount === 1 ? 'song' : 'songs'}
-                  {item.description ? ` · ${item.description}` : ''}
                   {isImported ? ' · imported' : ''}
                 </Text>
               </View>

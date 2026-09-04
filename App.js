@@ -71,10 +71,11 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [outgoingScreen, setOutgoingScreen] = useState(null);
-  const [isSlidingRight, setIsSlidingRight] = useState(true);
+  const [performanceSetlistId, setPerformanceSetlistId] = useState(null);
 
-  const transitionProgress = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const isAnimatingRef = useRef(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
@@ -95,32 +96,45 @@ export default function App() {
   const currentPlayerRef = useRef(null);
 
   // ----------------------------------------------------
-  // DUAL-SCREEN DIRECTIONAL SLIDE TRANSITION LOGIC
+  // FADE + SCALE TRANSITION
   // ----------------------------------------------------
   const navigateToScreen = (targetScreen) => {
-    if (targetScreen === currentScreen) return;
+    if (targetScreen === currentScreen || isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
 
-    const prevIndex = SCREEN_ORDER[currentScreen] ?? 0;
-    const nextIndex = SCREEN_ORDER[targetScreen] ?? 0;
+    // Reset to starting state (invisible, slightly shrunk)
+    fadeAnim.setValue(0);
+    scaleAnim.setValue(0.96);
+    setCurrentScreen(targetScreen); // content + navbar update instantly
 
-    const slidingRight = nextIndex > prevIndex;
-
-    setOutgoingScreen(currentScreen);
-    setCurrentScreen(targetScreen);
-    setIsSlidingRight(slidingRight);
-
-    transitionProgress.setValue(0);
-
-    Animated.timing(transitionProgress, {
-      toValue: 1,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
-        setOutgoingScreen(null);
-      }
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      isAnimatingRef.current = false;
     });
+  };
+
+  // Start worship service — navigate to setlists and trigger performance mode
+  const handleStartWorshipService = (setlist) => {
+    if (!setlist) {
+      navigateToScreen('setlists');
+      return;
+    }
+    setPerformanceSetlistId(null); // reset first so useEffect fires reliably
+    navigateToScreen('setlists');
+    // Small delay to let SetlistsScreen mount before triggering perf mode
+    setTimeout(() => setPerformanceSetlistId(setlist.id), 350);
   };
 
   // ----------------------------------------------------
@@ -447,6 +461,7 @@ export default function App() {
             }}
             onOpenNewSongModal={() => setModalVisible(true)}
             onNavigateToScreen={navigateToScreen}
+            onStartWorshipService={handleStartWorshipService}
             theme={theme}
             isDarkMode={isDarkMode}
           />
@@ -477,6 +492,7 @@ export default function App() {
             onDeleteSetlist={handleDeleteSetlist}
             onClearImportedSetlists={handleClearImportedSetlists}
             onSaveSongsBatch={handleSaveSongsBatch}
+            autoStartPerformanceSetlistId={performanceSetlistId}
             theme={theme}
             isDarkMode={isDarkMode}
           />
@@ -564,45 +580,14 @@ export default function App() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
         <Header theme={theme} onNavigateToProfile={() => navigateToScreen('profile')} />
 
-        {/* Dual-Screen Directional Slide Transition Container */}
-        <View style={{ flex: 1, overflow: 'hidden' }}>
-          {/* Outgoing Screen (sliding out) */}
-          {outgoingScreen && (
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  transform: [
-                    {
-                      translateX: transitionProgress.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, isSlidingRight ? -SCREEN_WIDTH * 0.3 : SCREEN_WIDTH * 0.3],
-                      }),
-                    },
-                  ],
-                  opacity: transitionProgress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 0.3],
-                  }),
-                },
-              ]}>
-              {renderScreenContent(outgoingScreen)}
-            </Animated.View>
-          )}
-
-          {/* Active Incoming Screen (sliding in) */}
+        {/* Fade + Scale transition */}
+        <View style={{ flex: 1 }}>
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
               {
-                transform: [
-                  {
-                    translateX: transitionProgress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [isSlidingRight ? SCREEN_WIDTH : -SCREEN_WIDTH, 0],
-                    }),
-                  },
-                ],
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
               },
             ]}>
             {renderScreenContent(currentScreen)}

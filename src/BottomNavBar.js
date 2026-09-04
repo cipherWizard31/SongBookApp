@@ -30,8 +30,8 @@ const TabItem = ({ tab, active, onSelectTab, theme }) => {
   useEffect(() => {
     Animated.spring(animValue, {
       toValue: active ? 1 : 0,
-      friction: 7,
-      tension: 100,
+      friction: 9,
+      tension: 200,
       useNativeDriver: true,
     }).start();
   }, [active, animValue]);
