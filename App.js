@@ -562,7 +562,7 @@ export default function App() {
     <SafeAreaProvider>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-        <Header theme={theme} onOpenNewSongModal={() => setModalVisible(true)} />
+        <Header theme={theme} onNavigateToProfile={() => navigateToScreen('profile')} />
 
         {/* Dual-Screen Directional Slide Transition Container */}
         <View style={{ flex: 1, overflow: 'hidden' }}>

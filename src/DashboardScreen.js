@@ -16,6 +16,7 @@ export const DashboardScreen = ({
   onSelectSong,
   onOpenNewSongModal,
   onNavigateToScreen,
+  onStartWorshipService,
   theme,
   isDarkMode,
 }) => {
@@ -130,7 +131,7 @@ export const DashboardScreen = ({
           {/* Start Service Button */}
           <TouchableOpacity
             style={[st.startServiceBtn, { backgroundColor: theme.tint }]}
-            onPress={() => onNavigateToScreen('setlists')}
+            onPress={() => onStartWorshipService ? onStartWorshipService(activeSetlist) : onNavigateToScreen('setlists')}
             activeOpacity={0.85}>
             <Ionicons name="play" size={18} color={theme.fabText || '#101319'} />
             <Text style={[st.startServiceBtnText, { color: theme.fabText || '#101319' }]}>
@@ -171,6 +172,32 @@ export const DashboardScreen = ({
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      {/* ── LATEST SETLIST BANNER ── */}
+      {setlists.length > 0 && (
+        <TouchableOpacity
+          style={[st.latestSetlistBanner, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+          onPress={() => onNavigateToScreen('setlists')}
+          activeOpacity={0.75}>
+          <View style={st.latestSetlistLeft}>
+            <View style={[st.latestSetlistIconBox, { backgroundColor: theme.cardBg }]}>
+              <Ionicons name="list" size={16} color={theme.tint} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[st.latestSetlistLabel, { color: theme.subText }]}>LATEST SETLIST</Text>
+              <Text style={[st.latestSetlistTitle, { color: theme.text }]} numberOfLines={1}>
+                {setlists[0].title}
+              </Text>
+            </View>
+          </View>
+          <View style={st.latestSetlistRight}>
+            <Text style={[st.latestSetlistCount, { color: theme.tint }]}>
+              {(setlists[0].songIds?.length || setlists[0].songs?.length || 0)} songs
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={theme.subText} />
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* ── QUICK ACTION SHORTCUTS ── */}
@@ -491,6 +518,51 @@ const st = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+
+  // Latest Setlist Banner
+  latestSetlistBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  latestSetlistLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  latestSetlistIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  latestSetlistLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 1,
+  },
+  latestSetlistTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  latestSetlistRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingLeft: 8,
+  },
+  latestSetlistCount: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // Quick Action Buttons

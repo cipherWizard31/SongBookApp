@@ -48,7 +48,7 @@ export const SidebarDrawer = ({
           {/* Drawer header */}
           <View style={[styles.drawerHeader, { borderBottomColor: theme.divider }]}>
             <Image
-              source={require('../assets/music-player.png')}
+              source={require('../assets/music-player-transparent.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  logo: { width: 22, height: 22 },
+  logo: { width: 30, height: 30 },
   drawerTitle: { fontSize: 17, fontWeight: '600', letterSpacing: 0.1 },
   navList: { paddingHorizontal: 8, paddingTop: 12 },
   navItem: {

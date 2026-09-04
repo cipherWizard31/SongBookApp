@@ -2,29 +2,30 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const Header = ({ theme, onOpenNewSongModal }) => {
+export const Header = ({ theme, onNavigateToProfile }) => {
   return (
     <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
       {/* Left: App Logo & Identity */}
       <View style={styles.titleRow}>
         <Image
-          source={require('../assets/music-player.png')}
+          source={require('../assets/music-player-transparent.png')}
           style={styles.logo}
           resizeMode="contain"
         />
         <Text style={[styles.title, { color: theme.text }]}>Selah Kignit</Text>
       </View>
 
-      {/* Right: Quick Action (Add Song) */}
-      {onOpenNewSongModal ? (
+      {/* Right: Profile Avatar Button */}
+      {onNavigateToProfile ? (
         <TouchableOpacity
-          onPress={onOpenNewSongModal}
-          style={[styles.addBtn, { backgroundColor: theme.tint }]}
-          activeOpacity={0.8}
-          accessibilityLabel="Add new song"
+          onPress={onNavigateToProfile}
+          style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+          activeOpacity={0.75}
+          accessibilityLabel="Open profile"
           accessibilityRole="button">
-          <Ionicons name="add" size={18} color={theme.fabText || '#101319'} />
-          <Text style={[styles.addBtnText, { color: theme.fabText || '#101319' }]}>Add Song</Text>
+          <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
+            <Ionicons name="person" size={18} color={theme.tint} />
+          </View>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -45,23 +46,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  logo: { width: 22, height: 22 },
+  logo: { width: 30, height: 30 },
   title: {
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
-  addBtn: {
-    flexDirection: 'row',
+  profileAvatarBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 4,
+    justifyContent: 'center',
   },
-  addBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+  avatarCircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

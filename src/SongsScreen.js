@@ -103,15 +103,16 @@ export const SongsScreen = ({
                   style={[
                     st.chip,
                     {
-                      backgroundColor: active ? theme.chipSelectedBg : theme.chipBg,
-                      borderColor: active ? theme.chipSelectedBg : theme.chipBorder,
+                      backgroundColor: active ? theme.tint : theme.cardBg,
+                      borderColor: active ? theme.tint : theme.border,
                     },
                   ]}
+                  activeOpacity={0.7}
                   onPress={() => setSelectedStyleFilter(style)}>
                   <Text
                     style={[
                       st.chipText,
-                      { color: active ? theme.chipSelectedText : theme.chipText },
+                      { color: active ? (theme.fabText || '#101319') : theme.subText },
                       active && st.chipTextActive,
                     ]}>
                     {style === 'All' ? 'All' : style}
@@ -123,7 +124,7 @@ export const SongsScreen = ({
         </View>
 
         {/* Row 2: Kignit / Scale Filters */}
-        <View style={[st.filterRowContainer, { marginTop: 6 }]}>
+        <View style={[st.filterRowContainer, { marginTop: 8 }]}>
           <Text style={[st.filterLabel, { color: theme.subText }]}>SCALE</Text>
           <ScrollView
             horizontal
@@ -137,15 +138,16 @@ export const SongsScreen = ({
                   style={[
                     st.chip,
                     {
-                      backgroundColor: active ? theme.chipSelectedBg : theme.chipBg,
-                      borderColor: active ? theme.chipSelectedBg : theme.chipBorder,
+                      backgroundColor: active ? theme.tint : theme.cardBg,
+                      borderColor: active ? theme.tint : theme.border,
                     },
                   ]}
+                  activeOpacity={0.7}
                   onPress={() => setSelectedScaleFilter(scale)}>
                   <Text
                     style={[
                       st.chipText,
-                      { color: active ? theme.chipSelectedText : theme.chipText },
+                      { color: active ? (theme.fabText || '#101319') : theme.subText },
                       active && st.chipTextActive,
                     ]}>
                     {scale === 'All' ? 'All' : scale}
@@ -160,11 +162,11 @@ export const SongsScreen = ({
       {/* ── Status & Filter Summary Bar ── */}
       <View style={[st.summaryBar, { borderBottomColor: theme.divider }]}>
         <Text style={[st.summaryText, { color: theme.subText }]}>
-          {filteredSongs.length} {filteredSongs.length === 1 ? 'song' : 'songs'}
+          Showing {filteredSongs.length} {filteredSongs.length === 1 ? 'song' : 'songs'}
         </Text>
         {isFiltered && (
           <TouchableOpacity onPress={resetFilters} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={[st.resetText, { color: theme.tint }]}>Reset filters</Text>
+            <Text style={[st.resetText, { color: theme.tint }]}>Reset filters ✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -172,7 +174,7 @@ export const SongsScreen = ({
       {/* ── Imported Songs Banner ── */}
       {importedCount > 0 && onClearImportedSongs ? (
         <TouchableOpacity
-          style={[st.importedBanner, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+          style={[st.importedBanner, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
           onPress={onClearImportedSongs}
           activeOpacity={0.7}>
           <Ionicons name="cloud-download-outline" size={16} color={theme.tint} style={{ marginRight: 8 }} />
@@ -183,7 +185,7 @@ export const SongsScreen = ({
         </TouchableOpacity>
       ) : null}
 
-      {/* ── Songs List ── */}
+      {/* ── Refined Songs List ── */}
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.id}
@@ -194,7 +196,7 @@ export const SongsScreen = ({
             <View style={[st.emptyIconWrap, { backgroundColor: theme.cardBg }]}>
               <Ionicons name="musical-notes-outline" size={32} color={theme.subText} />
             </View>
-            <Text style={[st.emptyTitle, { color: theme.text }]}>No songs found</Text>
+            <Text style={[st.emptyTitle, { color: theme.text }]}>No Songs Found</Text>
             <Text style={[st.emptyHint, { color: theme.subText }]}>
               {searchQuery
                 ? `No songs match "${searchQuery}" with active filters.`
@@ -249,7 +251,7 @@ export const SongsScreen = ({
                     </View>
                   )}
                   {hasAudio && (
-                    <View style={[st.audioBadge, { backgroundColor: theme.tint + '1A' }]}>
+                    <View style={[st.audioBadge, { backgroundColor: 'rgba(229, 169, 60, 0.15)' }]}>
                       <Ionicons name="volume-medium" size={12} color={theme.tint} />
                     </View>
                   )}
@@ -282,8 +284,8 @@ export const SongsScreen = ({
                   <View style={st.tagsRow}>
                     {hasScale ? (
                       <View style={[st.tagPill, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                        <Ionicons name="key-outline" size={10} color={theme.subText} style={{ marginRight: 3 }} />
-                        <Text style={[st.tagText, { color: theme.text }]} numberOfLines={1}>
+                        <Ionicons name="key-outline" size={10} color={theme.tint} style={{ marginRight: 3 }} />
+                        <Text style={[st.tagText, { color: theme.tint }]} numberOfLines={1}>
                           {item.scale}
                         </Text>
                       </View>
@@ -309,12 +311,12 @@ export const SongsScreen = ({
 
       {/* ── Floating Action Button (New Song) ── */}
       <TouchableOpacity
-        style={[st.fab, { backgroundColor: theme.fabBg }]}
+        style={[st.fab, { backgroundColor: theme.tint }]}
         activeOpacity={0.85}
         onPress={onOpenNewSongModal}
         accessibilityRole="button"
         accessibilityLabel="Add new song">
-        <Ionicons name="add" size={28} color={theme.fabText} />
+        <Ionicons name="add" size={28} color={theme.fabText || '#101319'} />
       </TouchableOpacity>
     </View>
   );
@@ -332,13 +334,13 @@ const st = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
-    height: 44,
+    height: 46,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, padding: 0, fontWeight: '500' },
 
   // Dual filter rows block
   filtersBlock: {
@@ -363,15 +365,15 @@ const st = StyleSheet.create({
     gap: 6,
   },
   chip: {
-    height: 30,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    borderWidth: 1,
+    height: 32,
+    paddingHorizontal: 13,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chipText: { fontSize: 12.5 },
-  chipTextActive: { fontWeight: '600' },
+  chipText: { fontSize: 12, fontWeight: '500' },
+  chipTextActive: { fontWeight: '700' },
 
   // Summary bar
   summaryBar: {
@@ -395,7 +397,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   importedBannerText: { flex: 1, fontSize: 13, fontWeight: '500' },
   importedBannerAction: { fontSize: 13, fontWeight: '600' },
@@ -412,12 +414,12 @@ const st = StyleSheet.create({
     marginVertical: 4,
     padding: 12,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   avatarTile: {
     width: 44,
     height: 44,
-    borderRadius: 11,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -434,7 +436,7 @@ const st = StyleSheet.create({
   },
   songTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     flexShrink: 1,
     letterSpacing: -0.2,
   },
@@ -446,22 +448,25 @@ const st = StyleSheet.create({
   },
   badgeText: { fontSize: 10, fontWeight: '500' },
   audioBadge: {
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   metaBlock: {
-    marginTop: 3,
-    gap: 3,
+    marginTop: 4,
+    gap: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 8,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '400',
   },
   tagsRow: {
@@ -474,14 +479,14 @@ const st = StyleSheet.create({
   tagPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: StyleSheet.hairlineWidth,
   },
   tagText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   chevronIcon: {
     marginLeft: 8,
@@ -503,7 +508,7 @@ const st = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 6,
   },
   emptyHint: {
@@ -526,18 +531,18 @@ const st = StyleSheet.create({
   // FAB
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 88,
+    right: 18,
+    bottom: 92,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowColor: '#E5A93C',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
   },
 });
 
