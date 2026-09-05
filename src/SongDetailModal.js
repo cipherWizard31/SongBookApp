@@ -18,8 +18,8 @@ import { AudioPreviewBanner } from './AudioPreviewBanner';
 
 // ─── Design tokens from Stitch system ───────────────────────────────────────
 const AMBER = '#E5A93C';
-const CYAN  = '#38BDF8';
-const BURG  = '#862633';
+const CYAN = '#38BDF8';
+const BURG = '#862633';
 
 export const SongDetailModal = ({
   songDetailModal,
@@ -69,8 +69,8 @@ export const SongDetailModal = ({
 
   if (!song) return null;
 
-  const author   = song.author?.trim();
-  const album    = song.album?.trim();
+  const author = song.author?.trim();
+  const album = song.album?.trim();
   const hasScale = song.scale && song.scale !== 'Uncategorized';
   const hasStyle = song.style && song.style !== 'Uncategorized';
   const keyLabel = transposeKey === 0 ? 'Original' : transposeKey > 0 ? `+${transposeKey}` : `${transposeKey}`;
@@ -264,20 +264,15 @@ export const SongDetailModal = ({
             </View>
 
             {/* Chords Toggle */}
-            <TouchableOpacity
-              style={[st.toggleBtn, { backgroundColor: showChords ? CYAN : theme.cardBg, borderColor: showChords ? CYAN : theme.border }]}
-              onPress={() => setShowChords(!showChords)}>
-              <Ionicons name="musical-note" size={13} color={showChords ? '#001E2C' : theme.subText} style={{ marginRight: 4 }} />
-              <Text style={[st.toggleText, { color: showChords ? '#001E2C' : theme.text }]}>Chords</Text>
-            </TouchableOpacity>
-
-            {/* Auto Scroll Toggle */}
-            <TouchableOpacity
-              style={[st.toggleBtn, { backgroundColor: isAutoScrolling ? AMBER : theme.cardBg, borderColor: isAutoScrolling ? AMBER : theme.border }]}
-              onPress={() => setIsAutoScrolling(!isAutoScrolling)}>
-              <Ionicons name={isAutoScrolling ? 'pause' : 'play'} size={13} color={isAutoScrolling ? '#281900' : theme.subText} style={{ marginRight: 4 }} />
-              <Text style={[st.toggleText, { color: isAutoScrolling ? '#281900' : theme.text }]}>Scroll</Text>
-            </TouchableOpacity>
+            <View style={st.toolGroup}>
+              <Text style={[st.toolLabel, { color: theme.subText }]}>Chords</Text>
+              <TouchableOpacity
+                style={[st.toggleBtn, { backgroundColor: showChords ? CYAN : theme.cardBg, borderColor: showChords ? CYAN : theme.border }]}
+                onPress={() => setShowChords(!showChords)}>
+                <Ionicons name="musical-note" size={13} color={showChords ? '#001E2C' : theme.subText} style={{ marginRight: 4 }} />
+                <Text style={[st.toggleText, { color: showChords ? '#001E2C' : theme.text }]}>{showChords ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Audio Banner */}
@@ -392,7 +387,7 @@ const st = StyleSheet.create({
   toggleBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     height: 34, paddingHorizontal: 10, borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth, marginTop: 14,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   toggleText: { fontSize: 12, fontWeight: '700' },
 

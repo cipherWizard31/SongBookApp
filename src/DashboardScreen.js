@@ -173,26 +173,6 @@ export const DashboardScreen = ({
           </View>
         </View>
       )}
-
-      {/* ── QUICK ACTION SHORTCUTS ── */}
-      <View style={st.quickActionsRow}>
-        <TouchableOpacity
-          style={[st.actionBtnOutline, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          onPress={() => onNavigateToScreen('songs')}
-          activeOpacity={0.7}>
-          <Ionicons name="library-outline" size={18} color={theme.text} />
-          <Text style={[st.actionBtnOutlineText, { color: theme.text }]}>Song Library</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[st.actionBtnOutline, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          onPress={() => onNavigateToScreen('dictionary')}
-          activeOpacity={0.7}>
-          <Ionicons name="book-outline" size={18} color={theme.text} />
-          <Text style={[st.actionBtnOutlineText, { color: theme.text }]}>Kignit Scales</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* ── RECENT SONGS LIST ── */}
       <View style={st.sectionBlock}>
         <View style={st.sectionHeader}>
