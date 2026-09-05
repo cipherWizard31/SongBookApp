@@ -74,7 +74,6 @@ export default function App() {
   const [performanceSetlistId, setPerformanceSetlistId] = useState(null);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
   const isAnimatingRef = useRef(false);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -102,25 +101,16 @@ export default function App() {
     if (targetScreen === currentScreen || isAnimatingRef.current) return;
     isAnimatingRef.current = true;
 
-    // Reset to starting state (invisible, slightly shrunk)
+    // Reset to invisible
     fadeAnim.setValue(0);
-    scaleAnim.setValue(0.96);
     setCurrentScreen(targetScreen); // content + navbar update instantly
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start(() => {
       isAnimatingRef.current = false;
     });
   };
@@ -585,10 +575,7 @@ export default function App() {
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
-              {
-                opacity: fadeAnim,
-                transform: [{ scale: scaleAnim }],
-              },
+              { opacity: fadeAnim },
             ]}>
             {renderScreenContent(currentScreen)}
           </Animated.View>
