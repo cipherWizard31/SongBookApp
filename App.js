@@ -95,24 +95,11 @@ export default function App() {
   const currentPlayerRef = useRef(null);
 
   // ----------------------------------------------------
-  // FADE + SCALE TRANSITION
+  // INSTANT SCREEN SWITCHING (NO TRANSITIONS)
   // ----------------------------------------------------
   const navigateToScreen = (targetScreen) => {
-    if (targetScreen === currentScreen || isAnimatingRef.current) return;
-    isAnimatingRef.current = true;
-
-    // Reset to invisible
-    fadeAnim.setValue(0);
-    setCurrentScreen(targetScreen); // content + navbar update instantly
-
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => {
-      isAnimatingRef.current = false;
-    });
+    if (targetScreen === currentScreen) return;
+    setCurrentScreen(targetScreen);
   };
 
   // Start worship service — navigate to setlists and trigger performance mode
@@ -570,15 +557,9 @@ export default function App() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
         <Header theme={theme} onNavigateToProfile={() => navigateToScreen('profile')} />
 
-        {/* Fade + Scale transition */}
+        {/* Direct Screen Content (No Transition Animations) */}
         <View style={{ flex: 1 }}>
-          <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              { opacity: fadeAnim },
-            ]}>
-            {renderScreenContent(currentScreen)}
-          </Animated.View>
+          {renderScreenContent(currentScreen)}
         </View>
 
         {/* Bottom Navigation Bar */}

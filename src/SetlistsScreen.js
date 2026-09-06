@@ -1,9 +1,19 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  StyleSheet, Text, View, TouchableOpacity, FlatList,
-  Modal, TextInput, ScrollView, Alert, Platform, Dimensions, Linking,
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  FlatList,
+  Modal,
+  TextInput,
+  ScrollView,
+  Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -11,6 +21,11 @@ import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
+
+// Design Accent Tokens
+const AMBER = '#E5A93C';
+const CYAN = '#38BDF8';
+const BURG = '#862633';
 
 export const SetlistsScreen = ({
   setlists = [],
@@ -53,7 +68,7 @@ export const SetlistsScreen = ({
     setCurrentPerfIndex(0);
     setPerfTransposeKey(0);
     setPerformanceModeVisible(true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartPerformanceSetlistId]);
 
   // ----------------------------------------------------
@@ -68,7 +83,7 @@ export const SetlistsScreen = ({
     const newSetlist = {
       id: Date.now().toString(),
       title: setlistTitle.trim(),
-      description: setlistDesc.trim() || new Date().toLocaleDateString(),
+      description: setlistDesc.trim(),
       songIds: [],
     };
 
@@ -194,25 +209,25 @@ export const SetlistsScreen = ({
     const activeSetlistSongs = songs.filter((s) => selectedSetlist.songIds.includes(s.id));
 
     return (
-      <View style={[styles.root, { backgroundColor: theme.bg }]}>
+      <View style={[st.root, { backgroundColor: theme.bg }]}>
         {/* Top navigation row */}
-        <View style={[styles.topBar, { borderBottomColor: theme.divider }]}>
+        <View style={[st.topBar, { borderBottomColor: theme.divider }]}>
           <TouchableOpacity
-            style={styles.barBtn}
+            style={st.iconBarBtn}
             onPress={() => setSelectedSetlist(null)}
             accessibilityRole="button"
             accessibilityLabel="Back to setlists">
-            <Text style={[styles.barBtnText, { color: theme.text }]}>‹ Setlists</Text>
+            <Ionicons name="chevron-back" size={24} color={theme.text} />
           </TouchableOpacity>
 
-          <View style={styles.barCenter}>
-            <Text style={[styles.barTitle, { color: theme.text }]} numberOfLines={1}>
+          <View style={st.barCenter}>
+            <Text style={[st.barTitle, { color: theme.text }]} numberOfLines={1}>
               {selectedSetlist.title}
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.barBtn}
+            style={[st.iconBarBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
             onPress={() => {
               Alert.alert(
                 'Delete Setlist',
@@ -230,86 +245,109 @@ export const SetlistsScreen = ({
                 ]
               );
             }}>
-            <Text style={styles.destructiveText}>Delete</Text>
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
           </TouchableOpacity>
         </View>
 
-        {/* Setlist info header */}
-        <View style={[styles.detailHeader, { borderBottomColor: theme.divider }]}>
-          <Text style={[styles.detailDesc, { color: theme.subText }]}>
-            {selectedSetlist.description} · {activeSetlistSongs.length} {activeSetlistSongs.length === 1 ? 'song' : 'songs'}
-          </Text>
+        {/* Setlist info hero header card */}
+        <View style={[st.detailHeroCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={st.heroHeaderTop}>
+            <View style={[st.heroIconBox, { backgroundColor: `${AMBER}18` }]}>
+              <Ionicons name="list" size={22} color={AMBER} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[st.heroTitle, { color: theme.text }]} numberOfLines={1}>
+                {selectedSetlist.title}
+              </Text>
+              {selectedSetlist.description ? (
+                <Text style={[st.heroDesc, { color: theme.subText }]} numberOfLines={1}>
+                  {selectedSetlist.description}
+                </Text>
+              ) : null}
+            </View>
+            <View style={[st.songCountBadge, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+              <Ionicons name="musical-notes-outline" size={12} color={AMBER} style={{ marginRight: 4 }} />
+              <Text style={[st.songCountText, { color: theme.text }]}>
+                {activeSetlistSongs.length} {activeSetlistSongs.length === 1 ? 'song' : 'songs'}
+              </Text>
+            </View>
+          </View>
 
-          {/* Action row */}
-          <View style={styles.actionRow}>
+          {/* Primary Action Buttons */}
+          <View style={st.heroActionRow}>
             {activeSetlistSongs.length > 0 && (
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: theme.fabBg }]}
+                style={[st.primaryPerfBtn, { backgroundColor: AMBER }]}
                 onPress={() => {
                   setCurrentPerfIndex(0);
                   setPerfTransposeKey(0);
                   setPerformanceModeVisible(true);
-                }}>
-                <Text style={[styles.actionBtnText, { color: theme.fabText }]}>
-                  Performance mode
-                </Text>
+                }}
+                activeOpacity={0.85}>
+                <Ionicons name="play-circle" size={18} color="#1E1909" style={{ marginRight: 6 }} />
+                <Text style={st.primaryPerfBtnText}>Start Worship</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}
+              style={[st.heroSecondaryBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
               onPress={() => {
                 setSongSearchQuery('');
                 setAddSongsModalVisible(true);
-              }}>
-              <Text style={[styles.actionBtnText, { color: theme.text }]}>
-                + Add songs
-              </Text>
+              }}
+              activeOpacity={0.7}>
+              <Ionicons name="add-circle-outline" size={17} color={theme.text} style={{ marginRight: 5 }} />
+              <Text style={[st.heroSecondaryBtnText, { color: theme.text }]}>Add Songs</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}
-              onPress={() => handleExportSetlist(selectedSetlist)}>
-              <Text style={[styles.actionBtnText, { color: theme.text }]}>
-                Export
-              </Text>
+              style={[st.heroIconBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+              onPress={() => handleExportSetlist(selectedSetlist)}
+              activeOpacity={0.7}>
+              <Ionicons name="share-outline" size={18} color={theme.text} />
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Songs List Header */}
+        <View style={st.sectionSubHeader}>
+          <Text style={[st.sectionSubTitle, { color: theme.subText }]}>SETLIST SONGS ({activeSetlistSongs.length})</Text>
         </View>
 
         {/* Songs List */}
         <FlatList
           data={activeSetlistSongs}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48 }}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={[styles.emptyTitle, { color: theme.subText }]}>Setlist is empty</Text>
-              <Text style={[styles.emptyHint, { color: theme.subText }]}>
-                Tap "+ Add songs" to select songs for this setlist
+            <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Ionicons name="folder-open-outline" size={32} color={theme.subText} style={{ marginBottom: 8 }} />
+              <Text style={[st.emptyTitle, { color: theme.text }]}>Setlist is empty</Text>
+              <Text style={[st.emptyHint, { color: theme.subText }]}>
+                Tap "+ Add Songs" above to select songs for this worship service setlist.
               </Text>
             </View>
           }
-          ItemSeparatorComponent={() => (
-            <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 52 }]} />
-          )}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item, index }) => (
-            <View style={[styles.songRow, { backgroundColor: theme.bg }]}>
-              <Text style={[styles.songNum, { color: theme.subText }]}>{index + 1}</Text>
-              <View style={styles.songText}>
-                <Text style={[styles.songTitle, { color: theme.text }]} numberOfLines={1}>
+            <View style={[st.songCardRow, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <View style={[st.indexBadge, { backgroundColor: theme.secondaryBg }]}>
+                <Text style={[st.indexBadgeText, { color: AMBER }]}>{index + 1}</Text>
+              </View>
+              <View style={st.songText}>
+                <Text style={[st.songTitle, { color: theme.text }]} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <Text style={[styles.songSub, { color: theme.subText }]} numberOfLines={1}>
+                <Text style={[st.songSub, { color: theme.subText }]} numberOfLines={1}>
                   {[item.author, item.scale, item.style].filter(Boolean).join(' · ')}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.removeBtn}
+                style={st.removeBtn}
                 onPress={() => toggleSongInSetlist(item.id)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityLabel="Remove song from setlist">
-                <Text style={[styles.removeGlyph, { color: theme.subText }]}>✕</Text>
+                <Ionicons name="close-circle" size={20} color={theme.subText} />
               </TouchableOpacity>
             </View>
           )}
@@ -321,28 +359,30 @@ export const SetlistsScreen = ({
           animationType="slide"
           transparent
           onRequestClose={() => setAddSongsModalVisible(false)}>
-          <View style={styles.sheetOverlay}>
+          <View style={st.sheetOverlay}>
             <TouchableOpacity
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={() => setAddSongsModalVisible(false)}
             />
-            <View style={[styles.sheet, { backgroundColor: theme.bg }]}>
-              <View style={[styles.handle, { backgroundColor: theme.border }]} />
+            <View style={[st.sheet, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <View style={[st.handle, { backgroundColor: theme.border }]} />
 
-              <View style={[styles.sheetHeader, { borderBottomColor: theme.divider }]}>
-                <Text style={[styles.sheetTitle, { color: theme.text }]}>Add Songs</Text>
-                <TouchableOpacity onPress={() => setAddSongsModalVisible(false)}>
-                  <Text style={[styles.sheetDone, { color: theme.text }]}>Done</Text>
+              <View style={[st.sheetHeader, { borderBottomColor: theme.divider }]}>
+                <Text style={[st.sheetTitle, { color: theme.text }]}>Add Songs to Setlist</Text>
+                <TouchableOpacity
+                  style={[st.doneChipBtn, { backgroundColor: AMBER }]}
+                  onPress={() => setAddSongsModalVisible(false)}>
+                  <Text style={st.doneChipText}>Done</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Search Bar */}
-              <View style={styles.modalSearchWrap}>
-                <View style={[styles.modalSearchBar, { backgroundColor: theme.cardBg }]}>
-                  <Text style={[styles.searchGlyph, { color: theme.subText }]}>⌕</Text>
+              <View style={st.modalSearchWrap}>
+                <View style={[st.modalSearchBar, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+                  <Ionicons name="search-outline" size={18} color={theme.subText} style={{ marginRight: 8 }} />
                   <TextInput
-                    style={[styles.modalSearchInput, { color: theme.text }]}
+                    style={[st.modalSearchInput, { color: theme.text }]}
                     placeholder="Search title, artist, or style…"
                     placeholderTextColor={theme.subText}
                     value={songSearchQuery}
@@ -350,35 +390,46 @@ export const SetlistsScreen = ({
                     returnKeyType="search"
                     autoCorrect={false}
                   />
+                  {songSearchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSongSearchQuery('')}>
+                      <Ionicons name="close-circle" size={16} color={theme.subText} />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
               <FlatList
                 data={filteredSongs}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 24 }}
-                ItemSeparatorComponent={() => (
-                  <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 16 }]} />
-                )}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28 }}
+                ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                 renderItem={({ item }) => {
                   const isSelected = selectedSetlist.songIds.includes(item.id);
 
                   return (
                     <TouchableOpacity
-                      activeOpacity={0.6}
-                      style={[styles.selectRow, { backgroundColor: theme.bg }]}
+                      activeOpacity={0.7}
+                      style={[
+                        st.selectRowCard,
+                        {
+                          backgroundColor: isSelected ? `${AMBER}12` : theme.secondaryBg,
+                          borderColor: isSelected ? `${AMBER}50` : theme.border,
+                        },
+                      ]}
                       onPress={() => toggleSongInSetlist(item.id)}>
                       <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text style={[styles.songTitle, { color: theme.text }]} numberOfLines={1}>
+                        <Text style={[st.songTitle, { color: theme.text }]} numberOfLines={1}>
                           {item.title}
                         </Text>
-                        <Text style={[styles.songSub, { color: theme.subText }]} numberOfLines={1}>
+                        <Text style={[st.songSub, { color: theme.subText }]} numberOfLines={1}>
                           {[item.author, item.style].filter(Boolean).join(' · ')}
                         </Text>
                       </View>
-                      <Text style={[styles.checkGlyph, { color: isSelected ? theme.text : theme.subText }]}>
-                        {isSelected ? '✓' : '+'}
-                      </Text>
+                      <Ionicons
+                        name={isSelected ? 'checkmark-circle' : 'add-circle-outline'}
+                        size={24}
+                        color={isSelected ? AMBER : theme.subText}
+                      />
                     </TouchableOpacity>
                   );
                 }}
@@ -396,56 +447,59 @@ export const SetlistsScreen = ({
           <StatusBar style={isDarkMode ? 'light' : 'dark'} />
           <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
             {/* Top Toolbar */}
-            <View style={[styles.perfTopBar, { borderBottomColor: theme.divider }]}>
+            <View style={[st.perfTopBar, { borderBottomColor: theme.divider }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.perfTitle, { color: theme.text }]}>
+                <Text style={[st.perfTitle, { color: theme.text }]}>
                   {currentPerfIndex + 1} of {activeSetlistSongs.length}
                 </Text>
-                <Text style={[styles.perfSub, { color: theme.subText }]} numberOfLines={1}>
+                <Text style={[st.perfSub, { color: theme.subText }]} numberOfLines={1}>
                   {selectedSetlist?.title}
                 </Text>
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <TouchableOpacity
-                  style={[styles.toggleBtn, { borderColor: theme.border }]}
+                  style={[st.toggleBtn, { backgroundColor: perfShowChords ? CYAN : theme.cardBg, borderColor: perfShowChords ? CYAN : theme.border }]}
                   onPress={() => setPerfShowChords(!perfShowChords)}>
-                  <Text style={[styles.toggleLabel, { color: theme.text }]}>
-                    {perfShowChords ? 'Hide chords' : 'Show chords'}
+                  <Ionicons name="musical-note" size={13} color={perfShowChords ? '#001E2C' : theme.subText} style={{ marginRight: 4 }} />
+                  <Text style={[st.toggleLabel, { color: perfShowChords ? '#001E2C' : theme.text }]}>
+                    {perfShowChords ? 'Hide Chords' : 'Chords'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  style={[st.perfExitPill, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
                   onPress={() => setPerformanceModeVisible(false)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.barBtnText, { color: theme.text }]}>Exit</Text>
+                  <Ionicons name="contract-outline" size={14} color={theme.text} style={{ marginRight: 4 }} />
+                  <Text style={[st.perfExitPillText, { color: theme.text }]}>Exit</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Sub Bar: Transpose Key Controls */}
-            <View style={[styles.perfSubBar, { backgroundColor: theme.secondaryBg, borderBottomColor: theme.divider }]}>
-              <View style={styles.keyControls}>
-                <Text style={[styles.toolbarLabel, { color: theme.subText }]}>Key</Text>
+            <View style={[st.perfSubBar, { backgroundColor: theme.secondaryBg, borderBottomColor: theme.divider }]}>
+              <View style={st.keyControls}>
+                <Text style={[st.toolbarLabel, { color: theme.subText }]}>KEY</Text>
                 <TouchableOpacity
-                  style={[styles.stepBtn, { backgroundColor: theme.cardBg }]}
+                  style={[st.stepBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                   onPress={() => setPerfTransposeKey((k) => k - 1)}>
-                  <Text style={[styles.stepBtnLabel, { color: theme.text }]}>−</Text>
+                  <Text style={[st.stepBtnLabel, { color: theme.text }]}>−</Text>
                 </TouchableOpacity>
-                <Text style={[styles.keyValue, { color: theme.text }]}>
-                  {perfTransposeKey > 0 ? `+${perfTransposeKey}` : perfTransposeKey}
+                <Text style={[st.keyValue, { color: AMBER }]}>
+                  {perfTransposeKey === 0 ? 'Orig' : perfTransposeKey > 0 ? `+${perfTransposeKey}` : perfTransposeKey}
                 </Text>
                 <TouchableOpacity
-                  style={[styles.stepBtn, { backgroundColor: theme.cardBg }]}
+                  style={[st.stepBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                   onPress={() => setPerfTransposeKey((k) => k + 1)}>
-                  <Text style={[styles.stepBtnLabel, { color: theme.text }]}>+</Text>
+                  <Text style={[st.stepBtnLabel, { color: theme.text }]}>+</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
                   disabled={currentPerfIndex === 0}
-                  style={[styles.navStepBtn, { opacity: currentPerfIndex === 0 ? 0.3 : 1 }]}
+                  style={[st.navStepBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, opacity: currentPerfIndex === 0 ? 0.3 : 1 }]}
                   onPress={() => {
                     if (currentPerfIndex > 0) {
                       const next = currentPerfIndex - 1;
@@ -453,12 +507,12 @@ export const SetlistsScreen = ({
                       perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
                     }
                   }}>
-                  <Text style={[styles.navStepLabel, { color: theme.text }]}>‹ Prev</Text>
+                  <Text style={[st.navStepLabel, { color: theme.text }]}>‹ Prev</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   disabled={currentPerfIndex >= activeSetlistSongs.length - 1}
-                  style={[styles.navStepBtn, { opacity: currentPerfIndex >= activeSetlistSongs.length - 1 ? 0.3 : 1 }]}
+                  style={[st.navStepBtn, { backgroundColor: theme.cardBg, borderColor: theme.border, opacity: currentPerfIndex >= activeSetlistSongs.length - 1 ? 0.3 : 1 }]}
                   onPress={() => {
                     if (currentPerfIndex < activeSetlistSongs.length - 1) {
                       const next = currentPerfIndex + 1;
@@ -466,7 +520,7 @@ export const SetlistsScreen = ({
                       perfFlatListRef.current?.scrollToIndex({ index: next, animated: true });
                     }
                   }}>
-                  <Text style={[styles.navStepLabel, { color: theme.text }]}>Next ›</Text>
+                  <Text style={[st.navStepLabel, { color: theme.text }]}>Next ›</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -489,32 +543,24 @@ export const SetlistsScreen = ({
                 const sub = [item.author, item.scale, item.style].filter(Boolean).join(' · ');
 
                 return (
-                  <View style={{ width: windowWidth, flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
-                    <Text style={[styles.perfSongTitle, { color: theme.text }]}>
+                  <View style={{ width: windowWidth, flex: 1, paddingHorizontal: 20, paddingTop: 20 }}>
+                    <Text style={[st.perfSongTitle, { color: theme.text }]}>
                       {index + 1}. {item.title}
                     </Text>
                     {sub ? (
-                      <Text style={[styles.perfSongSub, { color: theme.subText }]}>
+                      <Text style={[st.perfSongSub, { color: theme.subText }]}>
                         {sub}
                       </Text>
                     ) : null}
 
-                    <AudioPreviewBanner
-                      audioUrl={item.audioUrl || item.audioUri}
-                      onPressPlay={(url) => Linking.openURL(url).catch(() => Alert.alert('Unable to open URL', url))}
-                      isDarkMode={isDarkMode}
-                      theme={theme}
-                    />
-
-                    <ScrollView
-                      style={{ flex: 1, marginTop: 8 }}
-                      contentContainerStyle={{ paddingBottom: 48 }}>
+                    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
                       <SongContentViewer
                         content={item.content !== undefined ? item.content : migrateSongToInline(item)}
                         semitones={perfTransposeKey}
                         showChords={perfShowChords}
                         themeState={theme}
                         isDarkMode={isDarkMode}
+                        fontSize={18}
                       />
                     </ScrollView>
                   </View>
@@ -531,24 +577,26 @@ export const SetlistsScreen = ({
   // MAIN SCREEN: SETLISTS OVERVIEW LIST
   // ----------------------------------------------------
   return (
-    <View style={[styles.root, { backgroundColor: theme.bg }]}>
+    <View style={[st.root, { backgroundColor: theme.bg }]}>
       {/* Top action bar */}
-      <View style={[styles.headerRow, { borderBottomColor: theme.divider }]}>
-        <Text style={[styles.screenTitle, { color: theme.text }]}>Setlists</Text>
+      <View style={[st.headerRow, { borderBottomColor: theme.divider }]}>
+        <Text style={[st.screenTitle, { color: theme.text }]}>Setlists</Text>
 
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
           <TouchableOpacity
+            style={[st.headerActionBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
             onPress={handleImportSetlist}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={[styles.headerAction, { color: theme.text }]}>Import</Text>
+            activeOpacity={0.7}>
+            <Ionicons name="download-outline" size={15} color={theme.text} style={{ marginRight: 4 }} />
+            <Text style={[st.headerActionText, { color: theme.text }]}>Import</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[st.headerActionBtnPrimary, { backgroundColor: AMBER }]}
             onPress={() => setCreateModalVisible(true)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={[styles.headerAction, styles.headerActionPrimary, { color: theme.text }]}>
-              + New Set
-            </Text>
+            activeOpacity={0.85}>
+            <Ionicons name="add" size={16} color="#1E1909" style={{ marginRight: 2 }} />
+            <Text style={st.headerActionPrimaryText}>New Set</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -557,38 +605,48 @@ export const SetlistsScreen = ({
       <FlatList
         data={setlists}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 96 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 96 }}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyTitle, { color: theme.subText }]}>No setlists</Text>
-            <Text style={[styles.emptyHint, { color: theme.subText }]}>
-              Tap "+ New Set" or "Import" to create your first setlist
+          <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Ionicons name="albums-outline" size={36} color={theme.subText} style={{ marginBottom: 10 }} />
+            <Text style={[st.emptyTitle, { color: theme.text }]}>No Setlists Yet</Text>
+            <Text style={[st.emptyHint, { color: theme.subText }]}>
+              Tap "+ New Set" or "Import" above to create setlists for your worship services.
             </Text>
           </View>
         }
-        ItemSeparatorComponent={() => (
-          <View style={[styles.sep, { backgroundColor: theme.divider, marginLeft: 16 }]} />
-        )}
         renderItem={({ item }) => {
           const songCount = item.songIds ? item.songIds.length : 0;
           const isImported = item.isImported || item.title?.includes('(Imported)');
 
           return (
             <TouchableOpacity
-              activeOpacity={0.55}
-              style={[styles.setlistRow, { backgroundColor: theme.bg }]}
+              activeOpacity={0.7}
+              style={[st.setlistCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
               onPress={() => setSelectedSetlist(item)}>
-              <View style={styles.setlistText}>
-                <Text style={[styles.setlistTitle, { color: theme.text }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={[styles.setlistSub, { color: theme.subText }]} numberOfLines={1}>
-                  {songCount} {songCount === 1 ? 'song' : 'songs'}
-                  {isImported ? ' · imported' : ''}
-                </Text>
+
+              <View style={[st.setlistCardIcon, { backgroundColor: `${AMBER}18` }]}>
+                <Ionicons name="list" size={20} color={AMBER} />
               </View>
 
-              <Text style={[styles.chevron, { color: theme.subText }]}>›</Text>
+              <View style={st.setlistText}>
+                <Text style={[st.setlistTitle, { color: theme.text }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <View style={st.setlistBadgeRow}>
+                  <Text style={[st.setlistSub, { color: theme.subText }]} numberOfLines={1}>
+                    {songCount} {songCount === 1 ? 'song' : 'songs'}
+                  </Text>
+                  {isImported && (
+                    <View style={[st.importedChip, { backgroundColor: `${CYAN}18`, borderColor: `${CYAN}40` }]}>
+                      <Text style={[st.importedChipText, { color: CYAN }]}>imported</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <Ionicons name="chevron-forward" size={18} color={theme.subText} />
             </TouchableOpacity>
           );
         }}
@@ -600,29 +658,31 @@ export const SetlistsScreen = ({
         animationType="slide"
         transparent
         onRequestClose={() => setCreateModalVisible(false)}>
-        <View style={styles.sheetOverlay}>
+        <View style={st.sheetOverlay}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => setCreateModalVisible(false)}
           />
-          <View style={[styles.sheet, { backgroundColor: theme.bg }]}>
-            <View style={[styles.handle, { backgroundColor: theme.border }]} />
+          <View style={[st.sheet, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[st.handle, { backgroundColor: theme.border }]} />
 
-            <View style={[styles.sheetHeader, { borderBottomColor: theme.divider }]}>
+            <View style={[st.sheetHeader, { borderBottomColor: theme.divider }]}>
               <TouchableOpacity onPress={() => setCreateModalVisible(false)}>
-                <Text style={[styles.sheetCancel, { color: theme.subText }]}>Cancel</Text>
+                <Text style={[st.sheetCancel, { color: theme.subText }]}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: theme.text }]}>New Setlist</Text>
-              <TouchableOpacity onPress={handleCreateSetlist}>
-                <Text style={[styles.sheetDone, { color: theme.text }]}>Save</Text>
+              <Text style={[st.sheetTitle, { color: theme.text }]}>New Setlist</Text>
+              <TouchableOpacity
+                style={[st.doneChipBtn, { backgroundColor: AMBER }]}
+                onPress={handleCreateSetlist}>
+                <Text style={st.doneChipText}>Save</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.formPadding} keyboardShouldPersistTaps="handled">
-              <Text style={[styles.label, { color: theme.subText }]}>Title *</Text>
+            <ScrollView contentContainerStyle={st.formPadding} keyboardShouldPersistTaps="handled">
+              <Text style={[st.label, { color: theme.subText }]}>TITLE *</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
+                style={[st.input, { backgroundColor: theme.secondaryBg, borderColor: theme.border, color: theme.text }]}
                 placeholder="e.g. Sunday Morning Worship"
                 placeholderTextColor={theme.subText}
                 value={setlistTitle}
@@ -630,9 +690,9 @@ export const SetlistsScreen = ({
                 returnKeyType="next"
               />
 
-              <Text style={[styles.label, { color: theme.subText }]}>Notes / Date</Text>
+              <Text style={[st.label, { color: theme.subText }]}>NOTES / DATE</Text>
               <TextInput
-                style={[styles.input, { backgroundColor: theme.cardBg, borderColor: theme.border, color: theme.text }]}
+                style={[st.input, { backgroundColor: theme.secondaryBg, borderColor: theme.border, color: theme.text }]}
                 placeholder="e.g. Main Sanctuary, 10:00 AM"
                 placeholderTextColor={theme.subText}
                 value={setlistDesc}
@@ -641,9 +701,11 @@ export const SetlistsScreen = ({
               />
 
               <TouchableOpacity
-                style={[styles.saveBtn, { backgroundColor: theme.fabBg }]}
-                onPress={handleCreateSetlist}>
-                <Text style={[styles.saveBtnText, { color: theme.fabText }]}>Create Setlist</Text>
+                style={[st.saveBtn, { backgroundColor: AMBER }]}
+                onPress={handleCreateSetlist}
+                activeOpacity={0.85}>
+                <Ionicons name="checkmark-circle-outline" size={18} color="#1E1909" style={{ marginRight: 6 }} />
+                <Text style={st.saveBtnText}>Create Setlist</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -653,7 +715,7 @@ export const SetlistsScreen = ({
   );
 };
 
-const styles = StyleSheet.create({
+const st = StyleSheet.create({
   root: { flex: 1 },
 
   // Top header row
@@ -661,151 +723,314 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  screenTitle: { fontSize: 18, fontWeight: '600' },
-  headerAction: { fontSize: 15, fontWeight: '400' },
-  headerActionPrimary: { fontWeight: '600' },
+  screenTitle: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  headerActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  headerActionText: { fontSize: 13, fontWeight: '600' },
+  headerActionBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  headerActionPrimaryText: { fontSize: 13, fontWeight: '700', color: '#1E1909' },
 
-  // List rows
-  sep: { height: StyleSheet.hairlineWidth },
-  setlistRow: {
+  // Setlist Overview Cards
+  setlistCard: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 64,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  setlistCardIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
   setlistText: { flex: 1, paddingRight: 12 },
-  setlistTitle: { fontSize: 15, fontWeight: '500' },
-  setlistSub: { fontSize: 13, marginTop: 2 },
-  chevron: { fontSize: 22, fontWeight: '300' },
+  setlistTitle: { fontSize: 16, fontWeight: '600', marginBottom: 3 },
+  setlistBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  setlistSub: { fontSize: 13, fontWeight: '400' },
+  importedChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  importedChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
 
-  // Empty state
-  empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
-  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
-  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  // Empty State Card
+  emptyCard: {
+    padding: 32,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', marginBottom: 6 },
+  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
 
-  // Setlist Detail View
+  // Top Bar in Detail View
   topBar: {
-    height: 52,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  barBtn: { width: 80, height: 48, justifyContent: 'center', alignItems: 'center' },
-  barBtnText: { fontSize: 15, fontWeight: '400' },
-  barCenter: { flex: 1, alignItems: 'center' },
-  barTitle: { fontSize: 15, fontWeight: '600' },
-  destructiveText: { fontSize: 15, fontWeight: '400', color: '#C0392B' },
+  iconBarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  barCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 12 },
+  barTitle: { fontSize: 16, fontWeight: '700' },
 
-  detailHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  // Hero Card in Detail View
+  detailHeroCard: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
   },
-  detailDesc: { fontSize: 13, marginBottom: 12 },
-  actionRow: { flexDirection: 'row', gap: 8 },
-  actionBtn: {
+  heroHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  heroTitle: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
+  heroDesc: { fontSize: 13 },
+  songCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 99,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  songCountText: { fontSize: 11, fontWeight: '700' },
+
+  heroActionRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  primaryPerfBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  primaryPerfBtnText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+  heroSecondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderWidth: 1,
   },
-  actionBtnText: { fontSize: 13, fontWeight: '500' },
+  heroSecondaryBtnText: { fontSize: 13, fontWeight: '600' },
+  heroIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
 
-  // Songs list inside setlist
-  songRow: {
+  // Section Sub Header
+  sectionSubHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  sectionSubTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
+
+  // Song Row in Setlist Detail
+  songCardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minHeight: 56,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  songNum: { width: 28, fontSize: 14, fontWeight: '400', textAlign: 'center' },
-  songText: { flex: 1, paddingHorizontal: 8 },
-  songTitle: { fontSize: 15, fontWeight: '500' },
-  songSub: { fontSize: 13, marginTop: 2 },
-  removeBtn: { padding: 8 },
-  removeGlyph: { fontSize: 14 },
+  indexBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  indexBadgeText: { fontSize: 13, fontWeight: '700' },
+  songText: { flex: 1, paddingRight: 8 },
+  songTitle: { fontSize: 15, fontWeight: '600' },
+  songSub: { fontSize: 12, marginTop: 2 },
+  removeBtn: { padding: 4 },
 
-  // Sheet modals
+  // Sheet Modal Overlay
   sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    borderBottomWidth: 0,
     maxHeight: '88%',
-    elevation: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
   },
   handle: {
-    width: 36, height: 4, borderRadius: 2,
-    alignSelf: 'center', marginTop: 10, marginBottom: 2,
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
   sheetHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  sheetTitle: { fontSize: 15, fontWeight: '600' },
-  sheetCancel: { fontSize: 15, fontWeight: '400' },
-  sheetDone: { fontSize: 15, fontWeight: '600' },
-
-  // Form
-  formPadding: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
-  label: { fontSize: 12, fontWeight: '500', marginTop: 12, marginBottom: 6, letterSpacing: 0.4 },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15 },
-  saveBtn: { marginTop: 24, height: 48, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  saveBtnText: { fontSize: 15, fontWeight: '600' },
-
-  // Add songs modal search
-  modalSearchWrap: { paddingHorizontal: 16, paddingVertical: 8 },
-  modalSearchBar: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 12, height: 44 },
-  searchGlyph: { fontSize: 18, marginRight: 8 },
-  modalSearchInput: { flex: 1, fontSize: 16, padding: 0 },
-  selectRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  checkGlyph: { fontSize: 18, fontWeight: '600' },
-
-  // Performance mode
-  perfTopBar: {
-    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  perfTitle: { fontSize: 15, fontWeight: '600' },
+  sheetTitle: { fontSize: 16, fontWeight: '700' },
+  sheetCancel: { fontSize: 14, fontWeight: '500' },
+  doneChipBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 99,
+  },
+  doneChipText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+
+  // Add Songs Search
+  modalSearchWrap: { paddingHorizontal: 16, paddingVertical: 12 },
+  modalSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  modalSearchInput: { flex: 1, fontSize: 14, padding: 0 },
+  selectRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+
+  // Create Form
+  formPadding: { padding: 18, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
+  label: { fontSize: 10, fontWeight: '700', marginTop: 14, marginBottom: 6, letterSpacing: 0.8 },
+  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  saveBtn: {
+    marginTop: 24,
+    height: 46,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveBtnText: { color: '#1E1909', fontSize: 14, fontWeight: '700' },
+
+  // Performance Mode Modal
+  perfTopBar: {
+    height: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  perfTitle: { fontSize: 16, fontWeight: '700' },
   perfSub: { fontSize: 12, marginTop: 1 },
-  toggleBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1 },
-  toggleLabel: { fontSize: 12, fontWeight: '500' },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  toggleLabel: { fontSize: 12, fontWeight: '700' },
+  perfExitPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  perfExitPillText: { fontSize: 12, fontWeight: '600' },
 
   perfSubBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  keyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  toolbarLabel: { fontSize: 12, fontWeight: '500' },
-  stepBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  stepBtnLabel: { fontSize: 18, fontWeight: '300' },
-  keyValue: { fontSize: 15, fontWeight: '600', minWidth: 24, textAlign: 'center' },
-  navStepBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  navStepLabel: { fontSize: 14, fontWeight: '500' },
+  keyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  toolbarLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  stepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepBtnLabel: { fontSize: 16, fontWeight: '600' },
+  keyValue: { fontSize: 13, fontWeight: '700', minWidth: 32, textAlign: 'center' },
+  navStepBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  navStepLabel: { fontSize: 13, fontWeight: '600' },
 
-  perfSongTitle: { fontSize: 20, fontWeight: '600', marginBottom: 4 },
-  perfSongSub: { fontSize: 13, marginBottom: 12 },
+  perfSongTitle: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  perfSongSub: { fontSize: 13, marginBottom: 16 },
 });
+
+export default SetlistsScreen;

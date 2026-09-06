@@ -4,14 +4,14 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AlbumsScreen } from './AlbumsScreen';
 import { ArtistsScreen } from './ArtistsScreen';
 import { SettingsScreen } from './SettingsScreen';
-import { SongsScreen } from './SongsScreen';
+
+const AMBER = '#E5A93C';
+const CYAN = '#38BDF8';
 
 export const ProfileScreen = ({
   songs = [],
@@ -33,106 +33,112 @@ export const ProfileScreen = ({
   setIsDarkMode,
   theme,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('songs');
+  const [activeSubTab, setActiveSubTab] = useState('albums');
 
-  // Count unique albums and artists
+  // Compute unique metrics
   const uniqueAlbums = Array.from(new Set(songs.map((s) => s.album).filter(Boolean)));
   const uniqueArtists = Array.from(new Set(songs.map((s) => s.author).filter(Boolean)));
+
+  const subTabs = [
+    { id: 'albums', label: 'Albums', icon: 'albums' },
+    { id: 'artists', label: 'Artists', icon: 'people' },
+    { id: 'settings', label: 'Settings', icon: 'settings-sharp' },
+  ];
 
   return (
     <View style={[st.container, { backgroundColor: theme.bg }]}>
 
-      {/* ── PROFILE HEADER BANNER ── */}
-      <View style={[st.profileHeader, { backgroundColor: theme.secondaryBg, borderBottomColor: theme.border }]}>
+      {/* ── PROFILE HERO HEADER ── */}
+      <View style={[st.profileHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.divider }]}>
         <View style={st.profileInfoRow}>
-          <View style={[st.avatarTile, { backgroundColor: theme.cardBg, borderColor: theme.tint }]}>
-            <Ionicons name="person" size={28} color={theme.tint} />
+          <View style={[st.avatarRing, { borderColor: AMBER, backgroundColor: `${AMBER}15` }]}>
+            <Ionicons name="person-circle-sharp" size={48} color={AMBER} />
           </View>
 
           <View style={st.profileTextWrap}>
-            <Text style={[st.profileName, { color: theme.text }]}>Worship Musician</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[st.profileName, { color: theme.text }]}>Worship Musician</Text>
+              <Ionicons name="checkmark-circle" size={16} color={AMBER} />
+            </View>
             <Text style={[st.profileRole, { color: theme.subText }]}>
               Sanctuary Director • Selah Kignit
             </Text>
           </View>
         </View>
 
-        {/* Quick Library Counter Pills */}
-        <View style={st.statsRow}>
-          <TouchableOpacity
-            style={[st.statPill, activeSubTab === 'songs' && { borderColor: theme.tint, backgroundColor: theme.cardBg }]}
-            onPress={() => setActiveSubTab('songs')}>
+        {/* ── STATS OVERVIEW CARDS ── */}
+        <View style={st.statsGrid}>
+          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+            <Ionicons name="musical-notes-outline" size={16} color={AMBER} style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{songs.length}</Text>
             <Text style={[st.statLabel, { color: theme.subText }]}>Songs</Text>
-          </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
-            style={[st.statPill, activeSubTab === 'albums' && { borderColor: theme.tint, backgroundColor: theme.cardBg }]}
+            activeOpacity={0.7}
+            style={[
+              st.statCard,
+              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'albums' ? AMBER : theme.border },
+            ]}
             onPress={() => setActiveSubTab('albums')}>
+            <Ionicons name="albums-outline" size={16} color={CYAN} style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{uniqueAlbums.length}</Text>
             <Text style={[st.statLabel, { color: theme.subText }]}>Albums</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[st.statPill, activeSubTab === 'artists' && { borderColor: theme.tint, backgroundColor: theme.cardBg }]}
+            activeOpacity={0.7}
+            style={[
+              st.statCard,
+              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'artists' ? AMBER : theme.border },
+            ]}
             onPress={() => setActiveSubTab('artists')}>
+            <Ionicons name="people-outline" size={16} color="#A855F7" style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{uniqueArtists.length}</Text>
             <Text style={[st.statLabel, { color: theme.subText }]}>Artists</Text>
           </TouchableOpacity>
+
+          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+            <Ionicons name="list-outline" size={16} color="#34D399" style={{ marginBottom: 4 }} />
+            <Text style={[st.statValue, { color: theme.text }]}>{setlists.length}</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]}>Setlists</Text>
+          </View>
         </View>
 
-        {/* Segmented Sub-Tab Switcher */}
-        <View style={[st.subTabSegment, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-          <TouchableOpacity
-            style={[st.subTabBtn, activeSubTab === 'songs' && { backgroundColor: theme.tint }]}
-            onPress={() => setActiveSubTab('songs')}>
-            <Text style={[st.subTabBtnText, { color: activeSubTab === 'songs' ? (theme.fabText || '#101319') : theme.subText }]}>
-              Songs
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[st.subTabBtn, activeSubTab === 'albums' && { backgroundColor: theme.tint }]}
-            onPress={() => setActiveSubTab('albums')}>
-            <Text style={[st.subTabBtnText, { color: activeSubTab === 'albums' ? (theme.fabText || '#101319') : theme.subText }]}>
-              Albums
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[st.subTabBtn, activeSubTab === 'artists' && { backgroundColor: theme.tint }]}
-            onPress={() => setActiveSubTab('artists')}>
-            <Text style={[st.subTabBtnText, { color: activeSubTab === 'artists' ? (theme.fabText || '#101319') : theme.subText }]}>
-              Artists
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[st.subTabBtn, activeSubTab === 'settings' && { backgroundColor: theme.tint }]}
-            onPress={() => setActiveSubTab('settings')}>
-            <Text style={[st.subTabBtnText, { color: activeSubTab === 'settings' ? (theme.fabText || '#101319') : theme.subText }]}>
-              Settings
-            </Text>
-          </TouchableOpacity>
+        {/* ── SEGMENTED TAB SWITCHER ── */}
+        <View style={[st.subTabSegment, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+          {subTabs.map((tab) => {
+            const isActive = activeSubTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                activeOpacity={0.8}
+                style={[
+                  st.subTabBtn,
+                  isActive && { backgroundColor: AMBER },
+                ]}
+                onPress={() => setActiveSubTab(tab.id)}>
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={isActive ? '#1E1909' : theme.subText}
+                  style={{ marginRight: 5 }}
+                />
+                <Text
+                  style={[
+                    st.subTabBtnText,
+                    { color: isActive ? '#1E1909' : theme.subText, fontWeight: isActive ? '700' : '500' },
+                  ]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
       {/* ── TAB CONTENT ── */}
       <View style={st.contentArea}>
-        {activeSubTab === 'songs' && (
-          <SongsScreen
-            songs={songs}
-            styles={rhythmStyles}
-            scales={scales}
-            onSelectSong={onSelectSong}
-            onOpenNewSongModal={onOpenNewSongModal}
-            onClearImportedSongs={onClearImportedSongs}
-            onDeleteSong={onDeleteSong}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
-
         {activeSubTab === 'albums' && (
           <AlbumsScreen
             songs={songs}
@@ -162,7 +168,7 @@ export const ProfileScreen = ({
             setScales={setScales}
             handleExportSongs={handleExportSongs}
             handleImportSongs={handleImportSongs}
-            handleClearImportedSetlists={handleClearImportedSetlists}
+            handleClearImportedSetlists={onClearImportedSetlists}
             handleClearImportedSongs={onClearImportedSongs}
             handleClearAllImportedData={onClearAllImportedData}
             isDarkMode={isDarkMode}
@@ -181,19 +187,19 @@ const st = StyleSheet.create({
   profileHeader: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   profileInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
     gap: 14,
   },
-  avatarTile: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  avatarRing: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -202,56 +208,59 @@ const st = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
   profileRole: {
     fontSize: 13,
     marginTop: 2,
+    fontWeight: '400',
   },
 
-  // Stats Row
-  statsRow: {
+  // Stats Grid
+  statsGrid: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  statPill: {
+  statCard: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'transparent',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
+    lineHeight: 20,
   },
   statLabel: {
     fontSize: 11,
-    marginTop: 1,
+    marginTop: 2,
+    fontWeight: '500',
   },
 
   // Sub Tab Segment
   subTabSegment: {
     flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
   },
   subTabBtn: {
     flex: 1,
-    paddingVertical: 7,
-    borderRadius: 7,
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   subTabBtnText: {
     fontSize: 12,
-    fontWeight: '600',
   },
 
   contentArea: {

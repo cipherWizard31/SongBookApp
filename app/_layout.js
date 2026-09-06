@@ -6,8 +6,7 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right',
-        gestureEnabled: true,
+        animation: 'none',
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Home' }} />

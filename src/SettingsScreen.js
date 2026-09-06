@@ -3,6 +3,10 @@ import {
   View, Text, Switch, TouchableOpacity,
   StyleSheet, Modal, ScrollView, Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+const AMBER = '#E5A93C';
+const CYAN = '#38BDF8';
 
 export const SettingsScreen = ({
   theme, isDarkMode, setIsDarkMode, toggleDarkMode,
@@ -36,88 +40,108 @@ export const SettingsScreen = ({
 
   return (
     <ScrollView
-      style={[st.root, { backgroundColor: theme.secondaryBg }]}
+      style={[st.root, { backgroundColor: theme.bg }]}
       contentContainerStyle={st.content}>
 
       {/* ─── Section: Appearance ─── */}
-      <Text style={[st.sectionLabel, { color: theme.subText }]}>Appearance</Text>
-      <View style={[st.group, { backgroundColor: theme.bg, borderColor: theme.border }]}>
-        <View style={[st.row, { borderBottomColor: theme.divider }]}>
+      <Text style={[st.sectionLabel, { color: theme.subText }]}>APPEARANCE</Text>
+      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <View style={st.row}>
+          <View style={[st.rowIconBox, { backgroundColor: `${AMBER}18` }]}>
+            <Ionicons name="moon" size={18} color={AMBER} />
+          </View>
           <View style={st.rowLeft}>
             <Text style={[st.rowTitle, { color: theme.text }]}>Dark Mode</Text>
+            <Text style={[st.rowSub, { color: theme.subText }]}>Switch interface color theme</Text>
           </View>
           <Switch
             value={isDarkMode}
             onValueChange={onToggle}
-            trackColor={{ false: '#C7C7CC', true: '#34C759' }}
+            trackColor={{ false: '#334155', true: AMBER }}
             thumbColor="#FFFFFF"
           />
         </View>
       </View>
 
       {/* ─── Section: Library ─── */}
-      <Text style={[st.sectionLabel, { color: theme.subText }]}>Library</Text>
-      <View style={[st.group, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+      <Text style={[st.sectionLabel, { color: theme.subText }]}>LIBRARY ANALYTICS</Text>
+      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <TouchableOpacity
-          style={[st.row, st.rowPressable]}
+          activeOpacity={0.7}
+          style={st.rowPressable}
           onPress={() => setStatsVisible(true)}>
+          <View style={[st.rowIconBox, { backgroundColor: `${CYAN}18` }]}>
+            <Ionicons name="bar-chart" size={18} color={CYAN} />
+          </View>
           <View style={st.rowLeft}>
             <Text style={[st.rowTitle, { color: theme.text }]}>Song Statistics</Text>
             <Text style={[st.rowSub, { color: theme.subText }]}>
               {totalSongs} songs · {uniqueArtists} artists · {audioLinks} audio links
             </Text>
           </View>
-          <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
       </View>
 
       {/* ─── Section: Backup & Restore ─── */}
-      <Text style={[st.sectionLabel, { color: theme.subText }]}>Backup & Restore</Text>
-      <View style={[st.group, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+      <Text style={[st.sectionLabel, { color: theme.subText }]}>BACKUP & RESTORE</Text>
+      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <TouchableOpacity
-          style={[st.row, st.rowPressable, { borderBottomColor: theme.divider }]}
+          activeOpacity={0.7}
+          style={[st.rowPressable, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.divider }]}
           onPress={handleExportSongs}>
+          <View style={[st.rowIconBox, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
+            <Ionicons name="cloud-upload" size={18} color="#34D399" />
+          </View>
           <View style={st.rowLeft}>
             <Text style={[st.rowTitle, { color: theme.text }]}>Export Backup</Text>
             <Text style={[st.rowSub, { color: theme.subText }]}>
               Export full catalog and setlists as JSON
             </Text>
           </View>
-          <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[st.row, st.rowPressable]}
+          activeOpacity={0.7}
+          style={st.rowPressable}
           onPress={handleImportSongs}>
+          <View style={[st.rowIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+            <Ionicons name="cloud-download" size={18} color="#A855F7" />
+          </View>
           <View style={st.rowLeft}>
             <Text style={[st.rowTitle, { color: theme.text }]}>Import Backup</Text>
             <Text style={[st.rowSub, { color: theme.subText }]}>
               Restore full library from a backup JSON file
             </Text>
           </View>
-          <Text style={[st.chevron, { color: theme.subText }]}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
       </View>
 
       {/* ─── Section: Imported content (conditional) ─── */}
       {(importedSongs > 0 || importedSetlists > 0) && (
         <>
-          <Text style={[st.sectionLabel, { color: theme.subText }]}>Imported Content</Text>
+          <Text style={[st.sectionLabel, { color: theme.subText }]}>IMPORTED DATA MANAGEMENT</Text>
           <Text style={[st.sectionFooter, { color: theme.subText }]}>
             {importedSongs} imported song{importedSongs !== 1 ? 's' : ''} and{' '}
             {importedSetlists} imported setlist{importedSetlists !== 1 ? 's' : ''}
           </Text>
-          <View style={[st.group, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+          <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {importedSetlists > 0 && handleClearImportedSetlists && (
               <TouchableOpacity
-                style={[st.row, st.rowPressable, { borderBottomColor: theme.divider }]}
+                activeOpacity={0.7}
+                style={[st.rowPressable, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.divider }]}
                 onPress={handleClearImportedSetlists}>
+                <View style={[st.rowIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </View>
                 <View style={st.rowLeft}>
-                  <Text style={[st.rowTitle, { color: theme.destructive || '#FF3B30' }]}>
+                  <Text style={[st.rowTitle, { color: '#EF4444' }]}>
                     Remove Imported Setlists
                   </Text>
                   <Text style={[st.rowSub, { color: theme.subText }]}>
-                    Delete only setlists added via import
+                    Delete setlists added via import
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -125,17 +149,21 @@ export const SettingsScreen = ({
 
             {importedSongs > 0 && handleClearImportedSongs && (
               <TouchableOpacity
+                activeOpacity={0.7}
                 style={[
-                  st.row, st.rowPressable,
-                  handleClearAllImportedData && { borderBottomColor: theme.divider },
+                  st.rowPressable,
+                  handleClearAllImportedData && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.divider },
                 ]}
                 onPress={handleClearImportedSongs}>
+                <View style={[st.rowIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </View>
                 <View style={st.rowLeft}>
-                  <Text style={[st.rowTitle, { color: theme.destructive || '#FF3B30' }]}>
+                  <Text style={[st.rowTitle, { color: '#EF4444' }]}>
                     Remove Imported Songs
                   </Text>
                   <Text style={[st.rowSub, { color: theme.subText }]}>
-                    Delete only songs added via import
+                    Delete songs added via import
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -143,10 +171,14 @@ export const SettingsScreen = ({
 
             {handleClearAllImportedData && (
               <TouchableOpacity
-                style={[st.row, st.rowPressable]}
+                activeOpacity={0.7}
+                style={st.rowPressable}
                 onPress={handleClearAllImportedData}>
+                <View style={[st.rowIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                  <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
+                </View>
                 <View style={st.rowLeft}>
-                  <Text style={[st.rowTitle, { color: theme.destructive || '#FF3B30', fontWeight: '500' }]}>
+                  <Text style={[st.rowTitle, { color: '#EF4444', fontWeight: '600' }]}>
                     Remove All Imported Content
                   </Text>
                   <Text style={[st.rowSub, { color: theme.subText }]}>
@@ -159,7 +191,7 @@ export const SettingsScreen = ({
         </>
       )}
 
-      {/* ─── Statistics modal ─── */}
+      {/* ─── Statistics Modal ─── */}
       <Modal
         visible={statsVisible}
         animationType="slide"
@@ -171,28 +203,29 @@ export const SettingsScreen = ({
             activeOpacity={1}
             onPress={() => setStatsVisible(false)}
           />
-          <View style={[st.sheetWrap, { backgroundColor: theme.bg }]}>
+          <View style={[st.sheetWrap, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={[st.handle, { backgroundColor: theme.border }]} />
 
-            {/* Sheet header */}
             <View style={[st.sheetHeader, { borderBottomColor: theme.divider }]}>
               <Text style={[st.sheetTitle, { color: theme.text }]}>Song Statistics</Text>
-              <TouchableOpacity onPress={() => setStatsVisible(false)}>
-                <Text style={[st.sheetClose, { color: theme.tint || theme.text }]}>Done</Text>
+              <TouchableOpacity
+                style={[st.doneChipBtn, { backgroundColor: AMBER }]}
+                onPress={() => setStatsVisible(false)}>
+                <Text style={st.doneChipText}>Done</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={st.statsContent}>
-              {/* Key numbers */}
               <View style={st.statGrid}>
                 {[
-                  { label: 'Songs', value: totalSongs },
-                  { label: 'Setlists', value: totalSetlists },
-                  { label: 'Artists', value: uniqueArtists },
-                  { label: 'Audio Links', value: audioLinks },
-                  { label: 'Lyric Lines', value: totalLines },
+                  { label: 'Songs', value: totalSongs, icon: 'musical-notes', color: AMBER },
+                  { label: 'Setlists', value: totalSetlists, icon: 'list', color: CYAN },
+                  { label: 'Artists', value: uniqueArtists, icon: 'people', color: '#A855F7' },
+                  { label: 'Audio Links', value: audioLinks, icon: 'volume-high', color: '#34D399' },
+                  { label: 'Lyric Lines', value: totalLines, icon: 'document-text', color: '#F43F5E' },
                 ].map((item) => (
-                  <View key={item.label} style={[st.statCell, { backgroundColor: theme.secondaryBg }]}>
+                  <View key={item.label} style={[st.statCell, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+                    <Ionicons name={item.icon} size={20} color={item.color} style={{ marginBottom: 6 }} />
                     <Text style={[st.statValue, { color: theme.text }]}>{item.value}</Text>
                     <Text style={[st.statLabel, { color: theme.subText }]}>{item.label}</Text>
                   </View>
@@ -217,7 +250,7 @@ export const SettingsScreen = ({
                           <View
                             style={[
                               st.barFill,
-                              { width: `${pct}%`, backgroundColor: theme.text },
+                              { width: `${pct}%`, backgroundColor: AMBER },
                             ]}
                           />
                         </View>
@@ -230,7 +263,7 @@ export const SettingsScreen = ({
               {/* Scale distribution */}
               {scaleStats.length > 0 && (
                 <>
-                  <Text style={[st.distLabel, { color: theme.text, marginTop: 20 }]}>Scale Distribution</Text>
+                  <Text style={[st.distLabel, { color: theme.text, marginTop: 24 }]}>Scale Distribution</Text>
                   {scaleStats.map(([name, count]) => {
                     const pct = totalSongs > 0 ? (count / totalSongs) * 100 : 0;
                     return (
@@ -245,7 +278,7 @@ export const SettingsScreen = ({
                           <View
                             style={[
                               st.barFill,
-                              { width: `${pct}%`, backgroundColor: theme.subText },
+                              { width: `${pct}%`, backgroundColor: CYAN },
                             ]}
                           />
                         </View>
@@ -264,95 +297,121 @@ export const SettingsScreen = ({
 
 const st = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingBottom: 48 },
+  content: { paddingVertical: 16, paddingBottom: 48 },
 
-  // HIG Section Label
   sectionLabel: {
-    fontSize: 13, fontWeight: '400',
-    letterSpacing: -0.08, textTransform: 'uppercase',
-    marginTop: 24, marginBottom: 6,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginTop: 18,
+    marginBottom: 8,
     paddingHorizontal: 20,
   },
   sectionFooter: {
-    fontSize: 13, marginTop: -2, marginBottom: 8,
-    paddingHorizontal: 20, lineHeight: 18,
+    fontSize: 12,
+    marginTop: -4,
+    marginBottom: 8,
+    paddingHorizontal: 20,
+    lineHeight: 17,
   },
 
-  // HIG Inset Grouped Table View
   group: {
     marginHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 48,
+    minHeight: 56,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
   },
-  rowPressable: { activeOpacity: 0.55 },
+  rowPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  rowIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   rowLeft: { flex: 1, paddingRight: 12 },
-  rowTitle: { fontSize: 17, fontWeight: '400' },
-  rowSub: { fontSize: 13, marginTop: 2, lineHeight: 16 },
-  chevron: { fontSize: 20, fontWeight: '300' },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowSub: { fontSize: 12, marginTop: 2, lineHeight: 16 },
 
-  // Stats sheet
   sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'flex-end',
   },
   sheetWrap: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    borderBottomWidth: 0,
     maxHeight: '88%',
-    elevation: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
   },
   handle: {
-    width: 36, height: 4, borderRadius: 2,
-    alignSelf: 'center', marginTop: 8, marginBottom: 2,
-  },
-  sheetHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  sheetTitle: { fontSize: 17, fontWeight: '600' },
-  sheetClose: { fontSize: 17, fontWeight: '600' },
-
-  // Stats content
-  statsContent: { padding: 16, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
-  statGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    gap: 10, marginBottom: 20,
-  },
-  statCell: {
-    flex: 1, minWidth: '45%',
-    padding: 14, borderRadius: 10,
-    alignItems: 'center',
-  },
-  statValue: { fontSize: 24, fontWeight: '600', lineHeight: 28 },
-  statLabel: { fontSize: 13, fontWeight: '400', marginTop: 4 },
-
-  // Distribution bars
-  distLabel: { fontSize: 15, fontWeight: '600', marginBottom: 10 },
-  barRow: { marginBottom: 10 },
-  barMeta: {
-    flexDirection: 'row', justifyContent: 'space-between',
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
     marginBottom: 4,
   },
-  barName: { fontSize: 14, fontWeight: '400' },
-  barCount: { fontSize: 13 },
-  barTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 2 },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  sheetTitle: { fontSize: 16, fontWeight: '700' },
+  doneChipBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 99,
+  },
+  doneChipText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+
+  statsContent: { padding: 18, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  statCell: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  statValue: { fontSize: 22, fontWeight: '700', lineHeight: 26 },
+  statLabel: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+
+  distLabel: { fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 0.2 },
+  barRow: { marginBottom: 12 },
+  barMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  barName: { fontSize: 13, fontWeight: '600' },
+  barCount: { fontSize: 12 },
+  barTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 3 },
 });
 
 export default SettingsScreen;
