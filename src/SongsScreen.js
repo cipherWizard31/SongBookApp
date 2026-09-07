@@ -534,11 +534,11 @@ const st = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // FAB
+  // FAB — sits right above the bottom nav bar (nav bar total ~82px on Android, ~92px iOS)
   fab: {
     position: 'absolute',
     right: 18,
-    bottom: 92,
+    bottom: 18,
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AlbumsScreen } from './AlbumsScreen';
@@ -14,6 +15,8 @@ import { FavouritesScreen } from './FavouritesScreen';
 
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
+
+const SUB_TABS = ['favourites', 'albums', 'artists', 'settings'];
 
 export const ProfileScreen = ({
   songs = [],
@@ -27,6 +30,7 @@ export const ProfileScreen = ({
   handleSaveProfile,
   onSelectSong,
   onToggleFavorite,
+  onNavigateToScreen,
   onOpenNewSongModal,
   onClearImportedSongs,
   onClearImportedSetlists,
@@ -39,6 +43,54 @@ export const ProfileScreen = ({
   theme,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState('favourites');
+  const activeSubTabRef = useRef(activeSubTab);
+  activeSubTabRef.current = activeSubTab;
+
+  const handleProfileSwipe = (gestureState) => {
+    const curTab = activeSubTabRef.current;
+    const curIdx = SUB_TABS.indexOf(curTab);
+    const isLeftSwipe = gestureState.dx < -35 || (gestureState.dx < -15 && gestureState.vx < -0.2);
+    const isRightSwipe = gestureState.dx > 35 || (gestureState.dx > 15 && gestureState.vx > 0.2);
+
+    if (isLeftSwipe) {
+      if (curIdx >= 0 && curIdx < SUB_TABS.length - 1) {
+        setActiveSubTab(SUB_TABS[curIdx + 1]);
+      }
+    } else if (isRightSwipe) {
+      if (curIdx > 0) {
+        setActiveSubTab(SUB_TABS[curIdx - 1]);
+      } else if (curIdx === 0 && onNavigateToScreen) {
+        onNavigateToScreen('setlists');
+      }
+    }
+  };
+
+  const shouldHandleProfileSwipe = (evt, gestureState) => {
+    // Don't intercept if touching inside horizontal stats scrollview (pageY between 135 and 240)
+    const touchY = evt.nativeEvent.pageY;
+    if (touchY > 135 && touchY < 240) {
+      return false;
+    }
+    const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.8;
+    const isSignificant = Math.abs(gestureState.dx) > 18;
+    return isHorizontal && isSignificant;
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: shouldHandleProfileSwipe,
+      onMoveShouldSetPanResponder: shouldHandleProfileSwipe,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (evt, gestureState) => {
+        handleProfileSwipe(gestureState);
+      },
+      onPanResponderTerminate: (evt, gestureState) => {
+        handleProfileSwipe(gestureState);
+      },
+    })
+  ).current;
 
   // Compute unique metrics
   const favouriteSongs = songs.filter((s) => s.isFavorite);
@@ -53,7 +105,7 @@ export const ProfileScreen = ({
   ];
 
   return (
-    <View style={[st.container, { backgroundColor: theme.bg }]}>
+    <View style={[st.container, { backgroundColor: theme.bg }]} {...panResponder.panHandlers}>
 
       {/* ── PROFILE HERO HEADER ── */}
       <View style={[st.profileHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.divider }]}>

@@ -9,6 +9,7 @@ import {
   BackHandler,
   Platform,
   Linking,
+  PanResponder,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -100,22 +101,104 @@ export default function App() {
   // ----------------------------------------------------
   // INSTANT SCREEN SWITCHING (NO TRANSITIONS)
   // ----------------------------------------------------
+  const MAIN_TABS = ['dashboard', 'songs', 'setlists', 'profile'];
+  const currentScreenRef = useRef(currentScreen);
+  currentScreenRef.current = currentScreen;
+
   const navigateToScreen = (targetScreen) => {
+    if (targetScreen !== 'setlists') {
+      setPerformanceSetlistId(null);
+    }
     if (targetScreen === currentScreen) return;
     setCurrentScreen(targetScreen);
   };
 
-  // Start worship service — navigate to setlists and trigger performance mode
+  // Ref so PanResponder (created once at mount) always calls the latest navigate
+  const navigateRef = useRef(navigateToScreen);
+  navigateRef.current = navigateToScreen;
+
+  const mainPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        const cur = currentScreenRef.current;
+        if (cur === 'profile') return false;
+        // On songs, only block left-swipe over filter chips
+        if (cur === 'songs' && gestureState.dx < 0) {
+          const touchY = evt.nativeEvent.pageY;
+          if (touchY > 140 && touchY < 250) return false;
+        }
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+        return isHorizontal && Math.abs(gestureState.dx) > 10;
+      },
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const cur = currentScreenRef.current;
+        if (cur === 'profile') return false;
+        if (cur === 'songs' && gestureState.dx < 0) {
+          const touchY = evt.nativeEvent.pageY;
+          if (touchY > 140 && touchY < 250) return false;
+        }
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5;
+        return isHorizontal && Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (evt, gestureState) => {
+        const cur = currentScreenRef.current;
+        const tabs = ['dashboard', 'songs', 'setlists', 'profile'];
+        const idx = tabs.indexOf(cur);
+        const isLeft = gestureState.dx < -25 || (gestureState.dx < -10 && gestureState.vx < -0.15);
+        const isRight = gestureState.dx > 25 || (gestureState.dx > 10 && gestureState.vx > 0.15);
+        if (isLeft && idx >= 0 && idx < tabs.length - 1) {
+          navigateRef.current(tabs[idx + 1]);
+        } else if (isRight && idx > 0) {
+          navigateRef.current(tabs[idx - 1]);
+        }
+      },
+      onPanResponderTerminate: (evt, gestureState) => {
+        const cur = currentScreenRef.current;
+        const tabs = ['dashboard', 'songs', 'setlists', 'profile'];
+        const idx = tabs.indexOf(cur);
+        const isLeft = gestureState.dx < -25 || (gestureState.dx < -10 && gestureState.vx < -0.15);
+        const isRight = gestureState.dx > 25 || (gestureState.dx > 10 && gestureState.vx > 0.15);
+        if (isLeft && idx >= 0 && idx < tabs.length - 1) {
+          navigateRef.current(tabs[idx + 1]);
+        } else if (isRight && idx > 0) {
+          navigateRef.current(tabs[idx - 1]);
+        }
+      },
+    })
+  ).current;
+
+  // Navigate to setlist from dashboard banner without forcing performance mode
   const handleStartWorshipService = (setlist) => {
-    if (!setlist) {
-      navigateToScreen('setlists');
-      return;
+    if (setlist) {
+      setPerformanceSetlistId(setlist.id);
     }
-    setPerformanceSetlistId(null); // reset first so useEffect fires reliably
     navigateToScreen('setlists');
-    // Small delay to let SetlistsScreen mount before triggering perf mode
-    setTimeout(() => setPerformanceSetlistId(setlist.id), 350);
   };
+
+  // Android hardware back button / system edge back swipe support
+  useEffect(() => {
+    const onBackPress = () => {
+      if (songDetailModal) {
+        setSongDetailModal(null);
+        return true;
+      }
+      if (modalVisible) {
+        setModalVisible(false);
+        return true;
+      }
+      if (currentScreen !== 'dashboard') {
+        navigateToScreen('dashboard');
+        return true;
+      }
+      return false;
+    };
+
+    const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSubscription.remove();
+  }, [currentScreen, songDetailModal, modalVisible]);
 
   // ----------------------------------------------------
   // INITIALIZATION & PERSISTENCE
@@ -503,6 +586,7 @@ export default function App() {
             onClearImportedSetlists={handleClearImportedSetlists}
             onSaveSongsBatch={handleSaveSongsBatch}
             autoStartPerformanceSetlistId={performanceSetlistId}
+            onClearAutoStartPerformance={() => setPerformanceSetlistId(null)}
             theme={theme}
             isDarkMode={isDarkMode}
           />
@@ -524,6 +608,7 @@ export default function App() {
               setTransposeKey(0);
             }}
             onToggleFavorite={handleToggleFavorite}
+            onNavigateToScreen={navigateToScreen}
             onOpenNewSongModal={() => setModalVisible(true)}
             onClearImportedSongs={handleClearImportedSongs}
             onClearImportedSetlists={handleClearImportedSetlists}
@@ -601,6 +686,7 @@ export default function App() {
               setTransposeKey(0);
             }}
             onToggleFavorite={handleToggleFavorite}
+            onNavigateToScreen={navigateToScreen}
             onOpenNewSongModal={() => setModalVisible(true)}
             onClearImportedSongs={handleClearImportedSongs}
             onClearImportedSetlists={handleClearImportedSetlists}
@@ -625,7 +711,7 @@ export default function App() {
         <Header theme={theme} onNavigateToProfile={() => navigateToScreen('profile')} />
 
         {/* Direct Screen Content (No Transition Animations) */}
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }} {...mainPanResponder.panHandlers}>
           {renderScreenContent(currentScreen)}
         </View>
 

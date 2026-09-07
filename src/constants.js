@@ -44,5 +44,5 @@ export const DEFAULT_SCALES = [
 
   export const DEFAULT_PROFILE = {
     name: 'Worship Musician',
-    role: 'Sanctuary Director • Selah Kignit',
+    role: 'Worship Musician',
   };

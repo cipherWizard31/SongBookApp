@@ -35,6 +35,7 @@ export const SetlistsScreen = ({
   onClearImportedSetlists,
   onSaveSongsBatch,
   autoStartPerformanceSetlistId = null,
+  onClearAutoStartPerformance,
   theme,
   isDarkMode = false,
 }) => {
@@ -57,17 +58,15 @@ export const SetlistsScreen = ({
   const [setlistDesc, setSetlistDesc] = useState('');
   const [songSearchQuery, setSongSearchQuery] = useState('');
 
-  // Auto-start performance mode when triggered from dashboard
+  // Focus target setlist when navigated from dashboard (without auto-opening performance mode)
   useEffect(() => {
     if (!autoStartPerformanceSetlistId || setlists.length === 0) return;
     const target = setlists.find((s) => s.id === autoStartPerformanceSetlistId);
+    if (onClearAutoStartPerformance) {
+      onClearAutoStartPerformance();
+    }
     if (!target) return;
-    const targetSongs = songs.filter((s) => (target.songIds || []).includes(s.id));
-    if (targetSongs.length === 0) return;
     setSelectedSetlist(target);
-    setCurrentPerfIndex(0);
-    setPerfTransposeKey(0);
-    setPerformanceModeVisible(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartPerformanceSetlistId]);
 

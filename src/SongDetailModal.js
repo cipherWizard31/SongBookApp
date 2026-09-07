@@ -188,16 +188,6 @@ export const SongDetailModal = ({
           </View>
         </View>
 
-        {/* Overflow Menu */}
-        {showOverflowMenu && (
-          <View style={[st.overflowMenu, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <TouchableOpacity style={st.overflowMenuItem} onPress={confirmDelete}>
-              <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text style={[st.overflowMenuText, { color: '#EF4444' }]}>Delete Song</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* ── Scrollable Content ── */}
         <ScrollView ref={scrollViewRef} onScroll={handleScroll} scrollEventThrottle={16}
           style={{ flex: 1, backgroundColor: theme.bg }}
@@ -299,6 +289,26 @@ export const SongDetailModal = ({
             />
           </View>
         </ScrollView>
+
+        {/* Backdrop — rendered AFTER ScrollView so it sits above it in the view stack */}
+        {showOverflowMenu && (
+          <TouchableOpacity
+            style={[StyleSheet.absoluteFillObject, { zIndex: 90 }]}
+            activeOpacity={1}
+            onPress={() => setShowOverflowMenu(false)}
+          />
+        )}
+
+        {/* Overflow Menu — above backdrop */}
+        {showOverflowMenu && (
+          <View style={[st.overflowMenu, { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 100 }]}>
+            <TouchableOpacity style={st.overflowMenuItem} onPress={confirmDelete}>
+              <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 8 }} />
+              <Text style={[st.overflowMenuText, { color: '#EF4444' }]}>Delete Song</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
       </SafeAreaView>
     </Modal>
   );
