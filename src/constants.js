@@ -40,3 +40,9 @@ export const DEFAULT_SCALES = [
   export const CUSTOM_STYLES_KEY = '@songbook_custom_styles';
   export const CUSTOM_SCALES_KEY = '@songbook_custom_scales';
   export const DARK_MODE_KEY = '@songbook_dark_mode';
+  export const PROFILE_KEY = '@songbook_profile';
+
+  export const DEFAULT_PROFILE = {
+    name: 'Worship Musician',
+    role: 'Sanctuary Director • Selah Kignit',
+  };

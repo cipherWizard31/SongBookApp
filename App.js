@@ -32,6 +32,8 @@ import {
   CUSTOM_STYLES_KEY,
   CUSTOM_SCALES_KEY,
   DARK_MODE_KEY,
+  PROFILE_KEY,
+  DEFAULT_PROFILE,
 } from './src/constants';
 import { getTheme } from './src/theme';
 import { migrateSongToInline } from './src/chordParser';
@@ -68,6 +70,7 @@ export default function App() {
   const [setlists, setSetlists] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
   const [scales, setScales] = useState(DEFAULT_SCALES);
+  const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
@@ -151,6 +154,11 @@ export default function App() {
       const storedSetlists = await AsyncStorage.getItem(SETLISTS_KEY);
       if (storedSetlists) {
         setSetlists(JSON.parse(storedSetlists));
+      }
+
+      const storedProfile = await AsyncStorage.getItem(PROFILE_KEY);
+      if (storedProfile) {
+        setProfile(JSON.parse(storedProfile));
       }
     } catch (e) {
       console.error('Error loading initial data', e);
@@ -286,6 +294,15 @@ export default function App() {
       }
     } catch (e) {
       console.error('Error toggling favorite', e);
+    }
+  };
+
+  const handleSaveProfile = async (updatedProfile) => {
+    try {
+      setProfile(updatedProfile);
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(updatedProfile));
+    } catch (e) {
+      console.error('Error saving profile', e);
     }
   };
 
@@ -500,6 +517,8 @@ export default function App() {
             setSongs={setSongs}
             setStyles={setStyles}
             setScales={setScales}
+            profile={profile}
+            handleSaveProfile={handleSaveProfile}
             onSelectSong={(song) => {
               setSongDetailModal(song);
               setTransposeKey(0);
@@ -553,6 +572,8 @@ export default function App() {
             setStyles={setStyles}
             scales={scales}
             setScales={setScales}
+            profile={profile}
+            handleSaveProfile={handleSaveProfile}
             handleExportSongs={handleExportSongs}
             handleImportSongs={handleImportSongs}
             handleClearImportedSetlists={handleClearImportedSetlists}
@@ -573,6 +594,8 @@ export default function App() {
             setSongs={setSongs}
             setStyles={setStyles}
             setScales={setScales}
+            profile={profile}
+            handleSaveProfile={handleSaveProfile}
             onSelectSong={(song) => {
               setSongDetailModal(song);
               setTransposeKey(0);

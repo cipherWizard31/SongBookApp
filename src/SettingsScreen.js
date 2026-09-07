@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, Switch, TouchableOpacity,
+  View, Text, Switch, TouchableOpacity, TextInput,
   StyleSheet, Modal, ScrollView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,11 +14,36 @@ export const SettingsScreen = ({
   handleClearImportedSetlists,
   handleClearImportedSongs,
   handleClearAllImportedData,
+  profile = { name: 'Worship Musician', role: 'Sanctuary Director • Selah Kignit' },
+  handleSaveProfile,
   songs = [],
   setlists = [],
 }) => {
   const [statsVisible, setStatsVisible] = useState(false);
   const onToggle = toggleDarkMode || (() => setIsDarkMode && setIsDarkMode(!isDarkMode));
+
+  const [profileName, setProfileName] = useState(profile?.name || 'Worship Musician');
+  const [profileRole, setProfileRole] = useState(profile?.role || 'Sanctuary Director • Selah Kignit');
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      if (profile.name) setProfileName(profile.name);
+      if (profile.role) setProfileRole(profile.role);
+    }
+  }, [profile]);
+
+  const onSaveProfilePress = () => {
+    const updated = {
+      name: profileName.trim() || 'Worship Musician',
+      role: profileRole.trim() || 'Sanctuary Director • Selah Kignit',
+    };
+    if (handleSaveProfile) {
+      handleSaveProfile(updated);
+    }
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2500);
+  };
 
   // Stats
   const totalSongs    = songs.length;
@@ -43,8 +68,49 @@ export const SettingsScreen = ({
       style={[st.root, { backgroundColor: theme.bg }]}
       contentContainerStyle={st.content}>
 
+      {/* ─── Section: Musician Profile ─── */}
+      <Text style={[st.sectionLabel, { color: theme.subText }]}>MUSICIAN PROFILE</Text>
+      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 14 }]}>
+        <View style={st.inputWrap}>
+          <Text style={[st.inputLabel, { color: theme.subText }]}>Display Name</Text>
+          <TextInput
+            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+            value={profileName}
+            onChangeText={setProfileName}
+            placeholder="e.g. Worship Musician"
+            placeholderTextColor={theme.subText}
+          />
+        </View>
+
+        <View style={[st.inputWrap, { marginTop: 10 }]}>
+          <Text style={[st.inputLabel, { color: theme.subText }]}>Ministry Role & Title</Text>
+          <TextInput
+            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+            value={profileRole}
+            onChangeText={setProfileRole}
+            placeholder="e.g. Sanctuary Director • Selah Kignit"
+            placeholderTextColor={theme.subText}
+          />
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[st.saveProfileBtn, { backgroundColor: isSaved ? '#10B981' : AMBER }]}
+          onPress={onSaveProfilePress}>
+          <Ionicons
+            name={isSaved ? 'checkmark-circle' : 'save-outline'}
+            size={16}
+            color="#1E1909"
+            style={{ marginRight: 6 }}
+          />
+          <Text style={st.saveProfileBtnText}>
+            {isSaved ? 'Profile Saved Locally!' : 'Save Profile Changes'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* ─── Section: Appearance ─── */}
-      <Text style={[st.sectionLabel, { color: theme.subText }]}>APPEARANCE</Text>
+      <Text style={[st.sectionLabel, { color: theme.subText, marginTop: 16 }]}>APPEARANCE</Text>
       <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={st.row}>
           <View style={[st.rowIconBox, { backgroundColor: `${AMBER}18` }]}>
@@ -360,6 +426,38 @@ const st = StyleSheet.create({
   appTitle: { fontSize: 16, fontWeight: '700' },
   appSub: { fontSize: 12, fontWeight: '500' },
   appDesc: { fontSize: 12.5, lineHeight: 18 },
+
+  inputWrap: {
+    marginBottom: 4,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputField: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    fontSize: 14.5,
+    fontWeight: '500',
+  },
+  saveProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 42,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  saveProfileBtnText: {
+    color: '#1E1909',
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
 
   sheetOverlay: {
     flex: 1,

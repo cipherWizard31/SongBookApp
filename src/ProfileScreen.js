@@ -23,6 +23,8 @@ export const ProfileScreen = ({
   setSongs,
   setStyles,
   setScales,
+  profile,
+  handleSaveProfile,
   onSelectSong,
   onToggleFavorite,
   onOpenNewSongModal,
@@ -62,11 +64,13 @@ export const ProfileScreen = ({
 
           <View style={st.profileTextWrap}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[st.profileName, { color: theme.text }]}>Worship Musician</Text>
+              <Text style={[st.profileName, { color: theme.text }]}>
+                {profile?.name || 'Worship Musician'}
+              </Text>
               <Ionicons name="checkmark-circle" size={16} color={AMBER} />
             </View>
             <Text style={[st.profileRole, { color: theme.subText }]}>
-              Sanctuary Director • Selah Kignit
+              {profile?.role || 'Sanctuary Director • Selah Kignit'}
             </Text>
           </View>
         </View>
@@ -198,6 +202,8 @@ export const ProfileScreen = ({
             setStyles={setStyles}
             scales={scales}
             setScales={setScales}
+            profile={profile}
+            handleSaveProfile={handleSaveProfile}
             handleExportSongs={handleExportSongs}
             handleImportSongs={handleImportSongs}
             handleClearImportedSetlists={onClearImportedSetlists}
