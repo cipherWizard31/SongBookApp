@@ -191,6 +191,16 @@ export const SettingsScreen = ({
         </>
       )}
 
+      {/* ─── Section: About App ─── */}
+      <Text style={[st.sectionLabel, { color: theme.subText, marginTop: 16 }]}>ABOUT APP</Text>
+      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 16, alignItems: 'center' }]}>
+        <Text style={[st.appTitle, { color: theme.text }]}>Selah Kignit (ሰላህ ቅኝት)</Text>
+        <Text style={[st.appSub, { color: theme.subText, marginTop: 2 }]}>Version 1.0.0 • Sacred Worship Companion</Text>
+        <Text style={[st.appDesc, { color: theme.subText, marginTop: 6, textAlign: 'center' }]}>
+          Built for sanctuary directors & worship musicians to organize Ethiopian pentatonic chords, lyrics, and setlists.
+        </Text>
+      </View>
+
       {/* ─── Statistics Modal ─── */}
       <Modal
         visible={statsVisible}
@@ -346,6 +356,10 @@ const st = StyleSheet.create({
   rowLeft: { flex: 1, paddingRight: 12 },
   rowTitle: { fontSize: 15, fontWeight: '600' },
   rowSub: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+
+  appTitle: { fontSize: 16, fontWeight: '700' },
+  appSub: { fontSize: 12, fontWeight: '500' },
+  appDesc: { fontSize: 12.5, lineHeight: 18 },
 
   sheetOverlay: {
     flex: 1,

@@ -3,12 +3,14 @@ import {
   View,
   Text,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AlbumsScreen } from './AlbumsScreen';
 import { ArtistsScreen } from './ArtistsScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { FavouritesScreen } from './FavouritesScreen';
 
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
@@ -22,6 +24,7 @@ export const ProfileScreen = ({
   setStyles,
   setScales,
   onSelectSong,
+  onToggleFavorite,
   onOpenNewSongModal,
   onClearImportedSongs,
   onClearImportedSetlists,
@@ -33,13 +36,15 @@ export const ProfileScreen = ({
   setIsDarkMode,
   theme,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('albums');
+  const [activeSubTab, setActiveSubTab] = useState('favourites');
 
   // Compute unique metrics
+  const favouriteSongs = songs.filter((s) => s.isFavorite);
   const uniqueAlbums = Array.from(new Set(songs.map((s) => s.album).filter(Boolean)));
   const uniqueArtists = Array.from(new Set(songs.map((s) => s.author).filter(Boolean)));
 
   const subTabs = [
+    { id: 'favourites', label: 'Favourites', icon: 'star' },
     { id: 'albums', label: 'Albums', icon: 'albums' },
     { id: 'artists', label: 'Artists', icon: 'people' },
     { id: 'settings', label: 'Settings', icon: 'settings-sharp' },
@@ -67,12 +72,22 @@ export const ProfileScreen = ({
         </View>
 
         {/* ── STATS OVERVIEW CARDS ── */}
-        <View style={st.statsGrid}>
-          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-            <Ionicons name="musical-notes-outline" size={16} color={AMBER} style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{songs.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]}>Songs</Text>
-          </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.statsGrid}
+          style={{ marginBottom: 16 }}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[
+              st.statCard,
+              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'favourites' ? AMBER : theme.border },
+            ]}
+            onPress={() => setActiveSubTab('favourites')}>
+            <Ionicons name="star" size={16} color={AMBER} style={{ marginBottom: 4 }} />
+            <Text style={[st.statValue, { color: theme.text }]}>{favouriteSongs.length}</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Favourites</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.7}
@@ -83,7 +98,7 @@ export const ProfileScreen = ({
             onPress={() => setActiveSubTab('albums')}>
             <Ionicons name="albums-outline" size={16} color={CYAN} style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{uniqueAlbums.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]}>Albums</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Albums</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -95,15 +110,21 @@ export const ProfileScreen = ({
             onPress={() => setActiveSubTab('artists')}>
             <Ionicons name="people-outline" size={16} color="#A855F7" style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{uniqueArtists.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]}>Artists</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Artists</Text>
           </TouchableOpacity>
+
+          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+            <Ionicons name="musical-notes-outline" size={16} color="#60A5FA" style={{ marginBottom: 4 }} />
+            <Text style={[st.statValue, { color: theme.text }]}>{songs.length}</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Songs</Text>
+          </View>
 
           <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
             <Ionicons name="list-outline" size={16} color="#34D399" style={{ marginBottom: 4 }} />
             <Text style={[st.statValue, { color: theme.text }]}>{setlists.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]}>Setlists</Text>
+            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Setlists</Text>
           </View>
-        </View>
+        </ScrollView>
 
         {/* ── SEGMENTED TAB SWITCHER ── */}
         <View style={[st.subTabSegment, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
@@ -128,7 +149,8 @@ export const ProfileScreen = ({
                   style={[
                     st.subTabBtnText,
                     { color: isActive ? '#1E1909' : theme.subText, fontWeight: isActive ? '700' : '500' },
-                  ]}>
+                  ]}
+                  numberOfLines={1}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -139,6 +161,16 @@ export const ProfileScreen = ({
 
       {/* ── TAB CONTENT ── */}
       <View style={st.contentArea}>
+        {activeSubTab === 'favourites' && (
+          <FavouritesScreen
+            songs={songs}
+            onSelectSong={onSelectSong}
+            onToggleFavorite={onToggleFavorite}
+            theme={theme}
+            isDarkMode={isDarkMode}
+          />
+        )}
+
         {activeSubTab === 'albums' && (
           <AlbumsScreen
             songs={songs}
@@ -222,10 +254,10 @@ const st = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+    paddingRight: 8,
   },
   statCard: {
-    flex: 1,
+    minWidth: 74,
     paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 14,
@@ -255,12 +287,13 @@ const st = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   subTabBtnText: {
-    fontSize: 12,
+    fontSize: 11.5,
   },
 
   contentArea: {

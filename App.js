@@ -274,6 +274,21 @@ export default function App() {
     setModalVisible(true);
   };
 
+  const handleToggleFavorite = async (songId) => {
+    try {
+      const updated = songs.map((s) =>
+        s.id === songId ? { ...s, isFavorite: !s.isFavorite } : s
+      );
+      setSongs(updated);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      if (songDetailModal && songDetailModal.id === songId) {
+        setSongDetailModal((prev) => (prev ? { ...prev, isFavorite: !prev.isFavorite } : null));
+      }
+    } catch (e) {
+      console.error('Error toggling favorite', e);
+    }
+  };
+
   const handleDeleteSong = (songId) => {
     Alert.alert(
       'Delete Song',
@@ -453,6 +468,7 @@ export default function App() {
               setSongDetailModal(song);
               setTransposeKey(0);
             }}
+            onToggleFavorite={handleToggleFavorite}
             onOpenNewSongModal={() => setModalVisible(true)}
             onClearImportedSongs={handleClearImportedSongs}
             onDeleteSong={handleDeleteSong}
@@ -488,6 +504,7 @@ export default function App() {
               setSongDetailModal(song);
               setTransposeKey(0);
             }}
+            onToggleFavorite={handleToggleFavorite}
             onOpenNewSongModal={() => setModalVisible(true)}
             onClearImportedSongs={handleClearImportedSongs}
             onClearImportedSetlists={handleClearImportedSetlists}
@@ -541,6 +558,33 @@ export default function App() {
             handleClearImportedSetlists={handleClearImportedSetlists}
             handleClearImportedSongs={handleClearImportedSongs}
             handleClearAllImportedData={handleClearAllImportedData}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+            theme={theme}
+          />
+        );
+      case 'favourites':
+        return (
+          <ProfileScreen
+            songs={songs}
+            setlists={setlists}
+            styles={styles}
+            scales={scales}
+            setSongs={setSongs}
+            setStyles={setStyles}
+            setScales={setScales}
+            onSelectSong={(song) => {
+              setSongDetailModal(song);
+              setTransposeKey(0);
+            }}
+            onToggleFavorite={handleToggleFavorite}
+            onOpenNewSongModal={() => setModalVisible(true)}
+            onClearImportedSongs={handleClearImportedSongs}
+            onClearImportedSetlists={handleClearImportedSetlists}
+            onClearAllImportedData={handleClearAllImportedData}
+            onDeleteSong={handleDeleteSong}
+            handleExportSongs={handleExportSongs}
+            handleImportSongs={handleImportSongs}
             isDarkMode={isDarkMode}
             setIsDarkMode={setIsDarkMode}
             theme={theme}
@@ -605,6 +649,7 @@ export default function App() {
           playSound={playSound}
           handleEditSong={handleEditSong}
           handleDeleteSong={handleDeleteSong}
+          handleToggleFavorite={handleToggleFavorite}
           theme={theme}
           isDarkMode={isDarkMode}
         />

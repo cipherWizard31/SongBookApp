@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 const NAV_ITEMS = [
   { key: 'dashboard',  label: 'Dashboard',        icon: 'grid',          outlineIcon: 'grid-outline'          },
-  { key: 'songs',      label: 'Songs',            icon: 'musical-notes', outlineIcon: 'musical-notes-outline' },
-  { key: 'albums',     label: 'Albums',           icon: 'disc',          outlineIcon: 'disc-outline'          },
-  { key: 'artists',    label: 'Artists',          icon: 'person',        outlineIcon: 'person-outline'        },
+  { key: 'songs',      label: 'Song List',        icon: 'musical-notes', outlineIcon: 'musical-notes-outline' },
+  { key: 'favourites', label: 'Favourites',       icon: 'star',          outlineIcon: 'star-outline'          },
   { key: 'setlists',   label: 'Setlists',         icon: 'list',          outlineIcon: 'list-outline'          },
+  { key: 'albums',     label: 'Albums',           icon: 'albums',        outlineIcon: 'albums-outline'        },
+  { key: 'artists',    label: 'Artists',          icon: 'people',        outlineIcon: 'people-outline'        },
   { key: 'dictionary', label: 'Scale Dictionary', icon: 'book',          outlineIcon: 'book-outline'          },
+  { key: 'profile',    label: 'Profile',          icon: 'person',        outlineIcon: 'person-outline'        },
   { key: 'settings',   label: 'Settings',         icon: 'settings',      outlineIcon: 'settings-outline'      },
 ];
 

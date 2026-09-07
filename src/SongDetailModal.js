@@ -31,6 +31,7 @@ export const SongDetailModal = ({
   playSound,
   handleEditSong,
   handleDeleteSong,
+  handleToggleFavorite,
   theme,
   isDarkMode,
 }) => {
@@ -38,7 +39,7 @@ export const SongDetailModal = ({
   const audioUrl = song?.audioUrl || song?.audioUri;
 
   const [fontSize, setFontSize] = useState(16);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const isFavorite = Boolean(song?.isFavorite);
   const [isPerformanceMode, setIsPerformanceMode] = useState(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
@@ -167,7 +168,11 @@ export const SongDetailModal = ({
           </View>
 
           <View style={st.topNavRight}>
-            <TouchableOpacity style={st.iconNavBtn} onPress={() => setIsFavorite(!isFavorite)}>
+            <TouchableOpacity
+              style={st.iconNavBtn}
+              onPress={() => handleToggleFavorite && handleToggleFavorite(song.id)}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite ? 'Remove from favourites' : 'Add to favourites'}>
               <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color={isFavorite ? AMBER : theme.subText} />
             </TouchableOpacity>
             <TouchableOpacity style={[st.iconNavBtn, { backgroundColor: theme.cardBg, borderRadius: 10 }]}

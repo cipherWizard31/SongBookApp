@@ -16,6 +16,7 @@ export const SongsScreen = ({
   styles: rhythmStyles = [],
   scales = [],
   onSelectSong,
+  onToggleFavorite,
   onOpenNewSongModal,
   onClearImportedSongs,
   onDeleteSong,
@@ -253,6 +254,11 @@ export const SongsScreen = ({
                   {hasAudio && (
                     <View style={[st.audioBadge, { backgroundColor: 'rgba(229, 169, 60, 0.15)' }]}>
                       <Ionicons name="volume-medium" size={12} color={theme.tint} />
+                    </View>
+                  )}
+                  {item.isFavorite && (
+                    <View style={[st.audioBadge, { backgroundColor: 'rgba(229, 169, 60, 0.2)' }]}>
+                      <Ionicons name="star" size={11} color={theme.tint} />
                     </View>
                   )}
                 </View>
