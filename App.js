@@ -229,7 +229,7 @@ export default function App() {
         const parsedSongs = JSON.parse(storedSongs);
         const migratedSongs = parsedSongs.map((s) => ({
           ...s,
-          content: migrateSongToInline(s.content || ''),
+          content: s.content !== undefined ? s.content : migrateSongToInline(s),
         }));
         setSongs(migratedSongs);
       }
@@ -471,14 +471,14 @@ export default function App() {
         if (Array.isArray(importedData)) {
           const migrated = importedData.map((s) => ({
             ...s,
-            content: migrateSongToInline(s.content || ''),
+            content: s.content !== undefined ? s.content : migrateSongToInline(s),
           }));
           handleSaveSongsBatch(migrated);
         } else if (typeof importedData === 'object') {
           if (importedData.songs && Array.isArray(importedData.songs)) {
             const migrated = importedData.songs.map((s) => ({
               ...s,
-              content: migrateSongToInline(s.content || ''),
+              content: s.content !== undefined ? s.content : migrateSongToInline(s),
             }));
             handleSaveSongsBatch(migrated);
           }

@@ -88,6 +88,7 @@ export const SongEditModal = ({
               placeholderTextColor={theme.subText}
               value={title}
               onChangeText={setTitle}
+              maxLength={30}
               returnKeyType="next"
             />
 
@@ -99,6 +100,7 @@ export const SongEditModal = ({
               placeholderTextColor={theme.subText}
               value={author}
               onChangeText={setAuthor}
+              maxLength={30}
               returnKeyType="next"
             />
 
@@ -110,6 +112,7 @@ export const SongEditModal = ({
               placeholderTextColor={theme.subText}
               value={album}
               onChangeText={setAlbum}
+              maxLength={30}
               returnKeyType="next"
             />
 

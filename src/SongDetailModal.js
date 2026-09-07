@@ -118,33 +118,44 @@ export const SongDetailModal = ({
 
           {/* Perf Control Bar */}
           <View style={st.perfControlBar}>
-            <TouchableOpacity
-              style={[st.perfBarBtn, isAutoScrolling && { backgroundColor: AMBER }]}
-              onPress={() => setIsAutoScrolling(!isAutoScrolling)}>
-              <Ionicons name={isAutoScrolling ? 'pause' : 'play'} size={16} color="#FFF" />
-              <Text style={st.perfBarBtnText}>{isAutoScrolling ? 'Pause' : 'Auto Scroll'}</Text>
-            </TouchableOpacity>
+            <View style={st.perfTopControlsRow}>
+              <TouchableOpacity
+                style={[st.perfBarBtn, isAutoScrolling && { backgroundColor: AMBER }]}
+                onPress={() => setIsAutoScrolling(!isAutoScrolling)}>
+                <Ionicons name={isAutoScrolling ? 'pause' : 'play'} size={15} color={isAutoScrolling ? '#1E1909' : '#FFF'} />
+                <Text style={[st.perfBarBtnText, isAutoScrolling && { color: '#1E1909' }]}>
+                  {isAutoScrolling ? 'Pause' : 'Auto Scroll'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={st.perfFontStepper}>
+                <TouchableOpacity style={st.fontStepBtn} onPress={() => setFontSize(Math.max(12, fontSize - 2))}>
+                  <Text style={st.fontStepText}>A−</Text>
+                </TouchableOpacity>
+                <Text style={st.fontValText}>{fontSize}</Text>
+                <TouchableOpacity style={st.fontStepBtn} onPress={() => setFontSize(Math.min(32, fontSize + 2))}>
+                  <Text style={st.fontStepText}>A+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {isAutoScrolling && (
-              <View style={st.speedPillWrap}>
-                {[0.5, 1, 1.5, 2].map((spd) => (
-                  <TouchableOpacity key={spd} style={[st.speedChip, scrollSpeed === spd && { backgroundColor: '#374151' }]}
-                    onPress={() => setScrollSpeed(spd)}>
-                    <Text style={st.speedChipText}>{spd}x</Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={st.perfSpeedRow}>
+                <Text style={st.speedLabel}>SPEED</Text>
+                <View style={st.speedPillWrap}>
+                  {[0.5, 1, 1.5, 2].map((spd) => (
+                    <TouchableOpacity
+                      key={spd}
+                      style={[st.speedChip, scrollSpeed === spd && { backgroundColor: AMBER }]}
+                      onPress={() => setScrollSpeed(spd)}>
+                      <Text style={[st.speedChipText, scrollSpeed === spd && { color: '#1E1909', fontWeight: '700' }]}>
+                        {spd}x
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
-
-            <View style={st.perfFontStepper}>
-              <TouchableOpacity style={st.fontStepBtn} onPress={() => setFontSize(Math.max(12, fontSize - 2))}>
-                <Text style={st.fontStepText}>A-</Text>
-              </TouchableOpacity>
-              <Text style={st.fontValText}>{fontSize}</Text>
-              <TouchableOpacity style={st.fontStepBtn} onPress={() => setFontSize(Math.min(32, fontSize + 2))}>
-                <Text style={st.fontStepText}>A+</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </SafeAreaView>
       </Modal>
@@ -194,33 +205,58 @@ export const SongDetailModal = ({
           contentContainerStyle={st.scrollPadding}
           showsVerticalScrollIndicator={false}>
 
-          {/* Song Header */}
-          <View style={st.songHeader}>
-            {/* Hero Icon */}
-            <View style={[st.songIcon, { backgroundColor: theme.cardBg, borderColor: `${AMBER}30` }]}>
-              <Ionicons name="musical-notes" size={28} color={AMBER} />
+          {/* Song Header Hero Card */}
+          <View style={[st.songHeader, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            {/* Top row with hero badge and quick action */}
+            <View style={st.headerTopRow}>
+              <View style={[st.songIcon, { backgroundColor: `${AMBER}15`, borderColor: `${AMBER}35` }]}>
+                <Ionicons name="musical-notes" size={24} color={AMBER} />
+              </View>
+              <View style={st.headerActions}>
+                <TouchableOpacity
+                  style={[st.actionChip, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+                  onPress={() => setIsPerformanceMode(true)}
+                  activeOpacity={0.7}>
+                  <Ionicons name="expand-outline" size={13} color={AMBER} style={{ marginRight: 4 }} />
+                  <Text style={[st.actionChipText, { color: theme.text }]}>Perform</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text style={[st.mainTitle, { color: theme.text }]}>{song.title}</Text>
 
             {(author || album) ? (
-              <Text style={[st.artistSub, { color: theme.subText }]}>
-                {[author, album].filter(Boolean).join('  •  ')}
-              </Text>
+              <View style={st.metaLine}>
+                {author ? (
+                  <View style={st.metaItem}>
+                    <Ionicons name="person-outline" size={13} color={theme.subText} style={{ marginRight: 4 }} />
+                    <Text style={[st.artistSub, { color: theme.subText }]}>{author}</Text>
+                  </View>
+                ) : null}
+                {(author && album) ? (
+                  <Text style={[st.metaDot, { color: theme.divider }]}>•</Text>
+                ) : null}
+                {album ? (
+                  <View style={st.metaItem}>
+                    <Ionicons name="disc-outline" size={13} color={theme.subText} style={{ marginRight: 4 }} />
+                    <Text style={[st.artistSub, { color: theme.subText }]}>{album}</Text>
+                  </View>
+                ) : null}
+              </View>
             ) : null}
 
             {/* Kignit Scale & Rhythm pills */}
             {(hasScale || hasStyle) ? (
               <View style={st.tagRow}>
                 {hasScale && (
-                  <View style={[st.kignitPill, { backgroundColor: `${AMBER}18`, borderColor: `${AMBER}40` }]}>
-                    <Ionicons name="key-outline" size={11} color={AMBER} style={{ marginRight: 4 }} />
+                  <View style={[st.kignitPill, { backgroundColor: `${AMBER}14`, borderColor: `${AMBER}38` }]}>
+                    <Ionicons name="key-outline" size={11} color={AMBER} style={{ marginRight: 5 }} />
                     <Text style={[st.kignitPillText, { color: AMBER }]}>{song.scale}</Text>
                   </View>
                 )}
                 {hasStyle && (
-                  <View style={[st.rhythmPill, { backgroundColor: `${BURG}18`, borderColor: `${BURG}50` }]}>
-                    <Ionicons name="pulse-outline" size={11} color={BURG} style={{ marginRight: 4 }} />
+                  <View style={[st.rhythmPill, { backgroundColor: `${BURG}15`, borderColor: `${BURG}40` }]}>
+                    <Ionicons name="pulse-outline" size={11} color={BURG} style={{ marginRight: 5 }} />
                     <Text style={[st.rhythmPillText, { color: BURG }]}>{song.style}</Text>
                   </View>
                 )}
@@ -228,57 +264,103 @@ export const SongDetailModal = ({
             ) : null}
           </View>
 
-          {/* ── Live Toolbar ── */}
-          <View style={[st.liveToolbar, { backgroundColor: theme.secondaryBg, borderColor: theme.divider }]}>
+          {/* ── Live Transpose & Display Toolbar ── */}
+          <View style={[st.liveToolbar, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {/* Key Transpose */}
             <View style={st.toolGroup}>
               <Text style={[st.toolLabel, { color: theme.subText }]}>KEY</Text>
-              <View style={[st.stepper, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <TouchableOpacity style={st.stepBtn} onPress={() => setTransposeKey(transposeKey - 1)}>
+              <View style={[st.stepper, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+                <TouchableOpacity
+                  style={st.stepBtn}
+                  onPress={() => setTransposeKey(transposeKey - 1)}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                   <Text style={[st.stepSign, { color: theme.text }]}>−</Text>
                 </TouchableOpacity>
                 <Text style={[st.stepVal, { color: AMBER }]}>{keyLabel}</Text>
-                <TouchableOpacity style={st.stepBtn} onPress={() => setTransposeKey(transposeKey + 1)}>
+                <TouchableOpacity
+                  style={st.stepBtn}
+                  onPress={() => setTransposeKey(transposeKey + 1)}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                   <Text style={[st.stepSign, { color: theme.text }]}>+</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
+            {/* Divider between tools */}
+            <View style={[st.toolDivider, { backgroundColor: theme.divider }]} />
+
             {/* Font Size */}
             <View style={st.toolGroup}>
-              <Text style={[st.toolLabel, { color: theme.subText }]}>SIZE</Text>
-              <View style={[st.stepper, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <TouchableOpacity style={st.stepBtn} onPress={() => setFontSize(Math.max(12, fontSize - 2))}>
-                  <Text style={[st.stepSign, { color: theme.text }]}>A-</Text>
+              <Text style={[st.toolLabel, { color: theme.subText }]}>FONT</Text>
+              <View style={[st.stepper, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+                <TouchableOpacity
+                  style={st.stepBtn}
+                  onPress={() => setFontSize(Math.max(12, fontSize - 2))}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                  <Text style={[st.stepSign, { color: theme.text }]}>A−</Text>
                 </TouchableOpacity>
                 <Text style={[st.stepVal, { color: theme.text }]}>{fontSize}</Text>
-                <TouchableOpacity style={st.stepBtn} onPress={() => setFontSize(Math.min(32, fontSize + 2))}>
+                <TouchableOpacity
+                  style={st.stepBtn}
+                  onPress={() => setFontSize(Math.min(32, fontSize + 2))}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                   <Text style={[st.stepSign, { color: theme.text }]}>A+</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
+            {/* Divider between tools */}
+            <View style={[st.toolDivider, { backgroundColor: theme.divider }]} />
+
             {/* Chords Toggle */}
             <View style={st.toolGroup}>
-              <Text style={[st.toolLabel, { color: theme.subText }]}>Chords</Text>
+              <Text style={[st.toolLabel, { color: theme.subText }]}>CHORDS</Text>
               <TouchableOpacity
-                style={[st.toggleBtn, { backgroundColor: showChords ? CYAN : theme.cardBg, borderColor: showChords ? CYAN : theme.border }]}
+                style={[
+                  st.toggleBtn,
+                  {
+                    backgroundColor: showChords ? `${CYAN}20` : theme.secondaryBg,
+                    borderColor: showChords ? `${CYAN}60` : theme.border,
+                  },
+                ]}
+                activeOpacity={0.75}
                 onPress={() => setShowChords(!showChords)}>
-                <Ionicons name="musical-note" size={13} color={showChords ? '#001E2C' : theme.subText} style={{ marginRight: 4 }} />
-                <Text style={[st.toggleText, { color: showChords ? '#001E2C' : theme.text }]}>{showChords ? 'Hide' : 'Show'}</Text>
+                <Ionicons
+                  name={showChords ? 'musical-notes' : 'musical-note-outline'}
+                  size={13}
+                  color={showChords ? CYAN : theme.subText}
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={[st.toggleText, { color: showChords ? CYAN : theme.subText }]}>
+                  {showChords ? 'On' : 'Off'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Audio Banner */}
           {audioUrl ? (
-            <View style={{ marginBottom: 20 }}>
+            <View style={{ marginBottom: 16 }}>
               <AudioPreviewBanner audioUrl={audioUrl} onPressPlay={(url) => playSound(url)} isDarkMode={isDarkMode} theme={theme} />
             </View>
           ) : null}
 
-          {/* Song Content */}
-          <View style={[st.contentCard, { backgroundColor: theme.secondaryBg, borderColor: `${AMBER}18` }]}>
+          {/* Song Content / Lyrics Card */}
+          <View style={[st.contentCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={st.contentCardHeader}>
+              <View style={[st.lyricsPill, { backgroundColor: theme.secondaryBg }]}>
+                <Ionicons name="document-text-outline" size={11} color={theme.subText} style={{ marginRight: 4 }} />
+                <Text style={[st.lyricsPillText, { color: theme.subText }]}>CHORDS & LYRICS</Text>
+              </View>
+              {transposeKey !== 0 && (
+                <View style={[st.transposedBadge, { backgroundColor: `${AMBER}15` }]}>
+                  <Text style={[st.transposedBadgeText, { color: AMBER }]}>
+                    Transposed ({keyLabel})
+                  </Text>
+                </View>
+              )}
+            </View>
+
             <SongContentViewer
               content={song.content !== undefined ? song.content : migrateSongToInline(song)}
               semitones={transposeKey}
@@ -354,62 +436,135 @@ const st = StyleSheet.create({
   // Scroll
   scrollPadding: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 72 },
 
-  // Song Header
-  songHeader: { alignItems: 'center', marginBottom: 24 },
+  // Song Header Card
+  songHeader: {
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
   songIcon: {
-    width: 64, height: 64, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, marginBottom: 16,
+    borderWidth: 1,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  actionChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   mainTitle: {
-    fontSize: 26, fontWeight: '700', letterSpacing: -0.5,
-    lineHeight: 32, textAlign: 'center', marginBottom: 6,
+    fontSize: 24, fontWeight: '700', letterSpacing: -0.4,
+    lineHeight: 30, marginBottom: 8,
+  },
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 14,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaDot: {
+    fontSize: 12,
+    marginHorizontal: 2,
   },
   artistSub: {
-    fontSize: 14, fontWeight: '400', textAlign: 'center', marginBottom: 12,
+    fontSize: 13, fontWeight: '500',
   },
-  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   kignitPill: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 99, borderWidth: 1,
+    borderRadius: 8, borderWidth: 1,
   },
-  kignitPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  kignitPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
   rhythmPill: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 99, borderWidth: 1,
+    borderRadius: 8, borderWidth: 1,
   },
-  rhythmPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  rhythmPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
 
   // Live Toolbar
   liveToolbar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderRadius: 16, borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: 20, gap: 8,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 16, borderWidth: 1,
+    marginBottom: 16,
   },
-  toolGroup: { alignItems: 'center' },
-  toolLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.8, marginBottom: 5 },
+  toolGroup: { alignItems: 'center', flex: 1 },
+  toolDivider: { width: 1, height: 28 },
+  toolLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.9, marginBottom: 4 },
   stepper: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 10, borderWidth: StyleSheet.hairlineWidth,
-    height: 34, paddingHorizontal: 4,
+    height: 32, paddingHorizontal: 2,
   },
-  stepBtn: { width: 28, height: 32, justifyContent: 'center', alignItems: 'center' },
-  stepSign: { fontSize: 15, fontWeight: '600' },
-  stepVal: { fontSize: 13, fontWeight: '700', minWidth: 36, textAlign: 'center' },
+  stepBtn: { width: 26, height: 30, justifyContent: 'center', alignItems: 'center' },
+  stepSign: { fontSize: 13, fontWeight: '700' },
+  stepVal: { fontSize: 12, fontWeight: '700', minWidth: 32, textAlign: 'center' },
   toggleBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    height: 34, paddingHorizontal: 10, borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    height: 32, paddingHorizontal: 10, borderRadius: 10,
+    borderWidth: 1,
   },
   toggleText: { fontSize: 12, fontWeight: '700' },
 
   // Content Card
   contentCard: {
-    borderRadius: 16, borderWidth: 1,
-    paddingHorizontal: 16, paddingVertical: 20,
+    borderRadius: 20, borderWidth: 1,
+    paddingHorizontal: 18, paddingVertical: 18,
+  },
+  contentCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(150, 150, 150, 0.15)',
+  },
+  lyricsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  lyricsPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  transposedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  transposedBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   // ── Performance Mode ─────────────────────────────────────────────────────
@@ -432,10 +587,15 @@ const st = StyleSheet.create({
     position: 'absolute', bottom: 24, left: 20, right: 20,
     backgroundColor: '#141821', borderRadius: 18,
     paddingHorizontal: 16, paddingVertical: 12,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     borderWidth: 1, borderColor: '#27272A',
     elevation: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12,
+  },
+  perfTopControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
   },
   perfBarBtn: {
     flexDirection: 'row', alignItems: 'center',
@@ -443,9 +603,25 @@ const st = StyleSheet.create({
     borderRadius: 10, gap: 6,
   },
   perfBarBtnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  speedPillWrap: { flexDirection: 'row', backgroundColor: '#27272A', borderRadius: 8, padding: 2 },
-  speedChip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  speedChipText: { color: '#FFF', fontSize: 11, fontWeight: '600' },
+  perfSpeedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#27272A',
+    width: '100%',
+  },
+  speedLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.8,
+  },
+  speedPillWrap: { flexDirection: 'row', backgroundColor: '#27272A', borderRadius: 8, padding: 2, gap: 4 },
+  speedChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  speedChipText: { color: '#94A3B8', fontSize: 11, fontWeight: '600' },
   perfFontStepper: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#27272A', borderRadius: 10,

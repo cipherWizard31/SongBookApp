@@ -189,7 +189,7 @@ export const SongsScreen = ({
       {/* ── Refined Songs List ── */}
       <FlatList
         data={filteredSongs}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => (item?.id ? `${item.id}-${index}` : `song-${index}`)}
         contentContainerStyle={st.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
