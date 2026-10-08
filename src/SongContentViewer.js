@@ -11,15 +11,15 @@ const LyricChordSegment = React.memo(
 
     return (
       <View style={styles.segmentContainer}>
-        {showChords && (
+        {showChords && transposed ? (
           <Text
             style={[
               styles.chordText,
               { color: chordColor, fontSize: chordFontSize, lineHeight: chordFontSize + 4 },
             ]}>
-            {transposed || ' '}
+            {transposed}
           </Text>
-        )}
+        ) : null}
         <Text
           style={[
             styles.lyricText,

@@ -44,9 +44,9 @@ export const DashboardScreen = ({
   // Time-aware greeting generator
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { main: 'መልካም ጧት', sub: 'Good Morning ☀️' };
-    if (hour < 17) return { main: 'መልካም ቀን', sub: 'Good Afternoon 🌤️' };
-    return { main: 'መልካም ምሽት', sub: 'Good Evening 🌙' };
+    if (hour < 12) return { main: 'Good Morning' };
+    if (hour < 17) return { main: 'Good Afternoon' };
+    return { main: 'Good Evening' };
   };
   const greeting = getGreeting();
 

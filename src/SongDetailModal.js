@@ -5,6 +5,7 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Platform,
   Alert,
@@ -14,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
+import { CHROMATIC_NOTES } from './constants';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
 
 // ─── Design tokens from Stitch system ───────────────────────────────────────
@@ -74,7 +76,22 @@ export const SongDetailModal = ({
   const album = song.album?.trim();
   const hasScale = song.scale && song.scale !== 'Uncategorized';
   const hasStyle = song.style && song.style !== 'Uncategorized';
-  const keyLabel = transposeKey === 0 ? 'Original' : transposeKey > 0 ? `+${transposeKey}` : `${transposeKey}`;
+  // Derive actual key label from song's scale root + semitone offset
+  const getKeyLabel = () => {
+    if (transposeKey === 0) return 'Original';
+    // Try to extract root note from scale string e.g. "1st (C Major/Tizeta)" → "C"
+    const rootMatch = song.scale?.match(/\(([A-G](?:#|b)?)/);
+    if (rootMatch) {
+      const rootIdx = CHROMATIC_NOTES.indexOf(rootMatch[1]);
+      if (rootIdx !== -1) {
+        let newIdx = (rootIdx + transposeKey) % 12;
+        if (newIdx < 0) newIdx += 12;
+        return CHROMATIC_NOTES[newIdx];
+      }
+    }
+    return transposeKey > 0 ? `+${transposeKey}` : `${transposeKey}`;
+  };
+  const keyLabel = getKeyLabel();
 
   const confirmDelete = () => {
     setShowOverflowMenu(false);
@@ -174,9 +191,7 @@ export const SongDetailModal = ({
             <Ionicons name="chevron-down" size={24} color={theme.text} />
           </TouchableOpacity>
 
-          <View style={[st.screenLabelPill, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Text style={[st.screenLabelText, { color: theme.subText }]}>SONGBOOK</Text>
-          </View>
+
 
           <View style={st.topNavRight}>
             <TouchableOpacity
@@ -185,13 +200,6 @@ export const SongDetailModal = ({
               accessibilityRole="button"
               accessibilityLabel={isFavorite ? 'Remove from favourites' : 'Add to favourites'}>
               <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color={isFavorite ? AMBER : theme.subText} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[st.iconNavBtn, { backgroundColor: theme.cardBg, borderRadius: 10 }]}
-              onPress={() => setIsPerformanceMode(true)}>
-              <Ionicons name="expand-outline" size={18} color={AMBER} />
-            </TouchableOpacity>
-            <TouchableOpacity style={st.iconNavBtn} onPress={() => handleEditSong(song)}>
-              <Ionicons name="create-outline" size={20} color={theme.text} />
             </TouchableOpacity>
             <TouchableOpacity style={st.iconNavBtn} onPress={() => setShowOverflowMenu(!showOverflowMenu)}>
               <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
@@ -211,15 +219,6 @@ export const SongDetailModal = ({
             <View style={st.headerTopRow}>
               <View style={[st.songIcon, { backgroundColor: `${AMBER}15`, borderColor: `${AMBER}35` }]}>
                 <Ionicons name="musical-notes" size={24} color={AMBER} />
-              </View>
-              <View style={st.headerActions}>
-                <TouchableOpacity
-                  style={[st.actionChip, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-                  onPress={() => setIsPerformanceMode(true)}
-                  activeOpacity={0.7}>
-                  <Ionicons name="expand-outline" size={13} color={AMBER} style={{ marginRight: 4 }} />
-                  <Text style={[st.actionChipText, { color: theme.text }]}>Perform</Text>
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -255,9 +254,9 @@ export const SongDetailModal = ({
                   </View>
                 )}
                 {hasStyle && (
-                  <View style={[st.rhythmPill, { backgroundColor: `${BURG}15`, borderColor: `${BURG}40` }]}>
-                    <Ionicons name="pulse-outline" size={11} color={BURG} style={{ marginRight: 5 }} />
-                    <Text style={[st.rhythmPillText, { color: BURG }]}>{song.style}</Text>
+                  <View style={[st.rhythmPill, { backgroundColor: `${CYAN}15`, borderColor: `${CYAN}40` }]}>
+                    <Ionicons name="pulse-outline" size={11} color={CYAN} style={{ marginRight: 5 }} />
+                    <Text style={[st.rhythmPillText, { color: CYAN }]}>{song.style}</Text>
                   </View>
                 )}
               </View>
@@ -282,29 +281,6 @@ export const SongDetailModal = ({
                   onPress={() => setTransposeKey(transposeKey + 1)}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                   <Text style={[st.stepSign, { color: theme.text }]}>+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Divider between tools */}
-            <View style={[st.toolDivider, { backgroundColor: theme.divider }]} />
-
-            {/* Font Size */}
-            <View style={st.toolGroup}>
-              <Text style={[st.toolLabel, { color: theme.subText }]}>FONT</Text>
-              <View style={[st.stepper, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-                <TouchableOpacity
-                  style={st.stepBtn}
-                  onPress={() => setFontSize(Math.max(12, fontSize - 2))}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Text style={[st.stepSign, { color: theme.text }]}>A−</Text>
-                </TouchableOpacity>
-                <Text style={[st.stepVal, { color: theme.text }]}>{fontSize}</Text>
-                <TouchableOpacity
-                  style={st.stepBtn}
-                  onPress={() => setFontSize(Math.min(32, fontSize + 2))}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Text style={[st.stepSign, { color: theme.text }]}>A+</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -367,23 +343,30 @@ export const SongDetailModal = ({
               showChords={showChords}
               themeState={theme}
               isDarkMode={isDarkMode}
-              fontSize={fontSize}
+              fontSize={16}
             />
           </View>
         </ScrollView>
 
-        {/* Backdrop — rendered AFTER ScrollView so it sits above it in the view stack */}
+        {/* Backdrop — closes menu on outside tap */}
         {showOverflowMenu && (
-          <TouchableOpacity
-            style={[StyleSheet.absoluteFillObject, { zIndex: 90 }]}
-            activeOpacity={1}
+          <Pressable
+            style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100 }]}
             onPress={() => setShowOverflowMenu(false)}
           />
         )}
 
         {/* Overflow Menu — above backdrop */}
         {showOverflowMenu && (
-          <View style={[st.overflowMenu, { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 100 }]}>
+          <View style={[st.overflowMenu, { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 101, elevation: 101 }]}>
+            <TouchableOpacity style={st.overflowMenuItem} onPress={() => { setShowOverflowMenu(false); setIsPerformanceMode(true); }}>
+              <Ionicons name="expand-outline" size={16} color={AMBER} style={{ marginRight: 8 }} />
+              <Text style={[st.overflowMenuText, { color: theme.text }]}>Performance Mode</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={st.overflowMenuItem} onPress={() => { setShowOverflowMenu(false); handleEditSong(song); }}>
+              <Ionicons name="create-outline" size={16} color={theme.text} style={{ marginRight: 8 }} />
+              <Text style={[st.overflowMenuText, { color: theme.text }]}>Edit Song</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={st.overflowMenuItem} onPress={confirmDelete}>
               <Ionicons name="trash-outline" size={16} color="#EF4444" style={{ marginRight: 8 }} />
               <Text style={[st.overflowMenuText, { color: '#EF4444' }]}>Delete Song</Text>
@@ -426,11 +409,11 @@ const st = StyleSheet.create({
   // Overflow
   overflowMenu: {
     position: 'absolute', top: 56, right: 12, zIndex: 99,
-    borderRadius: 12, borderWidth: 1, paddingVertical: 4, width: 148,
+    borderRadius: 14, borderWidth: 1, paddingVertical: 6, width: 200,
     elevation: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
   },
-  overflowMenuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
+  overflowMenuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
   overflowMenuText: { fontSize: 14, fontWeight: '600' },
 
   // Scroll
