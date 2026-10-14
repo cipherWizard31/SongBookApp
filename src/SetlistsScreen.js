@@ -42,8 +42,14 @@ export const SetlistsScreen = ({
   theme,
   isDarkMode = false,
 }) => {
-  // Navigation / Active View states
-  const [selectedSetlist, setSelectedSetlist] = useState(null);
+  // Navigation / Active View states: initialize immediately if navigated with a target setlist ID
+  const [selectedSetlist, setSelectedSetlist] = useState(() => {
+    const targetId = initialSetlistId || autoStartPerformanceSetlistId;
+    if (targetId && setlists.length > 0) {
+      return setlists.find((s) => s.id === targetId) || null;
+    }
+    return null;
+  });
 
   // Modal states
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -67,18 +73,24 @@ export const SetlistsScreen = ({
   const [setlistDesc, setSetlistDesc] = useState('');
   const [songSearchQuery, setSongSearchQuery] = useState('');
 
+  // Overview Search & Sort states
+  const [overviewSearchQuery, setOverviewSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'title' | 'songs-desc' | 'songs-asc'
+
+
   // Focus target setlist and launch performance mode when navigated via "Start Worship" from dashboard
   useEffect(() => {
     if (!autoStartPerformanceSetlistId || setlists.length === 0) return;
     const target = setlists.find((s) => s.id === autoStartPerformanceSetlistId);
+    if (target) {
+      setSelectedSetlist(target);
+      setCurrentPerfIndex(0);
+      setPerfTransposeKey(0);
+      setPerformanceModeVisible(true);
+    }
     if (onClearAutoStartPerformance) {
       onClearAutoStartPerformance();
     }
-    if (!target) return;
-    setSelectedSetlist(target);
-    setCurrentPerfIndex(0);
-    setPerfTransposeKey(0);
-    setPerformanceModeVisible(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartPerformanceSetlistId]);
 
@@ -86,11 +98,11 @@ export const SetlistsScreen = ({
   useEffect(() => {
     if (!initialSetlistId || setlists.length === 0) return;
     const target = setlists.find((s) => s.id === initialSetlistId);
-    if (onClearInitialSetlistId) {
-      onClearInitialSetlistId();
-    }
     if (target) {
       setSelectedSetlist(target);
+    }
+    if (onClearInitialSetlistId) {
+      onClearInitialSetlistId();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialSetlistId]);
@@ -296,6 +308,56 @@ export const SetlistsScreen = ({
     ? selectedSetlist.songIds.map((id) => songs.find((s) => s.id === id)).filter(Boolean)
     : [];
 
+  // Filter and sort setlists for the overview screen
+  const filteredAndSortedSetlists = useMemo(() => {
+    let list = [...setlists];
+
+    // Search filter (title, description, or contained song titles)
+    const q = overviewSearchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((setlist) => {
+        const titleMatch = (setlist.title || '').toLowerCase().includes(q);
+        const descMatch = (setlist.description || '').toLowerCase().includes(q);
+        const songTitlesMatch = (setlist.songIds || []).some((id) => {
+          const s = songs.find((song) => song.id === id);
+          return s && s.title && s.title.toLowerCase().includes(q);
+        });
+        return titleMatch || descMatch || songTitlesMatch;
+      });
+    }
+
+    // Sort order
+    switch (sortBy) {
+      case 'title':
+        list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        break;
+      case 'songs-desc':
+        list.sort((a, b) => (b.songIds?.length || 0) - (a.songIds?.length || 0));
+        break;
+      case 'songs-asc':
+        list.sort((a, b) => (a.songIds?.length || 0) - (b.songIds?.length || 0));
+        break;
+      case 'recent':
+      default:
+        // Newest first by id or fallback to natural order
+        list.sort((a, b) => {
+          const idA = Number(a.id) || 0;
+          const idB = Number(b.id) || 0;
+          return idB - idA;
+        });
+        break;
+    }
+
+    return list;
+  }, [setlists, songs, overviewSearchQuery, sortBy]);
+
+  const SORT_OPTIONS = [
+    { key: 'recent', label: 'Recent', icon: 'time-outline' },
+    { key: 'title', label: 'Name (A-Z)', icon: 'text-outline' },
+    { key: 'songs-desc', label: 'Most Songs', icon: 'musical-notes-outline' },
+    { key: 'songs-asc', label: 'Fewest Songs', icon: 'musical-note-outline' },
+  ];
+
   return (
     <View style={[st.root, { backgroundColor: theme.bg }]}>
       {/* Top action bar */}
@@ -321,20 +383,97 @@ export const SetlistsScreen = ({
         </View>
       </View>
 
+      {/* ── Search Bar ── */}
+      <View style={[st.overviewSearchWrap, { borderBottomColor: theme.divider }]}>
+        <View style={[st.overviewSearchBar, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Ionicons name="search-outline" size={18} color={theme.subText} style={{ marginRight: 8 }} />
+          <TextInput
+            style={[st.overviewSearchInput, { color: theme.text }]}
+            placeholder="Search setlists or song names…"
+            placeholderTextColor={theme.subText}
+            value={overviewSearchQuery}
+            onChangeText={setOverviewSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+          />
+          {overviewSearchQuery.length > 0 && Platform.OS !== 'ios' ? (
+            <TouchableOpacity onPress={() => setOverviewSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color={theme.subText} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+
+      {/* ── Sort By Row ── */}
+      <View style={[st.overviewSortWrap, { borderBottomColor: theme.divider }]}>
+        <Text style={[st.overviewSortLabel, { color: theme.subText }]}>SORT BY</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={st.overviewSortScroll}>
+          {SORT_OPTIONS.map((opt) => {
+            const active = sortBy === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                activeOpacity={0.7}
+                style={[
+                  st.overviewSortChip,
+                  {
+                    backgroundColor: active ? AMBER : theme.cardBg,
+                    borderColor: active ? AMBER : theme.border,
+                  },
+                ]}
+                onPress={() => setSortBy(opt.key)}>
+                <Ionicons
+                  name={opt.icon}
+                  size={13}
+                  color={active ? '#1E1909' : theme.subText}
+                  style={{ marginRight: 5 }}
+                />
+                <Text
+                  style={[
+                    st.overviewSortChipText,
+                    { color: active ? '#1E1909' : theme.subText, fontWeight: active ? '700' : '500' },
+                  ]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       {/* Setlists Overview List */}
       <FlatList
-        data={setlists}
+        data={filteredAndSortedSetlists}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 96 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 96 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
-          <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <Ionicons name="albums-outline" size={36} color={theme.subText} style={{ marginBottom: 10 }} />
-            <Text style={[st.emptyTitle, { color: theme.text }]}>No Setlists Yet</Text>
-            <Text style={[st.emptyHint, { color: theme.subText }]}>
-              Tap "+ New Set" or "Import" above to create setlists for your worship services.
-            </Text>
-          </View>
+          overviewSearchQuery.trim() ? (
+            <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Ionicons name="search-outline" size={36} color={theme.subText} style={{ marginBottom: 10 }} />
+              <Text style={[st.emptyTitle, { color: theme.text }]}>No Matches Found</Text>
+              <Text style={[st.emptyHint, { color: theme.subText }]}>
+                No setlists matched "{overviewSearchQuery}". Try a different keyword or reset search.
+              </Text>
+              <TouchableOpacity
+                style={[st.emptyResetBtn, { backgroundColor: `${AMBER}20`, borderColor: AMBER }]}
+                onPress={() => setOverviewSearchQuery('')}>
+                <Text style={[st.emptyResetBtnText, { color: AMBER }]}>Clear Search</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Ionicons name="albums-outline" size={36} color={theme.subText} style={{ marginBottom: 10 }} />
+              <Text style={[st.emptyTitle, { color: theme.text }]}>No Setlists Yet</Text>
+              <Text style={[st.emptyHint, { color: theme.subText }]}>
+                Tap "+ New Set" or "Import" above to create setlists for your worship services.
+              </Text>
+            </View>
+          )
         }
         renderItem={({ item }) => {
           const songCount = item.songIds ? item.songIds.length : 0;
@@ -972,6 +1111,64 @@ const st = StyleSheet.create({
   },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginBottom: 6 },
   emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  emptyResetBtn: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  emptyResetBtnText: { fontSize: 13, fontWeight: '700' },
+
+  // Overview Search & Sort Bar
+  overviewSearchWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+  },
+  overviewSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  overviewSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    padding: 0,
+    fontWeight: '500',
+  },
+  overviewSortWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  overviewSortLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    paddingLeft: 16,
+    paddingRight: 10,
+  },
+  overviewSortScroll: {
+    paddingRight: 16,
+    gap: 6,
+    alignItems: 'center',
+  },
+  overviewSortChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  overviewSortChipText: {
+    fontSize: 12,
+  },
 
   // Top Bar in Detail View
   topBar: {
