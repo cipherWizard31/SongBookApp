@@ -10,6 +10,8 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 
+import { parseEnvelope } from './shareEnvelope';
+
 const AMBER = '#E5A93C';
 
 export const QRScannerModal = ({
@@ -27,26 +29,27 @@ export const QRScannerModal = ({
     if (scanned) return;
     setScanned(true);
 
-    try {
-      const parsed = JSON.parse(data);
-      if (parsed?.sk === 'selah_kignit' && parsed.type && parsed.payload) {
-        onClose();
-        if (onImportData) {
-          onImportData(parsed.type, parsed.payload);
-        }
-      } else {
-        Alert.alert(
-          'Unrecognized QR Code',
-          'This QR code is not a valid Selah Kignit song or setlist.',
-          [{ text: 'Scan Again', onPress: () => setScanned(false) }]
-        );
-      }
-    } catch (e) {
+    const result = parseEnvelope(data);
+
+    if (!result.ok) {
+      Alert.alert('Unrecognized QR Code', result.error || 'This is not a valid Selah Kignit QR code.', [
+        { text: 'Scan Again', onPress: () => setScanned(false) },
+      ]);
+      return;
+    }
+
+    if (result.type !== 'song') {
       Alert.alert(
-        'Scan Error',
-        'Could not parse data from this QR code.',
-        [{ text: 'Try Again', onPress: () => setScanned(false) }]
+        'Wrong QR Type',
+        `This QR code contains a "${result.type}". QR sharing is for songs only.\n\nUse "Import from file" (folder icon in the header) for setlists and backups.`,
+        [{ text: 'OK', onPress: () => setScanned(false) }]
       );
+      return;
+    }
+
+    onClose();
+    if (onImportData) {
+      onImportData('song', result.payload);
     }
   };
 

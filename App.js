@@ -38,6 +38,13 @@ import {
 } from './src/constants';
 import { getTheme } from './src/theme';
 import { migrateSongToInline } from './src/chordParser';
+import {
+  buildEnvelope,
+  parseEnvelope,
+  validateSongPayload,
+  validateSetlistPayload,
+  validateBackupPayload,
+} from './src/shareEnvelope';
 
 import { Header } from './src/Header';
 import { DashboardScreen } from './src/DashboardScreen';
@@ -455,9 +462,22 @@ export default function App() {
     setExportOptionsVisible(true);
   };
 
+  const getBackupEnvelopeString = () => {
+    return JSON.stringify(
+      buildEnvelope('backup', {
+        songs,
+        setlists,
+        styles,
+        scales,
+      }),
+      null,
+      2
+    );
+  };
+
   const handleSaveBackupToFile = async () => {
     try {
-      const dataString = JSON.stringify({ songs, setlists, styles, scales }, null, 2);
+      const dataString = getBackupEnvelopeString();
       const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
 
       if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
@@ -482,7 +502,7 @@ export default function App() {
         }
       }
 
-      // iOS or fallback: Write file and trigger save / share dialog
+      // iOS or fallback
       const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(fileUri, dataString, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -505,7 +525,7 @@ export default function App() {
 
   const handleShareBackupToApp = async () => {
     try {
-      const dataString = JSON.stringify({ songs, setlists, styles, scales }, null, 2);
+      const dataString = getBackupEnvelopeString();
       const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
       const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
 
@@ -528,110 +548,330 @@ export default function App() {
     }
   };
 
-  const handleImportSongs = async () => {
+  // Helper to import song with conflict/content check
+  const importSingleSongInternal = async (payload) => {
+    const songErr = validateSongPayload(payload);
+    if (songErr) {
+      Alert.alert('Invalid Song Data', songErr);
+      return;
+    }
+
+    const songData = {
+      ...payload,
+      id: payload.id || Date.now().toString(),
+      title: payload.title.trim(),
+      content: payload.content !== undefined ? payload.content : migrateSongToInline(payload),
+    };
+
+    const identical = songs.find(
+      (s) => s.title === songData.title && (s.content || '') === (songData.content || '')
+    );
+    if (identical) {
+      Alert.alert('Already Exists', `"${songData.title}" is already in your song library.`);
+      return;
+    }
+
+    const sameTitleDiffContent = songs.some((s) => s.title === songData.title);
+    const finalSong = {
+      ...songData,
+      id: Date.now().toString(),
+      title: sameTitleDiffContent ? `${songData.title} (Copy)` : songData.title,
+    };
+
+    const updated = [finalSong, ...songs];
+    setSongs(updated);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    Alert.alert('Song Imported', `"${finalSong.title}" has been saved to your songs.`, [
+      {
+        text: 'View Song',
+        onPress: () => {
+          setSongDetailModal(finalSong);
+          setTransposeKey(0);
+        },
+      },
+      { text: 'OK' },
+    ]);
+  };
+
+  // Helper to import setlist with smart song merging
+  const importSetlistInternal = async (payload) => {
+    const err = validateSetlistPayload(payload);
+    if (err) {
+      Alert.alert('Invalid Setlist Data', err);
+      return;
+    }
+
+    const { setlist: incomingSetlist, songs: incomingSongs = [] } = payload;
+    let addedCount = 0;
+    let skippedCount = 0;
+    const finalSongIds = [];
+    const songsToAdd = [];
+
+    for (const rawSong of incomingSongs) {
+      const songContent = rawSong.content !== undefined ? rawSong.content : migrateSongToInline(rawSong);
+      const existingMatch = songs.find((s) => s.title === rawSong.title);
+
+      if (existingMatch) {
+        if ((existingMatch.content || '') === (songContent || '')) {
+          // Identical song exists: reuse its ID and skip adding
+          skippedCount++;
+          finalSongIds.push(existingMatch.id);
+        } else {
+          // Same title but different content: clone with new ID and (Copy) title
+          addedCount++;
+          const newId = Date.now().toString() + Math.random().toString(36).slice(2, 6);
+          const clonedSong = {
+            ...rawSong,
+            id: newId,
+            title: `${rawSong.title} (Copy)`,
+            content: songContent,
+          };
+          songsToAdd.push(clonedSong);
+          finalSongIds.push(newId);
+        }
+      } else {
+        // Brand new song
+        addedCount++;
+        const newId = rawSong.id || Date.now().toString() + Math.random().toString(36).slice(2, 6);
+        const newSong = {
+          ...rawSong,
+          id: newId,
+          content: songContent,
+        };
+        songsToAdd.push(newSong);
+        finalSongIds.push(newId);
+      }
+    }
+
+    if (songsToAdd.length > 0) {
+      const updatedSongs = [...songsToAdd, ...songs];
+      setSongs(updatedSongs);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSongs));
+    }
+
+    const newSetlist = {
+      id: Date.now().toString(),
+      title: incomingSetlist.title || 'Imported Setlist',
+      description: incomingSetlist.description || 'Imported Setlist',
+      songIds: finalSongIds,
+    };
+
+    const updatedSetlists = [newSetlist, ...setlists];
+    setSetlists(updatedSetlists);
+    await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(updatedSetlists));
+
+    Alert.alert(
+      'Setlist Imported',
+      `"${newSetlist.title}" imported!\n\nSongs: ${addedCount} added, ${skippedCount} skipped (already in library).`,
+      [
+        {
+          text: 'Open Setlist',
+          onPress: () => navigateToScreen('setlists', newSetlist.id),
+        },
+        { text: 'OK' },
+      ]
+    );
+  };
+
+  // Helper to restore backup (Replace or Merge with rollback safeguard)
+  const restoreBackupInternal = (payload) => {
+    const err = validateBackupPayload(payload);
+    if (err) {
+      Alert.alert('Invalid Backup Data', err);
+      return;
+    }
+
+    Alert.alert(
+      'Restore Backup',
+      `This backup contains ${payload.songs?.length || 0} songs and ${payload.setlists?.length || 0} setlists.\n\nChoose how you want to restore:`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Merge',
+          onPress: async () => {
+            try {
+              let addedSongs = 0;
+              let skippedSongs = 0;
+              const mergedSongs = [...songs];
+
+              for (const bSong of payload.songs || []) {
+                const bContent = bSong.content !== undefined ? bSong.content : migrateSongToInline(bSong);
+                const existing = mergedSongs.find((s) => s.title === bSong.title);
+
+                if (existing) {
+                  if ((existing.content || '') === (bContent || '')) {
+                    skippedSongs++;
+                  } else {
+                    addedSongs++;
+                    mergedSongs.push({
+                      ...bSong,
+                      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                      title: `${bSong.title} (Copy)`,
+                      content: bContent,
+                    });
+                  }
+                } else {
+                  addedSongs++;
+                  mergedSongs.push({
+                    ...bSong,
+                    id: bSong.id || Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                    content: bContent,
+                  });
+                }
+              }
+
+              // Merge setlists (skip if same title and same song count)
+              const mergedSetlists = [...setlists];
+              let addedSetlists = 0;
+              for (const bSetlist of payload.setlists || []) {
+                const exists = mergedSetlists.some(
+                  (sl) => sl.title === bSetlist.title && (sl.songIds || []).length === (bSetlist.songIds || []).length
+                );
+                if (!exists) {
+                  addedSetlists++;
+                  mergedSetlists.push({
+                    ...bSetlist,
+                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                  });
+                }
+              }
+
+              setSongs(mergedSongs);
+              setSetlists(mergedSetlists);
+              if (payload.styles) setStyles(payload.styles);
+              if (payload.scales) setScales(payload.scales);
+
+              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mergedSongs));
+              await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(mergedSetlists));
+
+              Alert.alert(
+                'Merge Complete',
+                `Songs: ${addedSongs} added, ${skippedSongs} skipped.\nSetlists: ${addedSetlists} added.`
+              );
+            } catch (mergeErr) {
+              console.error('Merge error', mergeErr);
+              Alert.alert('Restore Failed', 'An error occurred during merge.');
+            }
+          },
+        },
+        {
+          text: 'Replace Everything',
+          style: 'destructive',
+          onPress: async () => {
+            const ROLLBACK_BACKUP_KEY = '@selah_rollback_backup_temp';
+            const snapshot = { songs, setlists, styles, scales };
+            try {
+              // 1. Save temporary rollback point
+              await AsyncStorage.setItem(ROLLBACK_BACKUP_KEY, JSON.stringify(snapshot));
+
+              // 2. Perform replacement
+              const preparedSongs = (payload.songs || []).map((s) => ({
+                ...s,
+                content: s.content !== undefined ? s.content : migrateSongToInline(s),
+              }));
+
+              setSongs(preparedSongs);
+              setSetlists(payload.setlists || []);
+              if (payload.styles) setStyles(payload.styles);
+              if (payload.scales) setScales(payload.scales);
+
+              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(preparedSongs));
+              await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(payload.setlists || []));
+              if (payload.styles) await AsyncStorage.setItem(CUSTOM_STYLES_KEY, JSON.stringify(payload.styles));
+              if (payload.scales) await AsyncStorage.setItem(CUSTOM_SCALES_KEY, JSON.stringify(payload.scales));
+
+              // 3. Clear temporary rollback after success
+              await AsyncStorage.removeItem(ROLLBACK_BACKUP_KEY);
+
+              Alert.alert('Backup Restored', 'All songs and setlists have been replaced successfully.');
+            } catch (replaceErr) {
+              console.error('Replace error, rolling back', replaceErr);
+              // Rollback to prior state
+              try {
+                const rbStr = await AsyncStorage.getItem(ROLLBACK_BACKUP_KEY);
+                if (rbStr) {
+                  const rb = JSON.parse(rbStr);
+                  setSongs(rb.songs || []);
+                  setSetlists(rb.setlists || []);
+                  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(rb.songs || []));
+                  await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(rb.setlists || []));
+                }
+              } catch (rbErr) {
+                console.error('Rollback failed', rbErr);
+              }
+              Alert.alert('Restore Error', 'Failed to restore backup. State has been rolled back.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Main file import handler (from Header folder-open button)
+  const handleImportFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: ['application/json', '*/*'],
         copyToCacheDirectory: true,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const fileUri = result.assets[0].uri;
-        const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-          encoding: FileSystem.EncodingType.UTF8,
-        });
-        const importedData = JSON.parse(fileContent);
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
 
-        if (Array.isArray(importedData)) {
-          const migrated = importedData.map((s) => ({
-            ...s,
-            content: s.content !== undefined ? s.content : migrateSongToInline(s),
-          }));
-          handleSaveSongsBatch(migrated);
-        } else if (typeof importedData === 'object') {
-          if (importedData.songs && Array.isArray(importedData.songs)) {
-            const migrated = importedData.songs.map((s) => ({
-              ...s,
-              content: s.content !== undefined ? s.content : migrateSongToInline(s),
-            }));
-            handleSaveSongsBatch(migrated);
-          }
-          if (importedData.setlists && Array.isArray(importedData.setlists)) {
-            const newSetlists = [...importedData.setlists, ...setlists];
-            setSetlists(newSetlists);
-            await AsyncStorage.setItem(SETLISTS_KEY, JSON.stringify(newSetlists));
-          }
-        }
-        Alert.alert('Import Successful', 'Data has been successfully imported!');
+      const fileUri = result.assets[0].uri;
+      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      const envelopeResult = parseEnvelope(fileContent);
+      if (!envelopeResult.ok) {
+        Alert.alert(
+          'Invalid File',
+          'This is not a valid Selah Kignit file or the file is corrupted.'
+        );
+        return;
+      }
+
+      const { type, payload } = envelopeResult;
+
+      switch (type) {
+        case 'song':
+          await importSingleSongInternal(payload);
+          break;
+        case 'setlist':
+          await importSetlistInternal(payload);
+          break;
+        case 'backup':
+          restoreBackupInternal(payload);
+          break;
+        default:
+          Alert.alert('Unsupported Type', `Unknown file type "${type}".`);
+          break;
       }
     } catch (e) {
-      console.error('Import error', e);
-      Alert.alert('Import Error', 'Failed to parse or import data file.');
+      console.error('File import error:', e);
+      Alert.alert('Import Failed', 'Could not open or parse the selected file.');
     }
   };
 
-  // Handle direct in-app import from scanned QR code
+  const handleImportSongs = handleImportFile;
+
+  // Handle direct in-app import from scanned QR code (SONG ONLY)
   const handleInAppQRImport = async (type, payload) => {
     try {
-      if (type === 'song') {
-        const songData = {
-          ...payload,
-          id: payload.id || Date.now().toString(),
-          title: payload.title || 'Imported Song',
-          content: payload.content !== undefined ? payload.content : migrateSongToInline(payload),
-        };
-        const exists = songs.some((s) => s.id === songData.id || s.title === songData.title);
-        const finalSong = exists ? { ...songData, id: Date.now().toString() } : songData;
-        const updated = [finalSong, ...songs];
-        setSongs(updated);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      if (type !== 'song') {
         Alert.alert(
-          'Song Imported!',
-          `"${finalSong.title}" has been saved directly to your Song List.`,
-          [
-            {
-              text: 'View Song',
-              onPress: () => {
-                setSongDetailModal(finalSong);
-                setTransposeKey(0);
-              },
-            },
-            { text: 'OK' },
-          ]
+          'Unsupported QR',
+          'QR sharing only supports single songs. Setlists and backups must be shared via files.'
         );
-      } else if (type === 'setlist') {
-        const { setlist: incomingSetlist, songs: incomingSongs = [] } = payload;
-        // Import songs if any
-        if (Array.isArray(incomingSongs) && incomingSongs.length > 0) {
-          const migrated = incomingSongs.map((s) => ({
-            ...s,
-            content: s.content !== undefined ? s.content : migrateSongToInline(s),
-          }));
-          await handleSaveSongsBatch(migrated);
-        }
-
-        const newSetlist = {
-          id: incomingSetlist.id || Date.now().toString(),
-          title: incomingSetlist.title || 'Shared Setlist',
-          description: incomingSetlist.description || 'Imported via Selah Kignit In-App QR',
-          songIds: incomingSongs.map((s) => s.id),
-        };
-        await handleSaveSetlist(newSetlist);
-        Alert.alert(
-          'Setlist Imported!',
-          `"${newSetlist.title}" with ${incomingSongs.length} songs has been added to your Setlists.`,
-          [
-            {
-              text: 'Open Setlist',
-              onPress: () => navigateToScreen('setlists', newSetlist.id),
-            },
-            { text: 'OK' },
-          ]
-        );
+        return;
       }
+      await importSingleSongInternal(payload);
     } catch (err) {
       console.error('QR import error:', err);
-      Alert.alert('Import Failed', 'Could not save the scanned data.');
+      Alert.alert('Import Failed', 'Could not save the scanned song.');
     }
   };
 
@@ -848,10 +1088,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top', 'bottom', 'left', 'right']}>
         <Header
           theme={theme}
           onNavigateToProfile={() => navigateToScreen('profile')}
           onOpenQRScanner={() => setQrScannerVisible(true)}
+          onImportFile={handleImportFile}
         />
 
         {/* Direct Screen Content (No Transition Animations) */}
@@ -865,6 +1107,7 @@ export default function App() {
           onSelectTab={navigateToScreen}
           theme={theme}
         />
+      </SafeAreaView>
 
         <SongEditModal
           modalVisible={modalVisible}

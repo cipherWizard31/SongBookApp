@@ -22,6 +22,8 @@ import { AudioPreviewBanner } from './AudioPreviewBanner';
 import { QRShareModal } from './QRShareModal';
 import { ExportOptionsModal } from './ExportOptionsModal';
 
+import { buildEnvelope } from './shareEnvelope';
+
 // ─── Design tokens from Stitch system ───────────────────────────────────────
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
@@ -51,6 +53,7 @@ export const SongDetailModal = ({
   const [scrollSpeed, setScrollSpeed] = useState(1);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [qrShareVisible, setQrShareVisible] = useState(false);
+  const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
 
   const scrollViewRef = useRef(null);
   const scrollOffsetRef = useRef(0);
@@ -98,8 +101,6 @@ export const SongDetailModal = ({
   };
   const keyLabel = getKeyLabel();
 
-  const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
-
   const confirmDelete = () => {
     setShowOverflowMenu(false);
     Alert.alert('Delete Song', `Delete "${song.title}"?`, [
@@ -109,21 +110,16 @@ export const SongDetailModal = ({
   };
 
   const getSongExportData = () => {
-    return {
-      version: '1.0',
-      type: 'songbook_song',
-      exportDate: new Date().toISOString(),
-      song: {
-        id: song.id,
-        title: song.title,
-        author: song.author,
-        album: song.album,
-        style: song.style,
-        scale: song.scale,
-        content: song.content,
-        audioUrl: song.audioUrl,
-      },
-    };
+    return buildEnvelope('song', {
+      id: song.id,
+      title: song.title,
+      author: song.author,
+      album: song.album,
+      style: song.style,
+      scale: song.scale,
+      content: song.content,
+      audioUrl: song.audioUrl,
+    });
   };
 
   const handleSaveSongToFile = async () => {
@@ -491,17 +487,8 @@ export const SongDetailModal = ({
           onClose={() => setQrShareVisible(false)}
           title={song.title}
           subtitle="Scan with Selah Kignit to import song"
-          type="song"
-          data={{
-            id: song.id,
-            title: song.title,
-            author: song.author,
-            album: song.album,
-            style: song.style,
-            scale: song.scale,
-            content: song.content,
-            audioUrl: song.audioUrl,
-          }}
+          song={song}
+          onFallbackToFile={() => setExportOptionsVisible(true)}
           theme={theme}
         />
 

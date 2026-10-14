@@ -6,6 +6,7 @@ import App from './App';
 
 LogBox.ignoreLogs([
   'InteractionManager has been deprecated',
+  /InteractionManager has been deprecated/,
 ]);
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

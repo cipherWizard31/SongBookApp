@@ -24,8 +24,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
-import { QRShareModal } from './QRShareModal';
 import { ExportOptionsModal } from './ExportOptionsModal';
+import { buildEnvelope, parseEnvelope, validateSetlistPayload } from './shareEnvelope';
 
 // Design Accent Tokens
 const AMBER = '#E5A93C';
@@ -243,17 +243,14 @@ export const SetlistsScreen = ({
   const getSetlistExportData = (setlist) => {
     const target = setlist || selectedSetlist;
     const setlistSongs = songs.filter((s) => (target?.songIds || []).includes(s.id));
-    return {
-      version: '1.0',
-      type: 'songbook_setlist',
-      exportDate: new Date().toISOString(),
+    return buildEnvelope('setlist', {
       setlist: {
         id: target?.id,
         title: target?.title,
         description: target?.description,
       },
       songs: setlistSongs,
-    };
+    });
   };
 
   const handleSaveSetlistToFile = async () => {
@@ -329,39 +326,89 @@ export const SetlistsScreen = ({
   const handleImportSetlist = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
+        type: ['application/json', '*/*'],
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled) return;
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
 
-      const fileUri = result.assets ? result.assets[0].uri : result.uri;
-      const fileContent = await FileSystem.readAsStringAsync(fileUri);
-      const parsedData = JSON.parse(fileContent);
+      const fileUri = result.assets[0].uri;
+      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      const envelopeResult = parseEnvelope(fileContent);
 
-      if (parsedData.type !== 'songbook_setlist' || !parsedData.setlist) {
-        Alert.alert('Invalid File', 'This JSON file is not a valid setlist file.');
+      if (!envelopeResult.ok || envelopeResult.type !== 'setlist') {
+        Alert.alert('Invalid File', 'This file is not a valid Selah Kignit setlist file.');
         return;
+      }
+
+      const valErr = validateSetlistPayload(envelopeResult.payload);
+      if (valErr) {
+        Alert.alert('Invalid Setlist', valErr);
+        return;
+      }
+
+      const { setlist: incomingSetlist, songs: incomingSongs = [] } = envelopeResult.payload;
+
+      let addedCount = 0;
+      let skippedCount = 0;
+      const finalSongIds = [];
+      const songsToAdd = [];
+
+      for (const rawSong of incomingSongs) {
+        const songContent = rawSong.content !== undefined ? rawSong.content : migrateSongToInline(rawSong);
+        const existingMatch = songs.find((s) => s.title === rawSong.title);
+
+        if (existingMatch) {
+          if ((existingMatch.content || '') === (songContent || '')) {
+            skippedCount++;
+            finalSongIds.push(existingMatch.id);
+          } else {
+            addedCount++;
+            const newId = Date.now().toString() + Math.random().toString(36).slice(2, 6);
+            const clonedSong = {
+              ...rawSong,
+              id: newId,
+              title: `${rawSong.title} (Copy)`,
+              content: songContent,
+            };
+            songsToAdd.push(clonedSong);
+            finalSongIds.push(newId);
+          }
+        } else {
+          addedCount++;
+          const newId = rawSong.id || Date.now().toString() + Math.random().toString(36).slice(2, 6);
+          const newSong = {
+            ...rawSong,
+            id: newId,
+            content: songContent,
+          };
+          songsToAdd.push(newSong);
+          finalSongIds.push(newId);
+        }
+      }
+
+      if (songsToAdd.length > 0 && onSaveSongsBatch) {
+        onSaveSongsBatch(songsToAdd);
       }
 
       const importedSetlist = {
         id: Date.now().toString(),
-        title: parsedData.setlist.title.includes('(Imported)')
-          ? parsedData.setlist.title
-          : `${parsedData.setlist.title} (Imported)`,
-        description: parsedData.setlist.description || 'Imported Setlist',
-        songIds: (parsedData.songs || []).map((s) => s.id),
+        title: incomingSetlist.title || 'Imported Setlist',
+        description: incomingSetlist.description || 'Imported Setlist',
+        songIds: finalSongIds,
         isImported: true,
       };
 
-      if (parsedData.songs && parsedData.songs.length > 0 && onSaveSongsBatch) {
-        onSaveSongsBatch(parsedData.songs.map((s) => ({ ...s, isImported: true })));
-      }
-
       onSaveSetlist(importedSetlist);
-      Alert.alert('Success', `Setlist "${importedSetlist.title}" imported successfully.`);
+      Alert.alert(
+        'Setlist Imported',
+        `"${importedSetlist.title}" imported!\n\nSongs: ${addedCount} added, ${skippedCount} skipped (already in library).`
+      );
     } catch (error) {
-      Alert.alert('Import Failed', 'Unable to parse the imported JSON file.');
+      console.error('Setlist import error:', error);
+      Alert.alert('Import Failed', 'Unable to parse the imported file.');
     }
   };
 
@@ -599,7 +646,7 @@ export const SetlistsScreen = ({
 
               <TouchableOpacity
                 style={[st.iconBarBtn]}
-                onPress={() => setMoreMenuVisible(true)}
+                onPress={() => setMoreMenuVisible((prev) => !prev)}
                 accessibilityRole="button"
                 accessibilityLabel="More options">
                 <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
@@ -746,15 +793,6 @@ export const SetlistsScreen = ({
                     st.moreMenuContainer,
                     { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 101, elevation: 101 },
                   ]}>
-                  <TouchableOpacity
-                    style={[st.moreMenuItem, { borderBottomColor: theme.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
-                    onPress={() => {
-                      setMoreMenuVisible(false);
-                      setQrShareVisible(true);
-                    }}>
-                    <Ionicons name="qr-code-outline" size={20} color={AMBER} style={st.moreMenuIcon} />
-                    <Text style={[st.moreMenuText, { color: theme.text }]}>Share In-App (QR Code)</Text>
-                  </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[st.moreMenuItem, { borderBottomColor: theme.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
@@ -763,7 +801,7 @@ export const SetlistsScreen = ({
                       handleExportSetlist(selectedSetlist);
                     }}>
                     <Ionicons name="share-outline" size={20} color={theme.text} style={st.moreMenuIcon} />
-                    <Text style={[st.moreMenuText, { color: theme.text }]}>Export File (External)</Text>
+                    <Text style={[st.moreMenuText, { color: theme.text }]}>Share Setlist</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -789,39 +827,14 @@ export const SetlistsScreen = ({
               </>
             )}
 
-            {/* In-App QR Share Modal */}
-            <QRShareModal
-              visible={qrShareVisible}
-              onClose={() => setQrShareVisible(false)}
-              title={selectedSetlist?.title || 'Setlist'}
-              subtitle="Scan with Selah Kignit to import setlist"
-              type="setlist"
-              data={{
-                setlist: {
-                  id: selectedSetlist?.id,
-                  title: selectedSetlist?.title,
-                  description: selectedSetlist?.description,
-                },
-                songs: activeSetlistSongs.map((s) => ({
-                  id: s.id,
-                  title: s.title,
-                  author: s.author,
-                  album: s.album,
-                  style: s.style,
-                  scale: s.scale,
-                  content: s.content,
-                  audioUrl: s.audioUrl,
-                })),
-              }}
-              theme={theme}
-            />
 
-            {/* Export Setlist Options Modal */}
+
+            {/* Share Setlist Options Modal */}
             <ExportOptionsModal
               visible={exportOptionsVisible}
               onClose={() => setExportOptionsVisible(false)}
-              title="Export Setlist"
-              subtitle={`Choose how you want to export "${exportingSetlist?.title || selectedSetlist?.title || 'Setlist'}"`}
+              title="Share Setlist"
+              subtitle={`Choose how you want to share "${exportingSetlist?.title || selectedSetlist?.title || 'Setlist'}"`}
               itemCountText={`${activeSetlistSongs.length} songs`}
               onSaveToFile={handleSaveSetlistToFile}
               onShareToApp={handleShareSetlistToApp}
@@ -1303,7 +1316,7 @@ const st = StyleSheet.create({
   // More Menu
   moreMenuContainer: {
     position: 'absolute',
-    top: 50,
+    top: 58,
     right: 12,
     width: 200,
     borderRadius: 14,

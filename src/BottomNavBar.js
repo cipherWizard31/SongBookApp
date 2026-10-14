@@ -97,7 +97,7 @@ const TabItem = ({ tab, active, onSelectTab, theme }) => {
 
 export const BottomNavBar = ({ currentTab, onSelectTab, theme }) => {
   return (
-    <View style={st.dockWrapper} pointerEvents="box-none">
+    <View style={[st.dockWrapper, { backgroundColor: 'transparent' }]} pointerEvents="box-none">
       <View
         style={[
           st.floatingContainer,

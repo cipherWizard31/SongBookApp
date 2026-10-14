@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner }) => {
+export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFile }) => {
   return (
     <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
       {/* Left: App Logo & Identity */}
@@ -17,16 +17,29 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner }) => {
         <Text style={[styles.title, { color: theme.text }]}>Selah Kignit</Text>
       </View>
 
-      {/* Right: Actions (In-App Scan & Profile) */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      {/* Right: Actions */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {onImportFile ? (
+          <TouchableOpacity
+            onPress={onImportFile}
+            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            activeOpacity={0.75}
+            accessibilityLabel="Import from file"
+            accessibilityRole="button">
+            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
+              <Ionicons name="folder-open-outline" size={17} color={theme.tint} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
         {onOpenQRScanner ? (
           <TouchableOpacity
             onPress={onOpenQRScanner}
-            style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             activeOpacity={0.75}
             accessibilityLabel="Scan In-App QR"
             accessibilityRole="button">
-            <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
               <Ionicons name="qr-code-outline" size={17} color={theme.tint} />
             </View>
           </TouchableOpacity>
@@ -35,11 +48,11 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner }) => {
         {onNavigateToProfile ? (
           <TouchableOpacity
             onPress={onNavigateToProfile}
-            style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             activeOpacity={0.75}
             accessibilityLabel="Open profile"
             accessibilityRole="button">
-            <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
+            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
               <Ionicons name="person" size={17} color={theme.tint} />
             </View>
           </TouchableOpacity>
@@ -81,7 +94,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.3,
   },
-  profileAvatarBtn: {
+  iconBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -89,7 +102,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarCircle: {
+  iconCircle: {
     width: '100%',
     height: '100%',
     borderRadius: 18,
