@@ -1,11 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  PanResponder,
+  BackHandler,
+  TextInput,
+  Switch,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AlbumsScreen } from './AlbumsScreen';
@@ -15,8 +18,6 @@ import { FavouritesScreen } from './FavouritesScreen';
 
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
-
-const SUB_TABS = ['favourites', 'albums', 'artists', 'settings'];
 
 export const ProfileScreen = ({
   songs = [],
@@ -40,76 +41,148 @@ export const ProfileScreen = ({
   setIsDarkMode,
   theme,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('favourites');
-  const activeSubTabRef = useRef(activeSubTab);
-  activeSubTabRef.current = activeSubTab;
+  // activeSubView: null (shows Profile Hub) | 'favourites' | 'albums' | 'artists' | 'settings'
+  const [activeSubView, setActiveSubView] = useState(null);
 
-  const handleProfileSwipe = (gestureState) => {
-    const curTab = activeSubTabRef.current;
-    const curIdx = SUB_TABS.indexOf(curTab);
-    const isLeftSwipe = gestureState.dx < -35 || (gestureState.dx < -15 && gestureState.vx < -0.2);
-    const isRightSwipe = gestureState.dx > 35 || (gestureState.dx > 15 && gestureState.vx > 0.2);
+  // Profile Edit State within Profile Hub
+  const [profileName, setProfileName] = useState(profile?.name || 'Worship Musician');
+  const [profileRole, setProfileRole] = useState(profile?.role || 'Sanctuary Director • Selah Kignit');
+  const [isSaved, setIsSaved] = useState(false);
+  const [statsModalVisible, setStatsModalVisible] = useState(false);
 
-    if (isLeftSwipe) {
-      if (curIdx >= 0 && curIdx < SUB_TABS.length - 1) {
-        setActiveSubTab(SUB_TABS[curIdx + 1]);
-      }
-    } else if (isRightSwipe) {
-      if (curIdx > 0) {
-        setActiveSubTab(SUB_TABS[curIdx - 1]);
-      } else if (curIdx === 0 && onNavigateToScreen) {
-        onNavigateToScreen('setlists');
-      }
+  useEffect(() => {
+    if (profile) {
+      if (profile.name) setProfileName(profile.name);
+      if (profile.role) setProfileRole(profile.role);
     }
-  };
+  }, [profile]);
 
-  const shouldHandleProfileSwipe = (evt, gestureState) => {
-    // Don't intercept if touching inside horizontal stats scrollview (pageY between 135 and 240)
-    const touchY = evt.nativeEvent.pageY;
-    if (touchY > 135 && touchY < 240) {
+  // Handle hardware back button inside Profile sub-views
+  useEffect(() => {
+    const onBackPress = () => {
+      if (activeSubView) {
+        setActiveSubView(null);
+        return true;
+      }
       return false;
+    };
+
+    const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSub.remove();
+  }, [activeSubView]);
+
+  const onSaveProfilePress = () => {
+    const updated = {
+      name: profileName.trim() || 'Worship Musician',
+      role: profileRole.trim() || 'Sanctuary Director • Selah Kignit',
+    };
+    if (handleSaveProfile) {
+      handleSaveProfile(updated);
     }
-    const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.8;
-    const isSignificant = Math.abs(gestureState.dx) > 18;
-    return isHorizontal && isSignificant;
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2500);
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponderCapture: shouldHandleProfileSwipe,
-      onMoveShouldSetPanResponder: shouldHandleProfileSwipe,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (evt, gestureState) => {
-        handleProfileSwipe(gestureState);
-      },
-      onPanResponderTerminate: (evt, gestureState) => {
-        handleProfileSwipe(gestureState);
-      },
-    })
-  ).current;
-
-  // Compute unique metrics
+  // Compute metrics
   const favouriteSongs = songs.filter((s) => s.isFavorite);
   const uniqueAlbums = Array.from(new Set(songs.map((s) => s.album).filter(Boolean)));
   const uniqueArtists = Array.from(new Set(songs.map((s) => s.author).filter(Boolean)));
 
-  const subTabs = [
-    { id: 'favourites', label: 'Favourites', icon: 'star' },
-    { id: 'albums', label: 'Albums', icon: 'albums' },
-    { id: 'artists', label: 'Artists', icon: 'people' },
-    { id: 'settings', label: 'Settings', icon: 'settings-sharp' },
-  ];
+  // If a subview (Favourites, Albums, Artists, Settings) is opened:
+  if (activeSubView) {
+    const subViewTitles = {
+      favourites: 'Favourites',
+      albums: 'Albums',
+      artists: 'Artists',
+      settings: 'Settings',
+    };
 
+    return (
+      <View style={[st.container, { backgroundColor: theme.bg }]}>
+        {/* Subview Navigation Header */}
+        <View style={[st.subviewHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.divider }]}>
+          <TouchableOpacity
+            style={st.subviewBackBtn}
+            onPress={() => setActiveSubView(null)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Profile">
+            <Ionicons name="arrow-back" size={22} color={theme.text} />
+            <Text style={[st.subviewBackText, { color: theme.text }]}>Profile</Text>
+          </TouchableOpacity>
+          <Text style={[st.subviewHeaderTitle, { color: theme.text }]}>
+            {subViewTitles[activeSubView] || ''}
+          </Text>
+          <View style={{ width: 50 }} />
+        </View>
+
+        <View style={st.contentArea}>
+          {activeSubView === 'favourites' && (
+            <FavouritesScreen
+              songs={songs}
+              onSelectSong={onSelectSong}
+              onToggleFavorite={onToggleFavorite}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
+          {activeSubView === 'albums' && (
+            <AlbumsScreen
+              songs={songs}
+              onSelectSong={onSelectSong}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
+          {activeSubView === 'artists' && (
+            <ArtistsScreen
+              songs={songs}
+              onSelectSong={onSelectSong}
+              theme={theme}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
+          {activeSubView === 'settings' && (
+            <SettingsScreen
+              songs={songs}
+              setSongs={setSongs}
+              setlists={setlists}
+              styles={rhythmStyles}
+              setStyles={setStyles}
+              scales={scales}
+              setScales={setScales}
+              profile={profile}
+              handleSaveProfile={handleSaveProfile}
+              handleExportSongs={handleExportSongs}
+              handleImportSongs={handleImportSongs}
+              handleClearImportedSetlists={onClearImportedSetlists}
+              handleClearImportedSongs={onClearImportedSongs}
+              handleClearAllImportedData={onClearAllImportedData}
+              isDarkMode={isDarkMode}
+              setIsDarkMode={setIsDarkMode}
+              theme={theme}
+            />
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // ── DEFAULT VIEW: PROFILE HUB ──
   return (
-    <View style={[st.container, { backgroundColor: theme.bg }]} {...panResponder.panHandlers}>
+    <ScrollView
+      style={[st.container, { backgroundColor: theme.bg }]}
+      contentContainerStyle={st.hubScrollContent}
+      showsVerticalScrollIndicator={false}>
 
       {/* ── PROFILE HERO HEADER ── */}
-      <View style={[st.profileHeader, { backgroundColor: theme.cardBg, borderBottomColor: theme.divider }]}>
+      <View style={[st.heroCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={st.profileInfoRow}>
           <View style={[st.avatarRing, { borderColor: AMBER, backgroundColor: `${AMBER}15` }]}>
-            <Ionicons name="person-circle-sharp" size={48} color={AMBER} />
+            <Ionicons name="person-circle-sharp" size={54} color={AMBER} />
           </View>
 
           <View style={st.profileTextWrap}>
@@ -125,169 +198,206 @@ export const ProfileScreen = ({
           </View>
         </View>
 
-        {/* ── STATS OVERVIEW CARDS ── */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={st.statsGrid}
-          style={{ marginBottom: 16 }}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={[
-              st.statCard,
-              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'favourites' ? AMBER : theme.border },
-            ]}
-            onPress={() => setActiveSubTab('favourites')}>
-            <Ionicons name="star" size={16} color={AMBER} style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{favouriteSongs.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Favourites</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={[
-              st.statCard,
-              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'albums' ? AMBER : theme.border },
-            ]}
-            onPress={() => setActiveSubTab('albums')}>
-            <Ionicons name="albums-outline" size={16} color={CYAN} style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{uniqueAlbums.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Albums</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={[
-              st.statCard,
-              { backgroundColor: theme.secondaryBg, borderColor: activeSubTab === 'artists' ? AMBER : theme.border },
-            ]}
-            onPress={() => setActiveSubTab('artists')}>
-            <Ionicons name="people-outline" size={16} color="#A855F7" style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{uniqueArtists.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Artists</Text>
-          </TouchableOpacity>
-
-          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-            <Ionicons name="musical-notes-outline" size={16} color="#60A5FA" style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{songs.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Songs</Text>
+        {/* ── STATS COUNTER STRIP ── */}
+        <View style={[st.statsStrip, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
+          <View style={st.statItem}>
+            <Text style={[st.statVal, { color: theme.text }]}>{songs.length}</Text>
+            <Text style={[st.statLbl, { color: theme.subText }]}>Songs</Text>
           </View>
-
-          <View style={[st.statCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-            <Ionicons name="list-outline" size={16} color="#34D399" style={{ marginBottom: 4 }} />
-            <Text style={[st.statValue, { color: theme.text }]}>{setlists.length}</Text>
-            <Text style={[st.statLabel, { color: theme.subText }]} numberOfLines={1}>Setlists</Text>
+          <View style={[st.statDivider, { backgroundColor: theme.divider }]} />
+          <View style={st.statItem}>
+            <Text style={[st.statVal, { color: theme.text }]}>{setlists.length}</Text>
+            <Text style={[st.statLbl, { color: theme.subText }]}>Setlists</Text>
           </View>
-        </ScrollView>
-
-        {/* ── SEGMENTED TAB SWITCHER ── */}
-        <View style={[st.subTabSegment, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-          {subTabs.map((tab) => {
-            const isActive = activeSubTab === tab.id;
-            return (
-              <TouchableOpacity
-                key={tab.id}
-                activeOpacity={0.8}
-                style={[
-                  st.subTabBtn,
-                  isActive && { backgroundColor: AMBER },
-                ]}
-                onPress={() => setActiveSubTab(tab.id)}>
-                <Ionicons
-                  name={tab.icon}
-                  size={14}
-                  color={isActive ? '#1E1909' : theme.subText}
-                  style={{ marginRight: 5 }}
-                />
-                <Text
-                  style={[
-                    st.subTabBtnText,
-                    { color: isActive ? '#1E1909' : theme.subText, fontWeight: isActive ? '700' : '500' },
-                  ]}
-                  numberOfLines={1}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          <View style={[st.statDivider, { backgroundColor: theme.divider }]} />
+          <View style={st.statItem}>
+            <Text style={[st.statVal, { color: theme.text }]}>{favouriteSongs.length}</Text>
+            <Text style={[st.statLbl, { color: theme.subText }]}>Favourites</Text>
+          </View>
         </View>
       </View>
 
-      {/* ── TAB CONTENT ── */}
-      <View style={st.contentArea}>
-        {activeSubTab === 'favourites' && (
-          <FavouritesScreen
-            songs={songs}
-            onSelectSong={onSelectSong}
-            onToggleFavorite={onToggleFavorite}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+      {/* ── SECTION: LIBRARY HUBS / BUTTONS ── */}
+      <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>LIBRARY & COLLECTIONS</Text>
+      <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        {/* Favourites Button */}
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={() => setActiveSubView('favourites')}>
+          <View style={[st.menuIconTile, { backgroundColor: `${AMBER}18` }]}>
+            <Ionicons name="star" size={20} color={AMBER} />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Favourites</Text>
+            <Text style={[st.menuSubtitle, { color: theme.subText }]}>
+              {favouriteSongs.length} {favouriteSongs.length === 1 ? 'starred song' : 'starred songs'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
 
-        {activeSubTab === 'albums' && (
-          <AlbumsScreen
-            songs={songs}
-            onSelectSong={onSelectSong}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+        <View style={[st.rowSeparator, { backgroundColor: theme.divider }]} />
 
-        {activeSubTab === 'artists' && (
-          <ArtistsScreen
-            songs={songs}
-            onSelectSong={onSelectSong}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        )}
+        {/* Albums Button */}
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={() => setActiveSubView('albums')}>
+          <View style={[st.menuIconTile, { backgroundColor: `${CYAN}18` }]}>
+            <Ionicons name="albums" size={20} color={CYAN} />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Albums</Text>
+            <Text style={[st.menuSubtitle, { color: theme.subText }]}>
+              {uniqueAlbums.length} {uniqueAlbums.length === 1 ? 'collection' : 'collections'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
 
-        {activeSubTab === 'settings' && (
-          <SettingsScreen
-            songs={songs}
-            setSongs={setSongs}
-            setlists={setlists}
-            styles={rhythmStyles}
-            setStyles={setStyles}
-            scales={scales}
-            setScales={setScales}
-            profile={profile}
-            handleSaveProfile={handleSaveProfile}
-            handleExportSongs={handleExportSongs}
-            handleImportSongs={handleImportSongs}
-            handleClearImportedSetlists={onClearImportedSetlists}
-            handleClearImportedSongs={onClearImportedSongs}
-            handleClearAllImportedData={onClearAllImportedData}
-            isDarkMode={isDarkMode}
-            setIsDarkMode={setIsDarkMode}
-            theme={theme}
-          />
-        )}
+        <View style={[st.rowSeparator, { backgroundColor: theme.divider }]} />
+
+        {/* Artists Button */}
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={() => setActiveSubView('artists')}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(168, 85, 247, 0.18)' }]}>
+            <Ionicons name="people" size={20} color="#A855F7" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Artists</Text>
+            <Text style={[st.menuSubtitle, { color: theme.subText }]}>
+              {uniqueArtists.length} {uniqueArtists.length === 1 ? 'author & artist' : 'authors & artists'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
       </View>
-    </View>
+
+      {/* ── SECTION: APP SETTINGS BUTTON ── */}
+      <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>APP PREFERENCES</Text>
+      <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={() => setActiveSubView('settings')}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(96, 165, 250, 0.18)' }]}>
+            <Ionicons name="settings-sharp" size={20} color="#60A5FA" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Settings & Data</Text>
+            <Text style={[st.menuSubtitle, { color: theme.subText }]}>
+              Theme, Backup/Export, Import, and Database
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── SECTION: EDIT PROFILE DETAILS ── */}
+      <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>EDIT MUSICIAN IDENTITY</Text>
+      <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 16 }]}>
+        <View style={st.inputWrap}>
+          <Text style={[st.inputLabel, { color: theme.subText }]}>Display Name</Text>
+          <TextInput
+            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+            value={profileName}
+            onChangeText={setProfileName}
+            placeholder="e.g. Worship Musician"
+            placeholderTextColor={theme.subText}
+          />
+        </View>
+
+        <View style={[st.inputWrap, { marginTop: 12 }]}>
+          <Text style={[st.inputLabel, { color: theme.subText }]}>Ministry Role & Title</Text>
+          <TextInput
+            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+            value={profileRole}
+            onChangeText={setProfileRole}
+            placeholder="e.g. Sanctuary Director • Selah Kignit"
+            placeholderTextColor={theme.subText}
+          />
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[st.saveProfileBtn, { backgroundColor: isSaved ? '#10B981' : AMBER }]}
+          onPress={onSaveProfilePress}>
+          <Ionicons
+            name={isSaved ? 'checkmark-circle' : 'save-outline'}
+            size={16}
+            color="#1E1909"
+            style={{ marginRight: 6 }}
+          />
+          <Text style={st.saveProfileBtnText}>
+            {isSaved ? 'Profile Saved Locally!' : 'Save Profile Changes'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
   );
 };
 
 const st = StyleSheet.create({
   container: { flex: 1 },
 
-  profileHeader: {
+  // Subview Header
+  subviewHeader: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  subviewBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingRight: 10,
+    gap: 4,
+  },
+  subviewBackText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  subviewHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  contentArea: {
+    flex: 1,
+  },
+
+  // Profile Hub Scroll Content
+  hubScrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 72,
+  },
+
+  // Hero Card
+  heroCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 20,
   },
   profileInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
     gap: 14,
+    marginBottom: 16,
   },
   avatarRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -306,54 +416,108 @@ const st = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // Stats Grid
-  statsGrid: {
+  // Stats Strip
+  statsStrip: {
     flexDirection: 'row',
-    gap: 8,
-    paddingRight: 8,
-  },
-  statCard: {
-    minWidth: 74,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'space-around',
     borderRadius: 14,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 12,
   },
-  statValue: {
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statVal: {
     fontSize: 16,
     fontWeight: '700',
-    lineHeight: 20,
   },
-  statLabel: {
+  statLbl: {
     fontSize: 11,
     marginTop: 2,
     fontWeight: '500',
   },
-
-  // Sub Tab Segment
-  subTabSegment: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 24,
   },
-  subTabBtn: {
-    flex: 1,
+
+  // Section Headers
+  sectionHeaderLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+
+  // Menu List Cards
+  menuCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  menuRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderRadius: 9,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuIconTile: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  menuTextCol: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  menuSubtitle: {
+    fontSize: 12,
+  },
+  rowSeparator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 70,
+  },
+
+  // Edit Profile Form
+  inputWrap: {
+    marginBottom: 4,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 6,
+    letterSpacing: 0.4,
+  },
+  inputField: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  saveProfileBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 44,
+    borderRadius: 12,
+    marginTop: 14,
   },
-  subTabBtnText: {
-    fontSize: 11.5,
-  },
-
-  contentArea: {
-    flex: 1,
+  saveProfileBtnText: {
+    color: '#1E1909',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 
