@@ -161,16 +161,16 @@ export const SongsScreen = ({
       </View>
 
       {/* ── Status & Filter Summary Bar ── */}
-      <View style={[st.summaryBar, { borderBottomColor: theme.divider }]}>
-        <Text style={[st.summaryText, { color: theme.subText }]}>
-          Showing {filteredSongs.length} {filteredSongs.length === 1 ? 'song' : 'songs'}
-        </Text>
-        {isFiltered && (
+      {isFiltered && (
+        <View style={[st.summaryBar, { borderBottomColor: theme.divider }]}>
+          <Text style={[st.summaryText, { color: theme.subText }]}>
+            Showing {filteredSongs.length} {filteredSongs.length === 1 ? 'song' : 'songs'}
+          </Text>
           <TouchableOpacity onPress={resetFilters} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={[st.resetText, { color: theme.tint }]}>Reset filters ✕</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* ── Imported Songs Banner ── */}
       {importedCount > 0 && onClearImportedSongs ? (

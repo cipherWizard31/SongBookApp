@@ -16,6 +16,7 @@ export const DashboardScreen = ({
   onSelectSong,
   onOpenNewSongModal,
   onNavigateToScreen,
+  onOpenSetlist,
   onStartWorshipService,
   theme,
   isDarkMode,
@@ -60,7 +61,7 @@ export const DashboardScreen = ({
       <View style={st.greetingHeader}>
         <View>
           <Text style={[st.greetingSub, { color: theme.subText }]}>
-            {greeting.main} • {greeting.sub}
+            {greeting.main}
           </Text>
           <Text style={[st.greetingTitle, { color: theme.text }]}>
             Selah Kignit
@@ -267,7 +268,7 @@ export const DashboardScreen = ({
                 key={setlist.id}
                 style={[st.recentSongCard, { backgroundColor: theme.secondaryBg, borderColor: theme.divider }]}
                 activeOpacity={0.7}
-                onPress={() => onNavigateToScreen('setlists')}>
+                onPress={() => onNavigateToScreen('setlists', setlist.id)}>
 
                 {/* Left Icon Tile */}
                 <View style={[st.songAvatarTile, { backgroundColor: theme.cardBg }]}>

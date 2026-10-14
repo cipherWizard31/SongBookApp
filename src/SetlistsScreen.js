@@ -12,7 +12,10 @@ import {
   Dimensions,
   BackHandler,
   Platform,
+  Pressable,
 } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -34,6 +37,8 @@ export const SetlistsScreen = ({
   onSaveSongsBatch,
   autoStartPerformanceSetlistId = null,
   onClearAutoStartPerformance,
+  initialSetlistId = null,
+  onClearInitialSetlistId,
   theme,
   isDarkMode = false,
 }) => {
@@ -43,6 +48,7 @@ export const SetlistsScreen = ({
   // Modal states
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [addSongsModalVisible, setAddSongsModalVisible] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
 
   // Performance Mode states
   const [performanceModeVisible, setPerformanceModeVisible] = useState(false);
@@ -76,9 +82,26 @@ export const SetlistsScreen = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartPerformanceSetlistId]);
 
+  // Handle opening a specific setlist when navigated from Dashboard
+  useEffect(() => {
+    if (!initialSetlistId || setlists.length === 0) return;
+    const target = setlists.find((s) => s.id === initialSetlistId);
+    if (onClearInitialSetlistId) {
+      onClearInitialSetlistId();
+    }
+    if (target) {
+      setSelectedSetlist(target);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSetlistId]);
+
   // Handle hardware back button inside Setlists view
   useEffect(() => {
     const onBackPress = () => {
+      if (moreMenuVisible) {
+        setMoreMenuVisible(false);
+        return true;
+      }
       // If we are viewing a specific setlist but NOT in performance mode, go back to setlist list
       if (selectedSetlist && !performanceModeVisible && !addSongsModalVisible && !createModalVisible) {
         setSelectedSetlist(null);
@@ -89,7 +112,7 @@ export const SetlistsScreen = ({
 
     const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSubscription.remove();
-  }, [selectedSetlist, performanceModeVisible, addSongsModalVisible, createModalVisible]);
+  }, [selectedSetlist, performanceModeVisible, addSongsModalVisible, createModalVisible, moreMenuVisible]);
 
   // Performance mode auto-scroll
   useEffect(() => {
@@ -167,6 +190,14 @@ export const SetlistsScreen = ({
       return;
     }
 
+    const updatedSetlist = { ...selectedSetlist, songIds: newSongIds };
+    setSelectedSetlist(updatedSetlist);
+    onSaveSetlist(updatedSetlist);
+  };
+
+  const handleDragReorder = ({ data }) => {
+    if (!selectedSetlist) return;
+    const newSongIds = data.map(song => song.id);
     const updatedSetlist = { ...selectedSetlist, songIds: newSongIds };
     setSelectedSetlist(updatedSetlist);
     onSaveSetlist(updatedSetlist);
@@ -347,169 +378,207 @@ export const SetlistsScreen = ({
         statusBarTranslucent
         onRequestClose={() => setSelectedSetlist(null)}>
         <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-        <SafeAreaView style={[st.root, { backgroundColor: theme.bg }]}>
-          {/* Top Nav Bar */}
-          <View style={[st.topBar, { borderBottomColor: theme.divider }]}>
-            <TouchableOpacity
-              style={st.iconBarBtn}
-              onPress={() => setSelectedSetlist(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Back to setlists">
-              <Ionicons name="chevron-back" size={24} color={theme.text} />
-            </TouchableOpacity>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaView style={[st.root, { backgroundColor: theme.bg }]}>
+            {/* Top Nav Bar */}
+            <View style={[st.topBar, { borderBottomColor: theme.divider }]}>
+              <TouchableOpacity
+                style={st.iconBarBtn}
+                onPress={() => setSelectedSetlist(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Back to setlists">
+                <Ionicons name="chevron-back" size={24} color={theme.text} />
+              </TouchableOpacity>
 
-            <View style={st.barCenter}>
-              <Text style={[st.barTitle, { color: theme.text }]} numberOfLines={1}>
-                {selectedSetlist?.title}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={[st.iconBarBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
-              onPress={() => {
-                Alert.alert('Delete Setlist', `Delete "${selectedSetlist?.title}"?`, [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: () => {
-                      onDeleteSetlist(selectedSetlist.id);
-                      setSelectedSetlist(null);
-                    },
-                  },
-                ]);
-              }}>
-              <Ionicons name="trash-outline" size={18} color="#EF4444" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 72 }}>
-            {/* Hero Header Card */}
-            <View
-              style={[
-                st.detailHeroCard,
-                { backgroundColor: theme.cardBg, borderColor: theme.border, borderRadius: 20, padding: 18, marginBottom: 16 },
-              ]}>
-              <View style={st.heroHeaderTop}>
-                <View style={[st.heroIconBox, { backgroundColor: `${AMBER}15`, borderRadius: 14 }]}>
-                  <Ionicons name="list" size={22} color={AMBER} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[st.heroTitle, { color: theme.text }]} numberOfLines={1}>
-                    {selectedSetlist?.title}
-                  </Text>
-                  {selectedSetlist?.description ? (
-                    <Text style={[st.heroDesc, { color: theme.subText }]} numberOfLines={1}>
-                      {selectedSetlist.description}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={[st.songCountBadge, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
-                  <Ionicons name="musical-notes-outline" size={12} color={AMBER} style={{ marginRight: 4 }} />
-                  <Text style={[st.songCountText, { color: theme.text }]}>
-                    {activeSetlistSongs.length} {activeSetlistSongs.length === 1 ? 'song' : 'songs'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={[st.heroActionRow, { marginTop: 14 }]}>
-                {activeSetlistSongs.length > 0 && (
-                  <TouchableOpacity
-                    style={[st.primaryPerfBtn, { backgroundColor: AMBER }]}
-                    onPress={() => {
-                      setCurrentPerfIndex(0);
-                      setPerfTransposeKey(0);
-                      setPerfIsAutoScrolling(false);
-                      setPerformanceModeVisible(true);
-                    }}
-                    activeOpacity={0.85}>
-                    <Ionicons name="play-circle" size={18} color="#1E1909" style={{ marginRight: 6 }} />
-                    <Text style={st.primaryPerfBtnText}>Start Worship</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={[st.heroSecondaryBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-                  onPress={() => {
-                    setSongSearchQuery('');
-                    setAddSongsModalVisible(true);
-                  }}
-                  activeOpacity={0.7}>
-                  <Ionicons name="add-circle-outline" size={17} color={theme.text} style={{ marginRight: 5 }} />
-                  <Text style={[st.heroSecondaryBtnText, { color: theme.text }]}>Add Songs</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[st.heroIconBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-                  onPress={() => handleExportSetlist(selectedSetlist)}
-                  activeOpacity={0.7}>
-                  <Ionicons name="share-outline" size={18} color={theme.text} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Songs List Header */}
-            <View style={{ paddingHorizontal: 2, marginBottom: 10 }}>
-              <Text style={[st.sectionSubTitle, { color: theme.subText }]}>
-                SETLIST SONGS ({activeSetlistSongs.length})
-              </Text>
-            </View>
-
-            {/* Songs */}
-            {activeSetlistSongs.length === 0 ? (
-              <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-                <Ionicons name="folder-open-outline" size={32} color={theme.subText} style={{ marginBottom: 8 }} />
-                <Text style={[st.emptyTitle, { color: theme.text }]}>Setlist is empty</Text>
-                <Text style={[st.emptyHint, { color: theme.subText }]}>
-                  Tap "+ Add Songs" above to select songs for this worship service setlist.
+              <View style={st.barCenter}>
+                <Text style={[st.barTitle, { color: theme.text }]} numberOfLines={1}>
+                  {selectedSetlist?.title}
                 </Text>
               </View>
-            ) : (
-              activeSetlistSongs.map((item, index) => (
+
+              <TouchableOpacity
+                style={[st.iconBarBtn]}
+                onPress={() => setMoreMenuVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="More options">
+                <Ionicons name="ellipsis-vertical" size={20} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <DraggableFlatList
+              data={activeSetlistSongs}
+              keyExtractor={(item) => item.id}
+              onDragEnd={handleDragReorder}
+              contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 72 }}
+              showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                <>
+                  {/* Hero Header Card */}
+                  <View
+                    style={[
+                      st.detailHeroCard,
+                      { backgroundColor: theme.cardBg, borderColor: theme.border, borderRadius: 20, padding: 18, marginBottom: 16 },
+                    ]}>
+                    <View style={[st.heroHeaderTop, { alignItems: 'flex-start' }]}>
+                      <View style={[st.heroIconBox, { backgroundColor: `${AMBER}15`, borderRadius: 14, marginTop: 4 }]}>
+                        <Ionicons name="list" size={22} color={AMBER} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                          <View style={[st.songCountBadge, { backgroundColor: theme.secondaryBg, borderColor: theme.border, marginLeft: 0 }]}>
+                            <Ionicons name="musical-notes-outline" size={12} color={AMBER} style={{ marginRight: 4 }} />
+                            <Text style={[st.songCountText, { color: theme.text }]}>
+                              {activeSetlistSongs.length} {activeSetlistSongs.length === 1 ? 'song' : 'songs'}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[st.heroTitle, { color: theme.text }]} numberOfLines={2}>
+                          {selectedSetlist?.title}
+                        </Text>
+                        {selectedSetlist?.description ? (
+                          <Text style={[st.heroDesc, { color: theme.subText }]} numberOfLines={2}>
+                            {selectedSetlist.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    {/* Action Buttons */}
+                    <View style={[st.heroActionRow, { marginTop: 14 }]}>
+                      {activeSetlistSongs.length > 0 && (
+                        <TouchableOpacity
+                          style={[st.primaryPerfBtn, { backgroundColor: AMBER }]}
+                          onPress={() => {
+                            setCurrentPerfIndex(0);
+                            setPerfTransposeKey(0);
+                            setPerfIsAutoScrolling(false);
+                            setPerformanceModeVisible(true);
+                          }}
+                          activeOpacity={0.85}>
+                          <Ionicons name="play-circle" size={18} color="#1E1909" style={{ marginRight: 6 }} />
+                          <Text style={st.primaryPerfBtnText}>Start Worship</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[st.heroSecondaryBtn, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
+                        onPress={() => {
+                          setSongSearchQuery('');
+                          setAddSongsModalVisible(true);
+                        }}
+                        activeOpacity={0.7}>
+                        <Ionicons name="add-circle-outline" size={17} color={theme.text} style={{ marginRight: 5 }} />
+                        <Text style={[st.heroSecondaryBtnText, { color: theme.text }]}>Add Songs</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Songs List Header */}
+                  <View style={{ paddingHorizontal: 2, marginBottom: 10 }}>
+                    <Text style={[st.sectionSubTitle, { color: theme.subText }]}>
+                      SETLIST SONGS ({activeSetlistSongs.length})
+                    </Text>
+                  </View>
+
+                  {/* Empty State */}
+                  {activeSetlistSongs.length === 0 && (
+                    <View style={[st.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+                      <Ionicons name="folder-open-outline" size={32} color={theme.subText} style={{ marginBottom: 8 }} />
+                      <Text style={[st.emptyTitle, { color: theme.text }]}>Setlist is empty</Text>
+                      <Text style={[st.emptyHint, { color: theme.subText }]}>
+                        Tap "+ Add Songs" above to select songs for this worship service setlist.
+                      </Text>
+                    </View>
+                  )}
+                </>
+              }
+              renderItem={({ item, drag, isActive, getIndex }) => {
+                const index = getIndex();
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onLongPress={drag}
+                    disabled={isActive}
+                    style={[
+                      st.songCardRow,
+                      { backgroundColor: isActive ? theme.secondaryBg : theme.cardBg, borderColor: theme.border, marginBottom: 8 },
+                      isActive && { elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, zIndex: 999 }
+                    ]}>
+                    <View style={[st.indexBadge, { backgroundColor: theme.secondaryBg }]}>
+                      <Text style={[st.indexBadgeText, { color: AMBER }]}>{index + 1}</Text>
+                    </View>
+                    <View style={st.songText}>
+                      <Text style={[st.songTitle, { color: theme.text }]} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={[st.songSub, { color: theme.subText }]} numberOfLines={1}>
+                        {[item.author, item.scale, item.style].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <TouchableOpacity
+                        style={st.reorderBtn}
+                        onPressIn={drag}
+                        hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}>
+                        <Ionicons name="menu" size={24} color={theme.subText} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[st.removeBtn, { marginLeft: 8 }]}
+                        onPress={() => toggleSongInSetlist(item.id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="close-circle" size={20} color={theme.subText} />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+
+            {/* MORE MENU COMPONENT */}
+            {moreMenuVisible && (
+              <>
+                <Pressable
+                  style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100 }]}
+                  onPress={() => setMoreMenuVisible(false)}
+                />
                 <View
-                  key={item.id}
-                  style={[st.songCardRow, { backgroundColor: theme.cardBg, borderColor: theme.border, marginBottom: 8 }]}>
-                  <View style={[st.indexBadge, { backgroundColor: theme.secondaryBg }]}>
-                    <Text style={[st.indexBadgeText, { color: AMBER }]}>{index + 1}</Text>
-                  </View>
-                  <View style={st.songText}>
-                    <Text style={[st.songTitle, { color: theme.text }]} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={[st.songSub, { color: theme.subText }]} numberOfLines={1}>
-                      {[item.author, item.scale, item.style].filter(Boolean).join(' · ')}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {index > 0 && (
-                      <TouchableOpacity
-                        style={st.reorderBtn}
-                        onPress={() => moveSongInSetlist(index, 'up')}
-                        hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}>
-                        <Ionicons name="chevron-up" size={20} color={theme.subText} />
-                      </TouchableOpacity>
-                    )}
-                    {index < activeSetlistSongs.length - 1 && (
-                      <TouchableOpacity
-                        style={st.reorderBtn}
-                        onPress={() => moveSongInSetlist(index, 'down')}
-                        hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}>
-                        <Ionicons name="chevron-down" size={20} color={theme.subText} />
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={[st.removeBtn, { marginLeft: 8 }]}
-                      onPress={() => toggleSongInSetlist(item.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Ionicons name="close-circle" size={20} color={theme.subText} />
-                    </TouchableOpacity>
-                  </View>
+                  style={[
+                    st.moreMenuContainer,
+                    { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 101, elevation: 101 },
+                  ]}>
+                  <TouchableOpacity
+                    style={[st.moreMenuItem, { borderBottomColor: theme.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
+                    onPress={() => {
+                      setMoreMenuVisible(false);
+                      handleExportSetlist(selectedSetlist);
+                    }}>
+                    <Ionicons name="share-outline" size={20} color={theme.text} style={st.moreMenuIcon} />
+                    <Text style={[st.moreMenuText, { color: theme.text }]}>Share Setlist</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={st.moreMenuItem}
+                    onPress={() => {
+                      setMoreMenuVisible(false);
+                      Alert.alert('Delete Setlist', `Delete "${selectedSetlist?.title}"?`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => {
+                            onDeleteSetlist(selectedSetlist.id);
+                            setSelectedSetlist(null);
+                          },
+                        },
+                      ]);
+                    }}>
+                    <Ionicons name="trash-outline" size={20} color="#EF4444" style={st.moreMenuIcon} />
+                    <Text style={[st.moreMenuText, { color: '#EF4444' }]}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
-              ))
+              </>
             )}
-          </ScrollView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </GestureHandlerRootView>
       </Modal>
 
       {/* ADD SONGS MODAL */}
@@ -923,6 +992,35 @@ const st = StyleSheet.create({
   barCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 12 },
   barTitle: { fontSize: 16, fontWeight: '700' },
 
+  // More Menu
+  moreMenuContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 12,
+    width: 200,
+    borderRadius: 14,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  moreMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  moreMenuIcon: {
+    marginRight: 12,
+  },
+  moreMenuText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
   // Hero Card in Detail View
   detailHeroCard: {
     margin: 16,
@@ -956,9 +1054,9 @@ const st = StyleSheet.create({
   },
   songCountText: { fontSize: 11, fontWeight: '700' },
 
-  heroActionRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  heroActionRow: { flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
   primaryPerfBtn: {
-    flex: 1,
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

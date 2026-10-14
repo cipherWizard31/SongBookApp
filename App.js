@@ -76,6 +76,7 @@ export default function App() {
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [performanceSetlistId, setPerformanceSetlistId] = useState(null);
+  const [initialSetlistId, setInitialSetlistId] = useState(null);
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const isAnimatingRef = useRef(false);
@@ -105,11 +106,17 @@ export default function App() {
   const currentScreenRef = useRef(currentScreen);
   currentScreenRef.current = currentScreen;
 
-  const navigateToScreen = (targetScreen) => {
+  const navigateToScreen = (targetScreen, setlistId = null) => {
     if (targetScreen !== 'setlists') {
       setPerformanceSetlistId(null);
     }
-    if (targetScreen === currentScreen) return;
+    if (setlistId) {
+      setInitialSetlistId(setlistId);
+    }
+    if (targetScreen === currentScreen) {
+      // Same screen — still apply setlistId if provided
+      return;
+    }
     setCurrentScreen(targetScreen);
   };
 
@@ -587,6 +594,8 @@ export default function App() {
             onSaveSongsBatch={handleSaveSongsBatch}
             autoStartPerformanceSetlistId={performanceSetlistId}
             onClearAutoStartPerformance={() => setPerformanceSetlistId(null)}
+            initialSetlistId={initialSetlistId}
+            onClearInitialSetlistId={() => setInitialSetlistId(null)}
             theme={theme}
             isDarkMode={isDarkMode}
           />
