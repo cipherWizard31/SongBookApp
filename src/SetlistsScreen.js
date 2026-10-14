@@ -24,6 +24,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
+import { QRShareModal } from './QRShareModal';
+import { ExportOptionsModal } from './ExportOptionsModal';
 
 // Design Accent Tokens
 const AMBER = '#E5A93C';
@@ -55,6 +57,7 @@ export const SetlistsScreen = ({
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [addSongsModalVisible, setAddSongsModalVisible] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [qrShareVisible, setQrShareVisible] = useState(false);
 
   // Performance Mode states
   const [performanceModeVisible, setPerformanceModeVisible] = useState(false);
@@ -229,38 +232,97 @@ export const SetlistsScreen = ({
   // ----------------------------------------------------
   // EXPORT & IMPORT (JSON FORMAT)
   // ----------------------------------------------------
-  const handleExportSetlist = async (setlist) => {
-    const setlistSongs = songs.filter((s) => setlist.songIds.includes(s.id));
+  const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
+  const [exportingSetlist, setExportingSetlist] = useState(null);
 
-    const exportData = {
+  const handleExportSetlist = (setlist) => {
+    setExportingSetlist(setlist);
+    setExportOptionsVisible(true);
+  };
+
+  const getSetlistExportData = (setlist) => {
+    const target = setlist || selectedSetlist;
+    const setlistSongs = songs.filter((s) => (target?.songIds || []).includes(s.id));
+    return {
       version: '1.0',
       type: 'songbook_setlist',
       exportDate: new Date().toISOString(),
       setlist: {
-        id: setlist.id,
-        title: setlist.title,
-        description: setlist.description,
+        id: target?.id,
+        title: target?.title,
+        description: target?.description,
       },
       songs: setlistSongs,
     };
+  };
+
+  const handleSaveSetlistToFile = async () => {
+    const target = exportingSetlist || selectedSetlist;
+    if (!target) return;
+    const exportData = getSetlistExportData(target);
+    const fileName = `${target.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setlist.json`;
 
     try {
-      const fileName = `${setlist.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setlist.json`;
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
+        try {
+          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
 
+          if (permissions.granted) {
+            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              fileName,
+              'application/json'
+            );
+            await FileSystem.writeAsStringAsync(destinationUri, JSON.stringify(exportData, null, 2), {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+            Alert.alert('Setlist Saved', `Successfully saved setlist to selected folder:\n${fileName}`);
+            return;
+          }
+        } catch (safErr) {
+          console.log('SAF error, falling back:', safErr);
+        }
+      }
+
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(fileUri, {
           mimeType: 'application/json',
-          dialogTitle: `Export Setlist: ${setlist.title}`,
+          dialogTitle: `Save Setlist: ${target.title}`,
           UTI: 'public.json',
         });
       } else {
         Alert.alert('Exported', `Setlist saved to: ${fileUri}`);
       }
     } catch (error) {
-      Alert.alert('Export Failed', error.message);
+      Alert.alert('Save Failed', error.message);
+    }
+  };
+
+  const handleShareSetlistToApp = async () => {
+    const target = exportingSetlist || selectedSetlist;
+    if (!target) return;
+    const exportData = getSetlistExportData(target);
+    const fileName = `${target.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setlist.json`;
+
+    try {
+      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: `Share Setlist: ${target.title}`,
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
+      }
+    } catch (error) {
+      Alert.alert('Share Failed', error.message);
     }
   };
 
@@ -676,7 +738,7 @@ export const SetlistsScreen = ({
             {moreMenuVisible && (
               <>
                 <Pressable
-                  style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100 }]}
+                  style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100, backgroundColor: 'transparent' }]}
                   onPress={() => setMoreMenuVisible(false)}
                 />
                 <View
@@ -688,10 +750,20 @@ export const SetlistsScreen = ({
                     style={[st.moreMenuItem, { borderBottomColor: theme.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
                     onPress={() => {
                       setMoreMenuVisible(false);
+                      setQrShareVisible(true);
+                    }}>
+                    <Ionicons name="qr-code-outline" size={20} color={AMBER} style={st.moreMenuIcon} />
+                    <Text style={[st.moreMenuText, { color: theme.text }]}>Share In-App (QR Code)</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[st.moreMenuItem, { borderBottomColor: theme.divider, borderBottomWidth: StyleSheet.hairlineWidth }]}
+                    onPress={() => {
+                      setMoreMenuVisible(false);
                       handleExportSetlist(selectedSetlist);
                     }}>
                     <Ionicons name="share-outline" size={20} color={theme.text} style={st.moreMenuIcon} />
-                    <Text style={[st.moreMenuText, { color: theme.text }]}>Share Setlist</Text>
+                    <Text style={[st.moreMenuText, { color: theme.text }]}>Export File (External)</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -716,6 +788,45 @@ export const SetlistsScreen = ({
                 </View>
               </>
             )}
+
+            {/* In-App QR Share Modal */}
+            <QRShareModal
+              visible={qrShareVisible}
+              onClose={() => setQrShareVisible(false)}
+              title={selectedSetlist?.title || 'Setlist'}
+              subtitle="Scan with Selah Kignit to import setlist"
+              type="setlist"
+              data={{
+                setlist: {
+                  id: selectedSetlist?.id,
+                  title: selectedSetlist?.title,
+                  description: selectedSetlist?.description,
+                },
+                songs: activeSetlistSongs.map((s) => ({
+                  id: s.id,
+                  title: s.title,
+                  author: s.author,
+                  album: s.album,
+                  style: s.style,
+                  scale: s.scale,
+                  content: s.content,
+                  audioUrl: s.audioUrl,
+                })),
+              }}
+              theme={theme}
+            />
+
+            {/* Export Setlist Options Modal */}
+            <ExportOptionsModal
+              visible={exportOptionsVisible}
+              onClose={() => setExportOptionsVisible(false)}
+              title="Export Setlist"
+              subtitle={`Choose how you want to export "${exportingSetlist?.title || selectedSetlist?.title || 'Setlist'}"`}
+              itemCountText={`${activeSetlistSongs.length} songs`}
+              onSaveToFile={handleSaveSetlistToFile}
+              onShareToApp={handleShareSetlistToApp}
+              theme={theme}
+            />
           </SafeAreaView>
         </GestureHandlerRootView>
       </Modal>

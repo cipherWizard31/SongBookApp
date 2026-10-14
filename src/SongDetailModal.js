@@ -13,10 +13,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { CHROMATIC_NOTES } from './constants';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
+import { QRShareModal } from './QRShareModal';
+import { ExportOptionsModal } from './ExportOptionsModal';
 
 // ─── Design tokens from Stitch system ───────────────────────────────────────
 const AMBER = '#E5A93C';
@@ -46,6 +50,7 @@ export const SongDetailModal = ({
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const [qrShareVisible, setQrShareVisible] = useState(false);
 
   const scrollViewRef = useRef(null);
   const scrollOffsetRef = useRef(0);
@@ -93,12 +98,100 @@ export const SongDetailModal = ({
   };
   const keyLabel = getKeyLabel();
 
+  const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
+
   const confirmDelete = () => {
     setShowOverflowMenu(false);
     Alert.alert('Delete Song', `Delete "${song.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => { setSongDetailModal(null); handleDeleteSong(song.id); } },
     ]);
+  };
+
+  const getSongExportData = () => {
+    return {
+      version: '1.0',
+      type: 'songbook_song',
+      exportDate: new Date().toISOString(),
+      song: {
+        id: song.id,
+        title: song.title,
+        author: song.author,
+        album: song.album,
+        style: song.style,
+        scale: song.scale,
+        content: song.content,
+        audioUrl: song.audioUrl,
+      },
+    };
+  };
+
+  const handleSaveSongToFile = async () => {
+    if (!song) return;
+    const exportData = getSongExportData();
+    const fileName = `${(song.title || 'Song').replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+
+    try {
+      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
+        try {
+          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
+
+          if (permissions.granted) {
+            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              fileName,
+              'application/json'
+            );
+            await FileSystem.writeAsStringAsync(destinationUri, JSON.stringify(exportData, null, 2), {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+            Alert.alert('Song Saved', `Successfully saved song to selected folder:\n${fileName}`);
+            return;
+          }
+        } catch (safErr) {
+          console.log('SAF error, falling back:', safErr);
+        }
+      }
+
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: `Save Song: ${song.title}`,
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Exported', `Song saved to: ${fileUri}`);
+      }
+    } catch (error) {
+      Alert.alert('Save Failed', error.message);
+    }
+  };
+
+  const handleShareSongToApp = async () => {
+    if (!song) return;
+    const exportData = getSongExportData();
+    const fileName = `${(song.title || 'Song').replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+
+    try {
+      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: `Share Song: ${song.title}`,
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
+      }
+    } catch (error) {
+      Alert.alert('Share Failed', error.message);
+    }
   };
 
   // ─── Performance Mode ────────────────────────────────────────────────────
@@ -348,10 +441,10 @@ export const SongDetailModal = ({
           </View>
         </ScrollView>
 
-        {/* Backdrop — closes menu on outside tap */}
+        {/* Backdrop — closes menu on outside tap without triggering elements underneath */}
         {showOverflowMenu && (
           <Pressable
-            style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100 }]}
+            style={[StyleSheet.absoluteFillObject, { zIndex: 100, elevation: 100, backgroundColor: 'transparent' }]}
             onPress={() => setShowOverflowMenu(false)}
           />
         )}
@@ -359,6 +452,24 @@ export const SongDetailModal = ({
         {/* Overflow Menu — above backdrop */}
         {showOverflowMenu && (
           <View style={[st.overflowMenu, { backgroundColor: theme.cardBg, borderColor: theme.border, zIndex: 101, elevation: 101 }]}>
+            <TouchableOpacity
+              style={st.overflowMenuItem}
+              onPress={() => {
+                setShowOverflowMenu(false);
+                setQrShareVisible(true);
+              }}>
+              <Ionicons name="qr-code-outline" size={16} color={CYAN} style={{ marginRight: 8 }} />
+              <Text style={[st.overflowMenuText, { color: theme.text }]}>Share In-App (QR Code)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={st.overflowMenuItem}
+              onPress={() => {
+                setShowOverflowMenu(false);
+                setExportOptionsVisible(true);
+              }}>
+              <Ionicons name="share-outline" size={16} color={theme.text} style={{ marginRight: 8 }} />
+              <Text style={[st.overflowMenuText, { color: theme.text }]}>Export File / Share</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={st.overflowMenuItem} onPress={() => { setShowOverflowMenu(false); setIsPerformanceMode(true); }}>
               <Ionicons name="expand-outline" size={16} color={AMBER} style={{ marginRight: 8 }} />
               <Text style={[st.overflowMenuText, { color: theme.text }]}>Performance Mode</Text>
@@ -374,6 +485,37 @@ export const SongDetailModal = ({
           </View>
         )}
 
+        {/* Direct In-App QR Share Modal */}
+        <QRShareModal
+          visible={qrShareVisible}
+          onClose={() => setQrShareVisible(false)}
+          title={song.title}
+          subtitle="Scan with Selah Kignit to import song"
+          type="song"
+          data={{
+            id: song.id,
+            title: song.title,
+            author: song.author,
+            album: song.album,
+            style: song.style,
+            scale: song.scale,
+            content: song.content,
+            audioUrl: song.audioUrl,
+          }}
+          theme={theme}
+        />
+
+        {/* Export Song Options Modal */}
+        <ExportOptionsModal
+          visible={exportOptionsVisible}
+          onClose={() => setExportOptionsVisible(false)}
+          title="Export Song"
+          subtitle={`Choose how you want to export "${song.title}"`}
+          itemCountText={song.author ? `By ${song.author}` : 'Song File'}
+          onSaveToFile={handleSaveSongToFile}
+          onShareToApp={handleShareSongToApp}
+          theme={theme}
+        />
       </SafeAreaView>
     </Modal>
   );

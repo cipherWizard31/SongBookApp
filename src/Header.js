@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const Header = ({ theme, onNavigateToProfile }) => {
+export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner }) => {
   return (
     <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
       {/* Left: App Logo & Identity */}
@@ -17,19 +17,34 @@ export const Header = ({ theme, onNavigateToProfile }) => {
         <Text style={[styles.title, { color: theme.text }]}>Selah Kignit</Text>
       </View>
 
-      {/* Right: Profile Avatar Button */}
-      {onNavigateToProfile ? (
-        <TouchableOpacity
-          onPress={onNavigateToProfile}
-          style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          activeOpacity={0.75}
-          accessibilityLabel="Open profile"
-          accessibilityRole="button">
-          <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
-            <Ionicons name="person" size={18} color={theme.tint} />
-          </View>
-        </TouchableOpacity>
-      ) : null}
+      {/* Right: Actions (In-App Scan & Profile) */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {onOpenQRScanner ? (
+          <TouchableOpacity
+            onPress={onOpenQRScanner}
+            style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            activeOpacity={0.75}
+            accessibilityLabel="Scan In-App QR"
+            accessibilityRole="button">
+            <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
+              <Ionicons name="qr-code-outline" size={17} color={theme.tint} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+
+        {onNavigateToProfile ? (
+          <TouchableOpacity
+            onPress={onNavigateToProfile}
+            style={[styles.profileAvatarBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
+            activeOpacity={0.75}
+            accessibilityLabel="Open profile"
+            accessibilityRole="button">
+            <View style={[styles.avatarCircle, { backgroundColor: theme.secondaryBg }]}>
+              <Ionicons name="person" size={17} color={theme.tint} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 };

@@ -51,6 +51,8 @@ import { ArtistsScreen } from './src/ArtistsScreen';
 import { SongEditModal } from './src/SongEditModal';
 import { SongDetailModal } from './src/SongDetailModal';
 import { BottomNavBar } from './src/BottomNavBar';
+import { QRScannerModal } from './src/QRScannerModal';
+import { ExportOptionsModal } from './src/ExportOptionsModal';
 
 const SETLISTS_KEY = '@songbook_setlists';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -83,6 +85,7 @@ export default function App() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
+  const [qrScannerVisible, setQrScannerVisible] = useState(false);
 
   const [transposeKey, setTransposeKey] = useState(0);
   const [showChords, setShowChords] = useState(true);
@@ -188,6 +191,10 @@ export default function App() {
   // Android hardware back button / system edge back swipe support
   useEffect(() => {
     const onBackPress = () => {
+      if (qrScannerVisible) {
+        setQrScannerVisible(false);
+        return true;
+      }
       if (songDetailModal) {
         setSongDetailModal(null);
         return true;
@@ -205,7 +212,7 @@ export default function App() {
 
     const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSubscription.remove();
-  }, [currentScreen, songDetailModal, modalVisible]);
+  }, [currentScreen, songDetailModal, modalVisible, qrScannerVisible]);
 
   // ----------------------------------------------------
   // INITIALIZATION & PERSISTENCE
@@ -442,22 +449,82 @@ export default function App() {
     }
   };
 
-  const handleExportSongs = async () => {
+  const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
+
+  const handleExportSongs = () => {
+    setExportOptionsVisible(true);
+  };
+
+  const handleSaveBackupToFile = async () => {
     try {
       const dataString = JSON.stringify({ songs, setlists, styles, scales }, null, 2);
-      const fileUri = `${FileSystem.documentDirectory}selah_kignit_backup.json`;
+      const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
+
+      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
+        try {
+          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
+          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
+
+          if (permissions.granted) {
+            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
+              permissions.directoryUri,
+              fileName,
+              'application/json'
+            );
+            await FileSystem.writeAsStringAsync(destinationUri, dataString, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+            Alert.alert('Backup Saved', `Successfully saved backup to selected folder:\n${fileName}`);
+            return;
+          }
+        } catch (safErr) {
+          console.log('SAF prompt error, falling back to documentDirectory / sharing:', safErr);
+        }
+      }
+
+      // iOS or fallback: Write file and trigger save / share dialog
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(fileUri, dataString, {
         encoding: FileSystem.EncodingType.UTF8,
       });
 
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Save Backup',
+          UTI: 'public.json',
+        });
       } else {
-        Alert.alert('Export Complete', `File saved to: ${fileUri}`);
+        Alert.alert('Backup Saved', `Backup file saved to: ${fileUri}`);
       }
     } catch (e) {
-      console.error('Export error', e);
-      Alert.alert('Export Error', 'Failed to export data.');
+      console.error('Save backup error', e);
+      Alert.alert('Save Error', 'Failed to save backup file.');
+    }
+  };
+
+  const handleShareBackupToApp = async () => {
+    try {
+      const dataString = JSON.stringify({ songs, setlists, styles, scales }, null, 2);
+      const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, dataString, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Share Backup to App',
+          UTI: 'public.json',
+        });
+      } else {
+        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
+      }
+    } catch (e) {
+      console.error('Share backup error', e);
+      Alert.alert('Share Error', 'Failed to share backup file.');
     }
   };
 
@@ -500,6 +567,71 @@ export default function App() {
     } catch (e) {
       console.error('Import error', e);
       Alert.alert('Import Error', 'Failed to parse or import data file.');
+    }
+  };
+
+  // Handle direct in-app import from scanned QR code
+  const handleInAppQRImport = async (type, payload) => {
+    try {
+      if (type === 'song') {
+        const songData = {
+          ...payload,
+          id: payload.id || Date.now().toString(),
+          title: payload.title || 'Imported Song',
+          content: payload.content !== undefined ? payload.content : migrateSongToInline(payload),
+        };
+        const exists = songs.some((s) => s.id === songData.id || s.title === songData.title);
+        const finalSong = exists ? { ...songData, id: Date.now().toString() } : songData;
+        const updated = [finalSong, ...songs];
+        setSongs(updated);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        Alert.alert(
+          'Song Imported!',
+          `"${finalSong.title}" has been saved directly to your Song List.`,
+          [
+            {
+              text: 'View Song',
+              onPress: () => {
+                setSongDetailModal(finalSong);
+                setTransposeKey(0);
+              },
+            },
+            { text: 'OK' },
+          ]
+        );
+      } else if (type === 'setlist') {
+        const { setlist: incomingSetlist, songs: incomingSongs = [] } = payload;
+        // Import songs if any
+        if (Array.isArray(incomingSongs) && incomingSongs.length > 0) {
+          const migrated = incomingSongs.map((s) => ({
+            ...s,
+            content: s.content !== undefined ? s.content : migrateSongToInline(s),
+          }));
+          await handleSaveSongsBatch(migrated);
+        }
+
+        const newSetlist = {
+          id: incomingSetlist.id || Date.now().toString(),
+          title: incomingSetlist.title || 'Shared Setlist',
+          description: incomingSetlist.description || 'Imported via Selah Kignit In-App QR',
+          songIds: incomingSongs.map((s) => s.id),
+        };
+        await handleSaveSetlist(newSetlist);
+        Alert.alert(
+          'Setlist Imported!',
+          `"${newSetlist.title}" with ${incomingSongs.length} songs has been added to your Setlists.`,
+          [
+            {
+              text: 'Open Setlist',
+              onPress: () => navigateToScreen('setlists', newSetlist.id),
+            },
+            { text: 'OK' },
+          ]
+        );
+      }
+    } catch (err) {
+      console.error('QR import error:', err);
+      Alert.alert('Import Failed', 'Could not save the scanned data.');
     }
   };
 
@@ -716,8 +848,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-        <Header theme={theme} onNavigateToProfile={() => navigateToScreen('profile')} />
+        <Header
+          theme={theme}
+          onNavigateToProfile={() => navigateToScreen('profile')}
+          onOpenQRScanner={() => setQrScannerVisible(true)}
+        />
 
         {/* Direct Screen Content (No Transition Animations) */}
         <View style={{ flex: 1 }} {...mainPanResponder.panHandlers}>
@@ -771,7 +906,26 @@ export default function App() {
           theme={theme}
           isDarkMode={isDarkMode}
         />
-      </SafeAreaView>
+
+        {/* Direct In-App QR Scanner */}
+        <QRScannerModal
+          visible={qrScannerVisible}
+          onClose={() => setQrScannerVisible(false)}
+          onImportData={handleInAppQRImport}
+          theme={theme}
+        />
+
+        {/* Export Backup Options Modal */}
+        <ExportOptionsModal
+          visible={exportOptionsVisible}
+          onClose={() => setExportOptionsVisible(false)}
+          title="Export Backup"
+          subtitle="Choose how you want to handle your exported backup"
+          itemCountText={`${songs.length} songs · ${setlists.length} setlists`}
+          onSaveToFile={handleSaveBackupToFile}
+          onShareToApp={handleShareBackupToApp}
+          theme={theme}
+        />
     </SafeAreaProvider>
   );
 }
