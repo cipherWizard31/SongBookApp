@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   View,
   Text,
@@ -8,48 +7,31 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+// Computed outside the component — no re-creation on every render
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
+
 export const DashboardScreen = ({
   songs = [],
   setlists = [],
-  scales = [],
-  styles: rhythmStyles = [],
   onSelectSong,
   onOpenNewSongModal,
   onNavigateToScreen,
-  onOpenSetlist,
   onStartWorshipService,
   theme,
-  isDarkMode,
 }) => {
-  // Recent songs (top 5)
   const recentSongs = songs.slice(0, 5);
-
-  // Recent setlists (top 4)
   const recentSetlists = setlists.slice(0, 4);
-
-  // Active setlist (first available setlist)
   const activeSetlist = setlists.length > 0 ? setlists[0] : null;
 
-  // Resolve actual song objects inside active setlist
-  let activeSetlistSongs = [];
-  if (activeSetlist) {
-    if (activeSetlist.songs && Array.isArray(activeSetlist.songs)) {
-      activeSetlistSongs = activeSetlist.songs;
-    } else if (activeSetlist.songIds && Array.isArray(activeSetlist.songIds)) {
-      activeSetlistSongs = activeSetlist.songIds
-        .map((id) => songs.find((s) => s.id === id))
-        .filter(Boolean);
-    }
-  }
-
-  // Time-aware greeting generator
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return { main: 'Good Morning' };
-    if (hour < 17) return { main: 'Good Afternoon' };
-    return { main: 'Good Evening' };
-  };
-  const greeting = getGreeting();
+  // songIds is the canonical schema — no legacy .songs branch needed
+  const activeSetlistSongs = activeSetlist
+    ? (activeSetlist.songIds ?? []).map((id) => songs.find((s) => s.id === id)).filter(Boolean)
+    : [];
 
   return (
     <ScrollView
@@ -60,9 +42,7 @@ export const DashboardScreen = ({
       {/* ── TOP GREETING HEADER ── */}
       <View style={st.greetingHeader}>
         <View>
-          <Text style={[st.greetingSub, { color: theme.subText }]}>
-            {greeting.main}
-          </Text>
+          <Text style={[st.greetingSub, { color: theme.subText }]}>{getGreeting()}</Text>
           <Text style={[st.greetingTitle, { color: theme.text }]}>
             Selah Kignit
           </Text>
@@ -262,7 +242,7 @@ export const DashboardScreen = ({
           </View>
         ) : (
           recentSetlists.map((setlist) => {
-            const songCount = setlist.songs?.length || setlist.songIds?.length || 0;
+            const songCount = setlist.songIds?.length ?? 0;
             return (
               <TouchableOpacity
                 key={setlist.id}
@@ -475,26 +455,6 @@ const st = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Quick Action Buttons
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
-  },
-  actionBtnOutline: {
-    flex: 1,
-    height: 42,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 6,
-  },
-  actionBtnOutlineText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
 
   // Section Layouts
   sectionBlock: {

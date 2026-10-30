@@ -31,6 +31,14 @@ import { buildEnvelope, parseEnvelope, validateSetlistPayload } from './shareEnv
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
 
+// Stable constant — defined at module level to avoid recreation on every render
+const SORT_OPTIONS = [
+  { key: 'recent', label: 'Recent', icon: 'time-outline' },
+  { key: 'title', label: 'Name (A-Z)', icon: 'text-outline' },
+  { key: 'songs-desc', label: 'Most Songs', icon: 'musical-notes-outline' },
+  { key: 'songs-asc', label: 'Fewest Songs', icon: 'musical-note-outline' },
+];
+
 export const SetlistsScreen = ({
   setlists = [],
   songs = [],
@@ -57,7 +65,6 @@ export const SetlistsScreen = ({
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [addSongsModalVisible, setAddSongsModalVisible] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [qrShareVisible, setQrShareVisible] = useState(false);
 
   // Performance Mode states
   const [performanceModeVisible, setPerformanceModeVisible] = useState(false);
@@ -185,27 +192,6 @@ export const SetlistsScreen = ({
     }
 
     const updatedSetlist = { ...selectedSetlist, songIds: updatedSongIds };
-    setSelectedSetlist(updatedSetlist);
-    onSaveSetlist(updatedSetlist);
-  };
-
-  const moveSongInSetlist = (index, direction) => {
-    if (!selectedSetlist) return;
-    const newSongIds = [...selectedSetlist.songIds];
-
-    if (direction === 'up' && index > 0) {
-      const temp = newSongIds[index - 1];
-      newSongIds[index - 1] = newSongIds[index];
-      newSongIds[index] = temp;
-    } else if (direction === 'down' && index < newSongIds.length - 1) {
-      const temp = newSongIds[index + 1];
-      newSongIds[index + 1] = newSongIds[index];
-      newSongIds[index] = temp;
-    } else {
-      return;
-    }
-
-    const updatedSetlist = { ...selectedSetlist, songIds: newSongIds };
     setSelectedSetlist(updatedSetlist);
     onSaveSetlist(updatedSetlist);
   };
@@ -460,12 +446,7 @@ export const SetlistsScreen = ({
     return list;
   }, [setlists, songs, overviewSearchQuery, sortBy]);
 
-  const SORT_OPTIONS = [
-    { key: 'recent', label: 'Recent', icon: 'time-outline' },
-    { key: 'title', label: 'Name (A-Z)', icon: 'text-outline' },
-    { key: 'songs-desc', label: 'Most Songs', icon: 'musical-notes-outline' },
-    { key: 'songs-asc', label: 'Fewest Songs', icon: 'musical-note-outline' },
-  ];
+
 
   return (
     <View style={[st.root, { backgroundColor: theme.bg }]}>
@@ -1406,10 +1387,6 @@ const st = StyleSheet.create({
   },
 
   // Section Sub Header
-  sectionSubHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
   sectionSubTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
 
   // Song Row in Setlist Detail

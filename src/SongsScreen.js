@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,8 +26,7 @@ export const SongsScreen = ({
   const [selectedStyleFilter, setSelectedStyleFilter] = useState('All');
   const [selectedScaleFilter, setSelectedScaleFilter] = useState('All');
 
-  // Filter logic
-  const filteredSongs = songs.filter((song) => {
+  const filteredSongs = useMemo(() => songs.filter((song) => {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -35,15 +34,10 @@ export const SongsScreen = ({
       song.author?.toLowerCase().includes(q) ||
       song.album?.toLowerCase().includes(q) ||
       song.content?.toLowerCase().includes(q);
-
-    const matchesStyle =
-      selectedStyleFilter === 'All' || song.style === selectedStyleFilter;
-
-    const matchesScale =
-      selectedScaleFilter === 'All' || song.scale === selectedScaleFilter;
-
+    const matchesStyle = selectedStyleFilter === 'All' || song.style === selectedStyleFilter;
+    const matchesScale = selectedScaleFilter === 'All' || song.scale === selectedScaleFilter;
     return matchesSearch && matchesStyle && matchesScale;
-  });
+  }), [songs, searchQuery, selectedStyleFilter, selectedScaleFilter]);
 
   const importedCount = songs.filter(
     (s) => s.isImported || s.title?.includes('(Imported)')

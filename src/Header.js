@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -26,9 +25,7 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFi
             activeOpacity={0.75}
             accessibilityLabel="Import from file"
             accessibilityRole="button">
-            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
-              <Ionicons name="folder-open-outline" size={17} color={theme.tint} />
-            </View>
+            <Ionicons name="folder-open-outline" size={17} color={theme.tint} />
           </TouchableOpacity>
         ) : null}
 
@@ -39,9 +36,7 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFi
             activeOpacity={0.75}
             accessibilityLabel="Scan In-App QR"
             accessibilityRole="button">
-            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
-              <Ionicons name="qr-code-outline" size={17} color={theme.tint} />
-            </View>
+            <Ionicons name="qr-code-outline" size={17} color={theme.tint} />
           </TouchableOpacity>
         ) : null}
 
@@ -52,9 +47,7 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFi
             activeOpacity={0.75}
             accessibilityLabel="Open profile"
             accessibilityRole="button">
-            <View style={[styles.iconCircle, { backgroundColor: theme.secondaryBg }]}>
-              <Ionicons name="person" size={17} color={theme.tint} />
-            </View>
+            <Ionicons name="person" size={17} color={theme.tint} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -99,13 +92,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCircle: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
