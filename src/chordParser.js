@@ -31,7 +31,7 @@ export function parseChordLine(line) {
     return { type: 'blank' };
   }
 
-  const sectionMatch = trimmed.match(/^\[?(Verse\vert{}Chorus\vert{}Bridge\vert{}Intro\vert{}Outro\vert{}Pre-Chorus\vert{}Hook\vert{}Tag\vert{}Ending\vert{}Refrain)[\s\d]*\]?$/i);
+  const sectionMatch = trimmed.match(/^\[?(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus|Hook|Tag|Ending|Refrain)[\s\d]*\]?$/i);
   if (sectionMatch) {
     return {
       type: 'section',

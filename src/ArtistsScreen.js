@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 
-export const ArtistsScreen = ({ songs, onSelectSong, theme, isDarkMode }) => {
+export const ArtistsScreen = ({ songs, onSelectSong, theme }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
 

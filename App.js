@@ -2,10 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  StyleSheet,
   BackHandler,
   Platform,
   Linking,
@@ -15,16 +11,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import {
-  useAudioRecorder,
-  useAudioRecorderState,
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  createAudioPlayer,
-} from 'expo-audio';
+import { createAudioPlayer } from 'expo-audio';
 
 import {
   DEFAULT_STYLES,
@@ -45,6 +33,7 @@ import {
   validateSetlistPayload,
   validateBackupPayload,
 } from './src/shareEnvelope';
+import { saveJsonToFile, shareJsonToApp } from './src/exportUtils';
 
 import { Header } from './src/Header';
 import { DashboardScreen } from './src/DashboardScreen';
@@ -62,18 +51,6 @@ import { QRScannerModal } from './src/QRScannerModal';
 import { ExportOptionsModal } from './src/ExportOptionsModal';
 
 const SETLISTS_KEY = '@songbook_setlists';
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const SCREEN_ORDER = {
-  dashboard: 0,
-  songs: 1,
-  albums: 2,
-  artists: 3,
-  setlists: 4,
-  dictionary: 5,
-  profile: 6,
-  settings: 7,
-};
 
 export default function App() {
   const [songs, setSongs] = useState([]);
@@ -86,9 +63,6 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [performanceSetlistId, setPerformanceSetlistId] = useState(null);
   const [initialSetlistId, setInitialSetlistId] = useState(null);
-
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const isAnimatingRef = useRef(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
@@ -476,76 +450,23 @@ export default function App() {
   };
 
   const handleSaveBackupToFile = async () => {
-    try {
-      const dataString = getBackupEnvelopeString();
-      const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
-
-      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
-        try {
-          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
-          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
-
-          if (permissions.granted) {
-            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
-              permissions.directoryUri,
-              fileName,
-              'application/json'
-            );
-            await FileSystem.writeAsStringAsync(destinationUri, dataString, {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-            Alert.alert('Backup Saved', `Successfully saved backup to selected folder:\n${fileName}`);
-            return;
-          }
-        } catch (safErr) {
-          console.log('SAF prompt error, falling back to documentDirectory / sharing:', safErr);
-        }
-      }
-
-      // iOS or fallback
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, dataString, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: 'Save Backup',
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Backup Saved', `Backup file saved to: ${fileUri}`);
-      }
-    } catch (e) {
-      console.error('Save backup error', e);
-      Alert.alert('Save Error', 'Failed to save backup file.');
-    }
+    const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    await saveJsonToFile({
+      data: getBackupEnvelopeString(),
+      fileName,
+      dialogTitle: 'Save Backup',
+      successAlertTitle: 'Backup Saved',
+      successMessage: 'Successfully saved backup to selected folder:',
+    });
   };
 
   const handleShareBackupToApp = async () => {
-    try {
-      const dataString = getBackupEnvelopeString();
-      const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
-      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
-
-      await FileSystem.writeAsStringAsync(fileUri, dataString, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: 'Share Backup to App',
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
-      }
-    } catch (e) {
-      console.error('Share backup error', e);
-      Alert.alert('Share Error', 'Failed to share backup file.');
-    }
+    const fileName = `selah_kignit_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    await shareJsonToApp({
+      data: getBackupEnvelopeString(),
+      fileName,
+      dialogTitle: 'Share Backup to App',
+    });
   };
 
   // Helper to import song with conflict/content check

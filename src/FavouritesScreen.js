@@ -11,14 +11,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 const AMBER = '#E5A93C';
-const BURG = '#862633';
 
 export const FavouritesScreen = ({
   songs = [],
   onSelectSong,
   onToggleFavorite,
   theme,
-  isDarkMode,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 

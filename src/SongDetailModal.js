@@ -13,21 +13,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { CHROMATIC_NOTES } from './constants';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
 import { QRShareModal } from './QRShareModal';
 import { ExportOptionsModal } from './ExportOptionsModal';
-
 import { buildEnvelope } from './shareEnvelope';
+import { saveJsonToFile, shareJsonToApp } from './exportUtils';
 
 // ─── Design tokens from Stitch system ───────────────────────────────────────
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
-const BURG = '#862633';
 
 export const SongDetailModal = ({
   songDetailModal,
@@ -124,70 +121,24 @@ export const SongDetailModal = ({
 
   const handleSaveSongToFile = async () => {
     if (!song) return;
-    const exportData = getSongExportData();
     const fileName = `${(song.title || 'Song').replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-
-    try {
-      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
-        try {
-          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
-          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
-
-          if (permissions.granted) {
-            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
-              permissions.directoryUri,
-              fileName,
-              'application/json'
-            );
-            await FileSystem.writeAsStringAsync(destinationUri, JSON.stringify(exportData, null, 2), {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-            Alert.alert('Song Saved', `Successfully saved song to selected folder:\n${fileName}`);
-            return;
-          }
-        } catch (safErr) {
-          console.log('SAF error, falling back:', safErr);
-        }
-      }
-
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: `Save Song: ${song.title}`,
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Exported', `Song saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      Alert.alert('Save Failed', error.message);
-    }
+    await saveJsonToFile({
+      data: getSongExportData(),
+      fileName,
+      dialogTitle: `Save Song: ${song.title}`,
+      successAlertTitle: 'Song Saved',
+      successMessage: 'Successfully saved song to selected folder:',
+    });
   };
 
   const handleShareSongToApp = async () => {
     if (!song) return;
-    const exportData = getSongExportData();
     const fileName = `${(song.title || 'Song').replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-
-    try {
-      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: `Share Song: ${song.title}`,
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      Alert.alert('Share Failed', error.message);
-    }
+    await shareJsonToApp({
+      data: getSongExportData(),
+      fileName,
+      dialogTitle: `Share Song: ${song.title}`,
+    });
   };
 
   // ─── Performance Mode ────────────────────────────────────────────────────

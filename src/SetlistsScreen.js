@@ -19,13 +19,13 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { buildEnvelope, parseEnvelope, validateSetlistPayload } from './shareEnvelope';
+import { saveJsonToFile, shareJsonToApp } from './exportUtils';
 
 // Design Accent Tokens
 const AMBER = '#E5A93C';
@@ -242,71 +242,25 @@ export const SetlistsScreen = ({
   const handleSaveSetlistToFile = async () => {
     const target = exportingSetlist || selectedSetlist;
     if (!target) return;
-    const exportData = getSetlistExportData(target);
     const fileName = `${target.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setlist.json`;
-
-    try {
-      if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
-        try {
-          const initialUri = FileSystem.StorageAccessFramework.getUriForDirectoryInRoot('Download');
-          const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(initialUri);
-
-          if (permissions.granted) {
-            const destinationUri = await FileSystem.StorageAccessFramework.createFileAsync(
-              permissions.directoryUri,
-              fileName,
-              'application/json'
-            );
-            await FileSystem.writeAsStringAsync(destinationUri, JSON.stringify(exportData, null, 2), {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-            Alert.alert('Setlist Saved', `Successfully saved setlist to selected folder:\n${fileName}`);
-            return;
-          }
-        } catch (safErr) {
-          console.log('SAF error, falling back:', safErr);
-        }
-      }
-
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: `Save Setlist: ${target.title}`,
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Exported', `Setlist saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      Alert.alert('Save Failed', error.message);
-    }
+    await saveJsonToFile({
+      data: getSetlistExportData(target),
+      fileName,
+      dialogTitle: `Save Setlist: ${target.title}`,
+      successAlertTitle: 'Setlist Saved',
+      successMessage: 'Successfully saved setlist to selected folder:',
+    });
   };
 
   const handleShareSetlistToApp = async () => {
     const target = exportingSetlist || selectedSetlist;
     if (!target) return;
-    const exportData = getSetlistExportData(target);
     const fileName = `${target.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setlist.json`;
-
-    try {
-      const fileUri = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(exportData, null, 2));
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'application/json',
-          dialogTitle: `Share Setlist: ${target.title}`,
-          UTI: 'public.json',
-        });
-      } else {
-        Alert.alert('Sharing Unavailable', `Sharing is not supported on this device. File saved to: ${fileUri}`);
-      }
-    } catch (error) {
-      Alert.alert('Share Failed', error.message);
-    }
+    await shareJsonToApp({
+      data: getSetlistExportData(target),
+      fileName,
+      dialogTitle: `Share Setlist: ${target.title}`,
+    });
   };
 
   const handleImportSetlist = async () => {

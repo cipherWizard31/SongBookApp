@@ -15,7 +15,7 @@ export const SongEditModal = ({
   content, setContent,
   audioUrl, setAudioUrl,
   handleSaveSong,
-  theme, isDarkMode,
+  theme,
 }) => {
   const [contentHeight, setContentHeight] = useState(120);
 
