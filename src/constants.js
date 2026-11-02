@@ -23,8 +23,11 @@ export const DEFAULT_SCALES = [
   'Uncategorized',
 ];
   
-  export const CHROMATIC_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  
+export const CHROMATIC_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const CHROMATIC_FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+export const FLAT_KEYS = new Set(['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Dm', 'Gm', 'Cm', 'Fm', 'Bbm', 'Ebm']);
+
   export const SCALE_DICTIONARY = [
     { name: '1st (C Major/Tizeta)', notes: 'C - D - E - G - A', description: 'Traditional nostalgic pentatonic scale.' },
     { name: '2nd (D Minor/Natural)', notes: 'D - E - F - G - A - Bb - C', description: 'Standard minor scale for worship songs.' },

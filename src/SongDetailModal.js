@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { SongContentViewer } from './SongContentViewer';
-import { migrateSongToInline } from './chordParser';
+import { migrateSongToInline, extractKeyRoot, transposeNote } from './chordParser';
 import { CHROMATIC_NOTES } from './constants';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
 import { QRShareModal } from './QRShareModal';
@@ -82,17 +82,11 @@ export const SongDetailModal = ({
   const hasScale = song.scale && song.scale !== 'Uncategorized';
   const hasStyle = song.style && song.style !== 'Uncategorized';
   // Derive actual key label from song's scale root + semitone offset
+  const originalKeyRoot = extractKeyRoot(song.scale);
   const getKeyLabel = () => {
-    if (transposeKey === 0) return 'Original';
-    // Try to extract root note from scale string e.g. "1st (C Major/Tizeta)" → "C"
-    const rootMatch = song.scale?.match(/\(([A-G](?:#|b)?)/);
-    if (rootMatch) {
-      const rootIdx = CHROMATIC_NOTES.indexOf(rootMatch[1]);
-      if (rootIdx !== -1) {
-        let newIdx = (rootIdx + transposeKey) % 12;
-        if (newIdx < 0) newIdx += 12;
-        return CHROMATIC_NOTES[newIdx];
-      }
+    if (transposeKey === 0) return originalKeyRoot || 'Original';
+    if (originalKeyRoot) {
+      return transposeNote(originalKeyRoot, transposeKey);
     }
     return transposeKey > 0 ? `+${transposeKey}` : `${transposeKey}`;
   };
@@ -166,6 +160,7 @@ export const SongDetailModal = ({
             <SongContentViewer
               content={song.content !== undefined ? song.content : migrateSongToInline(song)}
               semitones={transposeKey}
+              referenceKey={song.scale}
               showChords={showChords}
               themeState={{ text: '#F1F5F9', subText: '#94A3B8' }}
               isDarkMode={true}
@@ -380,6 +375,7 @@ export const SongDetailModal = ({
             <SongContentViewer
               content={song.content !== undefined ? song.content : migrateSongToInline(song)}
               semitones={transposeKey}
+              referenceKey={song.scale}
               showChords={showChords}
               themeState={theme}
               isDarkMode={isDarkMode}

@@ -3,10 +3,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { parseChordLine, transposeChord } from './chordParser';
 
 const LyricChordSegment = React.memo(
-  ({ chord, lyric, semitones, showChords, themeState, isDarkMode, fontSize = 16 }) => {
+  ({ chord, lyric, semitones, referenceKey, showChords, themeState, isDarkMode, fontSize = 16 }) => {
     // Sanctuary Cyan (#38BDF8 in dark, #0284C7 in light)
     const chordColor = themeState.chord || (isDarkMode ? '#38BDF8' : '#0284C7');
-    const transposed = chord ? transposeChord(chord, semitones) : null;
+    const transposed = chord ? transposeChord(chord, semitones, referenceKey) : null;
     const chordFontSize = Math.max(12, Math.round(fontSize * 0.88));
 
     return (
@@ -37,7 +37,7 @@ const LyricChordSegment = React.memo(
 );
 
 export const SongContentViewer = React.memo(
-  ({ content, semitones, showChords, themeState, isDarkMode, fontSize = 16 }) => {
+  ({ content, semitones, referenceKey, showChords, themeState, isDarkMode, fontSize = 16 }) => {
     const parsedLines = useMemo(() => {
       if (!content) return [];
       return content.split('\n').map(parseChordLine);
@@ -87,6 +87,7 @@ export const SongContentViewer = React.memo(
                   chord={seg.chord}
                   lyric={seg.lyric}
                   semitones={semitones}
+                  referenceKey={referenceKey}
                   showChords={showChords}
                   themeState={themeState}
                   isDarkMode={isDarkMode}
