@@ -55,17 +55,12 @@ export const DashboardScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* ── HERO BANNER: Active Setlist OR Empty Banner State ── */}
       {activeSetlist ? (
         /* Active Setlist Banner */
         <View style={[st.heroCard, { backgroundColor: theme.secondaryBg, borderColor: theme.border }]}>
           <View style={st.heroHeaderRow}>
-            <View style={st.heroBadgePill}>
-              <View style={st.pulsingDot} />
-              <Text style={st.heroBadgeText}>ACTIVE SETLIST</Text>
-            </View>
             <Text style={[st.heroDateText, { color: theme.subText }]}>
-              {activeSetlist.description || 'Sunday Worship'}
+              {activeSetlist.description}
             </Text>
           </View>
 
@@ -74,8 +69,8 @@ export const DashboardScreen = ({
           </Text>
           <Text style={[st.heroSubtitle, { color: theme.subText }]} numberOfLines={1}>
             {activeSetlistSongs.length > 0
-              ? `${activeSetlistSongs.length} Songs • Prepared for Worship`
-              : 'Sanctuary Team A • Main Worship'}
+              ? `${activeSetlistSongs.length} Songs`
+              : 'Sanctuary Team A - Main Worship'}
           </Text>
 
           {/* Songs Preview List */}
