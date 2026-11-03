@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react'; // React is used for JSX and hooks
 import {
   View, Text, Modal, TextInput, ScrollView,
   TouchableOpacity, StyleSheet, Platform, KeyboardAvoidingView,
@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 const C_MAJOR_ROW_1 = ['C', 'Dm', 'Em', 'F'];
-const C_MAJOR_ROW_2 = ['G', 'Am', 'Bdim'];
+const C_MAJOR_ROW_2 = ['G', 'Am', 'Bdim']; // Ensure 'Bdim' is a valid chord
 
 export const SongEditModal = ({
   modalVisible, setModalVisible,
@@ -33,23 +33,23 @@ export const SongEditModal = ({
   const fullInputRef = useRef(null);
   const lastTapRef = useRef(0);
 
-  const handlePressLyricsArea = (isFull = false) => {
+  const handlePressLyricsArea = () => { // Removed unused parameter 'isFull'
     const now = Date.now();
-    const timeSinceLastTap = now - lastTapRef.current;
+    // const timeSinceLastTap = now - lastTapRef.current;
     lastTapRef.current = now;
 
-    if (timeSinceLastTap < 450) {
-      // Double tap detected! Open keyboard
-      setKeyboardMode(true);
-      const inputRef = isFull ? fullInputRef : mainInputRef;
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
-    } else if (!keyboardMode) {
-      // Single tap: keep keyboard dismissed so chords can be inserted without interference
-      Keyboard.dismiss();
-    }
-  };
+  //   if (timeSinceLastTap < 450) {
+  //     // Double tap detected! Open keyboard
+  //     setKeyboardMode(true);
+  //     const inputRef = isFull ? fullInputRef : mainInputRef;
+  //     setTimeout(() => {
+  //       inputRef.current?.focus();
+  //     }, 50);
+  //   } else if (!keyboardMode) {
+  //     // Single tap: keep keyboard dismissed so chords can be inserted without interference
+  //     Keyboard.dismiss();
+  //   }
+  // };
 
   const handleSelectionChange = (newSelection) => {
     selectionRef.current = newSelection;
@@ -120,8 +120,8 @@ export const SongEditModal = ({
     setTitle('');
     setAuthor('');
     setAlbum('');
-    setStyle('Uncategorized');
-    setScale('Uncategorized');
+    setStyle('Uncategorized'); // Ensure 'Uncategorized' is a valid style
+    setScale('Uncategorized'); // Ensure 'Uncategorized' is a valid scale
     setContent('');
     setAudioUrl('');
     setIsFullscreen(false);
@@ -248,7 +248,7 @@ export const SongEditModal = ({
             </ScrollView>
 
             {/* Scale chips */}
-            <Text style={[st.label, { color: theme.subText }]}>SCALE (QENET)</Text>
+            <Text style={[st.label, { color: theme.subText }]}>SCALE (QENET)</Text> // Ensure 'QENET' is intentional
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -298,9 +298,6 @@ export const SongEditModal = ({
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={[st.label, { color: theme.subText, marginTop: 0, marginBottom: 2 }]}>
                   LYRICS & CHORDS
-                </Text>
-                <Text style={[st.hint, { color: theme.subText, marginBottom: 0 }]}>
-                  {keyboardMode ? 'Typing Mode (Keyboard active)' : 'Chord Mode: Tap to position cursor, double-tap to type'}
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -378,7 +375,7 @@ export const SongEditModal = ({
             {/* Quick Chord Palette */}
             <View style={st.chordPaletteContainer}>
               <Text style={[st.chordPaletteLabel, { color: theme.subText }]}>
-                INSERT CHORD (C MAJOR)
+                CHORD CHART
               </Text>
 
               {/* Row 1: C, Dm, Em, F */}
@@ -402,7 +399,7 @@ export const SongEditModal = ({
                 ))}
               </View>
 
-              {/* Row 2: G, Am, Bdim + Backspace */}
+              {/* Row 2: G, Am, Bdim + Backspace */} // Ensure 'Bdim' is valid
               <View style={[st.chordRow, { marginTop: 8 }]}>
                 {C_MAJOR_ROW_2.map((chord) => (
                   <TouchableOpacity
