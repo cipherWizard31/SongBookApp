@@ -49,11 +49,7 @@ export const SongEditModal = ({
   //     // Single tap: keep keyboard dismissed so chords can be inserted without interference
   //     Keyboard.dismiss();
   //   }
-<<<<<<< HEAD
   };
-=======
-  // };
->>>>>>> 20b40b670ca98f8e85d47f515a005050a9bc659c
 
   const handleSelectionChange = (newSelection) => {
     selectionRef.current = newSelection;
