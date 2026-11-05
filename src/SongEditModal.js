@@ -49,7 +49,11 @@ export const SongEditModal = ({
   //     // Single tap: keep keyboard dismissed so chords can be inserted without interference
   //     Keyboard.dismiss();
   //   }
+<<<<<<< HEAD
   };
+=======
+  // };
+>>>>>>> 20b40b670ca98f8e85d47f515a005050a9bc659c
 
   const handleSelectionChange = (newSelection) => {
     selectionRef.current = newSelection;
@@ -399,7 +403,7 @@ export const SongEditModal = ({
                 ))}
               </View>
 
-              {/* Row 2: G, Am, Bdim + Backspace */}
+              {/* Row 2: G, Am, Bdim + Backspace */} // Ensure 'Bdim' is valid
               <View style={[st.chordRow, { marginTop: 8 }]}>
                 {C_MAJOR_ROW_2.map((chord) => (
                   <TouchableOpacity

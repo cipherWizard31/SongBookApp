@@ -6,7 +6,11 @@ import {
   Platform,
   Linking,
   PanResponder,
+  Animated,
+  Dimensions,
 } from 'react-native';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -84,11 +88,17 @@ export default function App() {
   const currentPlayerRef = useRef(null);
 
   // ----------------------------------------------------
-  // INSTANT SCREEN SWITCHING (NO TRANSITIONS)
+  // SCREEN SWITCHING WITH SLIDE TRANSITION
   // ----------------------------------------------------
   const MAIN_TABS = ['dashboard', 'songs', 'setlists', 'profile'];
   const currentScreenRef = useRef(currentScreen);
   currentScreenRef.current = currentScreen;
+
+  // Slide animation value: 0 = settled, animated from ±SCREEN_WIDTH on change
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  // Track the previous screen so we can keep rendering it during the transition
+  const [displayScreen, setDisplayScreen] = useState(currentScreen);
+  const displayScreenRef = useRef(currentScreen);
 
   const navigateToScreen = (targetScreen, setlistId = null) => {
     if (targetScreen !== 'setlists') {
@@ -98,11 +108,35 @@ export default function App() {
       setInitialSetlistId(setlistId);
     }
     if (targetScreen === currentScreen) {
-      // Same screen — still apply setlistId if provided
       return;
     }
     setCurrentScreen(targetScreen);
   };
+
+  // Trigger slide animation whenever currentScreen changes
+  useEffect(() => {
+    const prevScreen = displayScreenRef.current;
+    if (prevScreen === currentScreen) return;
+
+    const prevIdx = MAIN_TABS.indexOf(prevScreen);
+    const nextIdx = MAIN_TABS.indexOf(currentScreen);
+    // For non-tab screens (dictionary, albums, etc.) always slide in from right
+    const direction = (nextIdx === -1 || prevIdx === -1)
+      ? 1
+      : nextIdx > prevIdx ? 1 : -1;
+
+    // Snap the new screen in from the edge, then animate to 0
+    slideAnim.setValue(direction * SCREEN_WIDTH);
+    setDisplayScreen(currentScreen);
+    displayScreenRef.current = currentScreen;
+
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 68,
+      friction: 11,
+      useNativeDriver: true,
+    }).start();
+  }, [currentScreen]);
 
   // Ref so PanResponder (created once at mount) always calls the latest navigate
   const navigateRef = useRef(navigateToScreen);
@@ -1017,9 +1051,11 @@ export default function App() {
           onImportFile={handleImportFile}
         />
 
-        {/* Direct Screen Content (No Transition Animations) */}
-        <View style={{ flex: 1 }} {...mainPanResponder.panHandlers}>
-          {renderScreenContent(currentScreen)}
+        {/* Screen Content with Slide Transition */}
+        <View style={{ flex: 1, overflow: 'hidden' }} {...mainPanResponder.panHandlers}>
+          <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }] }}>
+            {renderScreenContent(displayScreen)}
+          </Animated.View>
         </View>
 
         {/* Bottom Navigation Bar */}
