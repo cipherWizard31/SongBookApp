@@ -156,7 +156,7 @@ const st = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 12, height: 44,
   },
   searchGlyph: { fontSize: 18, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, padding: 0 },
+  searchInput: { flex: 1, fontFamily: 'AnthropicSerifText-Medium', fontSize: 16, padding: 0 },
 
   // Album list rows
   sep: { height: StyleSheet.hairlineWidth },
@@ -170,14 +170,14 @@ const st = StyleSheet.create({
   },
   albumThumbGlyph: { fontSize: 20, color: '#999' },
   albumText: { flex: 1, paddingRight: 8 },
-  albumTitle: { fontSize: 15, fontWeight: '500' },
-  albumSub: { fontSize: 13, marginTop: 2 },
+  albumTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 15, fontWeight: '500' },
+  albumSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, marginTop: 2 },
   chevron: { fontSize: 22, fontWeight: '300' },
 
   // Empty
   empty: { paddingTop: 64, paddingHorizontal: 32, alignItems: 'center' },
-  emptyTitle: { fontSize: 17, fontWeight: '500', marginBottom: 6 },
-  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 17, fontWeight: '500', marginBottom: 6 },
+  emptyHint: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 14, textAlign: 'center', lineHeight: 20 },
 
   // Album detail
   backRow: {
@@ -185,7 +185,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 16, height: 48,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backLabel: { fontSize: 15, fontWeight: '400' },
+  backLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 15, fontWeight: '400' },
 
   albumHeader: {
     alignItems: 'center', paddingVertical: 24,
@@ -196,8 +196,8 @@ const st = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
   albumArtGlyph: { fontSize: 36, color: '#999' },
-  albumName: { fontSize: 20, fontWeight: '600', textAlign: 'center', marginBottom: 4 },
-  albumMeta: { fontSize: 13 },
+  albumName: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 20, fontWeight: '600', textAlign: 'center', marginBottom: 4 },
+  albumMeta: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13 },
 
   // Track rows
   trackRow: {
@@ -205,11 +205,12 @@ const st = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 10, minHeight: 56,
   },
   trackNum: {
+    fontFamily: 'AnthropicSerifText-Medium',
     width: 28, fontSize: 14, fontWeight: '400', textAlign: 'center',
   },
   trackText: { flex: 1, paddingHorizontal: 8 },
-  trackTitle: { fontSize: 15, fontWeight: '500' },
-  trackSub: { fontSize: 13, marginTop: 2 },
+  trackTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 15, fontWeight: '500' },
+  trackSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, marginTop: 2 },
 });
 
 export default AlbumsScreen;

@@ -10,6 +10,7 @@ import {
 
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
@@ -34,7 +35,7 @@ import {
   validateSetlistPayload,
   validateBackupPayload,
 } from './src/shareEnvelope';
-import { saveJsonToFile, shareJsonToApp } from './src/exportUtils';
+import { saveJsonToFile, shareJsonToApp, readFileTextAsync } from './src/exportUtils';
 
 import { Header } from './src/Header';
 import { DashboardScreen } from './src/DashboardScreen';
@@ -54,6 +55,11 @@ import { ExportOptionsModal } from './src/ExportOptionsModal';
 const SETLISTS_KEY = '@songbook_setlists';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'AnthropicSansDisplay-Bold': require('./assets/fonts/Sans-Display-Bold-Static.otf'),
+    'AnthropicSerifText-Medium': require('./assets/fonts/Serif-Text-Medium-Static.otf'),
+  });
+
   const [songs, setSongs] = useState([]);
   const [setlists, setSetlists] = useState([]);
   const [styles, setStyles] = useState(DEFAULT_STYLES);
@@ -484,12 +490,14 @@ export default function App() {
       content: payload.content !== undefined ? payload.content : migrateSongToInline(payload),
     };
 
-    const identical = songs.find(
-      (s) => s.title === songData.title && (s.content || '') === (songData.content || '')
+    // Skip silently if title + author already match (import dedup)
+    const duplicate = songs.find(
+      (s) =>
+        s.title.trim().toLowerCase() === songData.title.trim().toLowerCase() &&
+        (s.author || '').trim().toLowerCase() === (songData.author || '').trim().toLowerCase()
     );
-    if (identical) {
-      Alert.alert('Already Exists', `"${songData.title}" is already in your song library.`);
-      return;
+    if (duplicate) {
+      return; // silently skip — already in library
     }
 
     const sameTitleDiffContent = songs.some((s) => s.title === songData.title);
@@ -531,26 +539,17 @@ export default function App() {
 
     for (const rawSong of incomingSongs) {
       const songContent = rawSong.content !== undefined ? rawSong.content : migrateSongToInline(rawSong);
-      const existingMatch = songs.find((s) => s.title === rawSong.title);
+      // Match by title + author (case-insensitive) — same logic as manual create
+      const existingMatch = songs.find(
+        (s) =>
+          s.title.trim().toLowerCase() === (rawSong.title || '').trim().toLowerCase() &&
+          (s.author || '').trim().toLowerCase() === (rawSong.author || '').trim().toLowerCase()
+      );
 
       if (existingMatch) {
-        if ((existingMatch.content || '') === (songContent || '')) {
-          // Identical song exists: reuse its ID and skip adding
-          skippedCount++;
-          finalSongIds.push(existingMatch.id);
-        } else {
-          // Same title but different content: clone with new ID and (Copy) title
-          addedCount++;
-          const newId = Date.now().toString() + Math.random().toString(36).slice(2, 6);
-          const clonedSong = {
-            ...rawSong,
-            id: newId,
-            title: `${rawSong.title} (Copy)`,
-            content: songContent,
-          };
-          songsToAdd.push(clonedSong);
-          finalSongIds.push(newId);
-        }
+        // Same title + author already in library — skip silently, reuse its ID
+        skippedCount++;
+        finalSongIds.push(existingMatch.id);
       } else {
         // Brand new song
         addedCount++;
@@ -618,20 +617,19 @@ export default function App() {
 
               for (const bSong of payload.songs || []) {
                 const bContent = bSong.content !== undefined ? bSong.content : migrateSongToInline(bSong);
-                const existing = mergedSongs.find((s) => s.title === bSong.title);
+                const bTitle = (bSong.title || '').trim().toLowerCase();
+                const bAuthor = (bSong.author || '').trim().toLowerCase();
+
+                // Dedup rule: match by title + author (case-insensitive)
+                const existing = mergedSongs.find(
+                  (s) =>
+                    s.title.trim().toLowerCase() === bTitle &&
+                    (s.author || '').trim().toLowerCase() === bAuthor
+                );
 
                 if (existing) {
-                  if ((existing.content || '') === (bContent || '')) {
-                    skippedSongs++;
-                  } else {
-                    addedSongs++;
-                    mergedSongs.push({
-                      ...bSong,
-                      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
-                      title: `${bSong.title} (Copy)`,
-                      content: bContent,
-                    });
-                  }
+                  // Duplicate song found during import — silently skip
+                  skippedSongs++;
                 } else {
                   addedSongs++;
                   mergedSongs.push({
@@ -733,7 +731,7 @@ export default function App() {
   const handleImportFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', '*/*'],
+        type: ['application/json', 'text/*', '*/*'],
         copyToCacheDirectory: true,
       });
 
@@ -742,15 +740,13 @@ export default function App() {
       }
 
       const fileUri = result.assets[0].uri;
-      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
+      const fileContent = await readFileTextAsync(fileUri);
 
       const envelopeResult = parseEnvelope(fileContent);
       if (!envelopeResult.ok) {
         Alert.alert(
           'Invalid File',
-          'This is not a valid Selah Kignit file or the file is corrupted.'
+          envelopeResult.error || 'This is not a valid Selah Kignit file or the file is corrupted.'
         );
         return;
       }
@@ -773,7 +769,7 @@ export default function App() {
       }
     } catch (e) {
       console.error('File import error:', e);
-      Alert.alert('Import Failed', 'Could not open or parse the selected file.');
+      Alert.alert('Import Failed', e?.message ? `Could not read file: ${e.message}` : 'Could not open or parse the selected file.');
     }
   };
 
@@ -810,6 +806,17 @@ export default function App() {
           : s
       );
     } else {
+      // Duplicate guard: same title + author (case-insensitive) → reject
+      const duplicate = songs.find(
+        (s) =>
+          s.title.trim().toLowerCase() === title.trim().toLowerCase() &&
+          (s.author || '').trim().toLowerCase() === (author || '').trim().toLowerCase()
+      );
+      if (duplicate) {
+        Alert.alert('Song Already Exists', `A song titled "${title.trim()}" by "${author.trim() || 'Unknown'}" already exists in your library.`);
+        return;
+      }
+
       const newSong = {
         id: Date.now().toString(),
         title,
@@ -1005,6 +1012,10 @@ export default function App() {
         return null;
     }
   };
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

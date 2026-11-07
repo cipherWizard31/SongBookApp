@@ -25,7 +25,7 @@ import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { buildEnvelope, parseEnvelope, validateSetlistPayload } from './shareEnvelope';
-import { saveJsonToFile, shareJsonToApp } from './exportUtils';
+import { saveJsonToFile, shareJsonToApp, readFileTextAsync } from './exportUtils';
 
 // Design Accent Tokens
 const AMBER = '#E5A93C';
@@ -266,20 +266,18 @@ export const SetlistsScreen = ({
   const handleImportSetlist = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', '*/*'],
+        type: ['application/json', 'text/*', '*/*'],
         copyToCacheDirectory: true,
       });
 
       if (result.canceled || !result.assets || result.assets.length === 0) return;
 
       const fileUri = result.assets[0].uri;
-      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
+      const fileContent = await readFileTextAsync(fileUri);
       const envelopeResult = parseEnvelope(fileContent);
 
       if (!envelopeResult.ok || envelopeResult.type !== 'setlist') {
-        Alert.alert('Invalid File', 'This file is not a valid Selah Kignit setlist file.');
+        Alert.alert('Invalid File', envelopeResult.ok ? 'This file is not a setlist file.' : (envelopeResult.error || 'This file is not a valid Selah Kignit setlist file.'));
         return;
       }
 
@@ -1111,7 +1109,7 @@ const st = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  screenTitle: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  screenTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
   headerActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1120,7 +1118,7 @@ const st = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  headerActionText: { fontSize: 13, fontWeight: '600' },
+  headerActionText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '600' },
   headerActionBtnPrimary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1128,7 +1126,7 @@ const st = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 10,
   },
-  headerActionPrimaryText: { fontSize: 13, fontWeight: '700', color: '#1E1909' },
+  headerActionPrimaryText: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '700', color: '#1E1909' },
 
   // Setlist Overview Cards
   setlistCard: {
@@ -1148,16 +1146,16 @@ const st = StyleSheet.create({
     marginRight: 14,
   },
   setlistText: { flex: 1, paddingRight: 12 },
-  setlistTitle: { fontSize: 16, fontWeight: '600', marginBottom: 3 },
+  setlistTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '600', marginBottom: 3 },
   setlistBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  setlistSub: { fontSize: 13, fontWeight: '400' },
+  setlistSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '400' },
   importedChip: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
-  importedChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  importedChipText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
 
   // Empty State Card
   emptyCard: {
@@ -1168,8 +1166,8 @@ const st = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 20,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700', marginBottom: 6 },
-  emptyHint: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  emptyTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 17, fontWeight: '700', marginBottom: 6 },
+  emptyHint: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, textAlign: 'center', lineHeight: 19 },
   emptyResetBtn: {
     marginTop: 16,
     paddingHorizontal: 16,
@@ -1177,7 +1175,7 @@ const st = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  emptyResetBtnText: { fontSize: 13, fontWeight: '700' },
+  emptyResetBtnText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '700' },
 
   // Overview Search & Sort Bar
   overviewSearchWrap: {
@@ -1194,6 +1192,7 @@ const st = StyleSheet.create({
     height: 42,
   },
   overviewSearchInput: {
+    fontFamily: 'AnthropicSerifText-Medium',
     flex: 1,
     fontSize: 14,
     padding: 0,
@@ -1206,6 +1205,7 @@ const st = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   overviewSortLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -1226,6 +1226,7 @@ const st = StyleSheet.create({
     borderWidth: 1,
   },
   overviewSortChipText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
   },
 
@@ -1246,7 +1247,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
   },
   barCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 12 },
-  barTitle: { fontSize: 16, fontWeight: '700' },
+  barTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
 
   // More Menu
   moreMenuContainer: {
@@ -1273,6 +1274,7 @@ const st = StyleSheet.create({
     marginRight: 12,
   },
   moreMenuText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -1297,8 +1299,8 @@ const st = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  heroTitle: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
-  heroDesc: { fontSize: 13 },
+  heroTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 18, fontWeight: '700', marginBottom: 2 },
+  heroDesc: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13 },
   songCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1308,7 +1310,7 @@ const st = StyleSheet.create({
     borderWidth: 1,
     marginLeft: 8,
   },
-  songCountText: { fontSize: 11, fontWeight: '700' },
+  songCountText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 11, fontWeight: '700' },
 
   heroActionRow: { flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
   primaryPerfBtn: {
@@ -1320,7 +1322,7 @@ const st = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
   },
-  primaryPerfBtnText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+  primaryPerfBtnText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#1E1909', fontSize: 13, fontWeight: '700' },
   heroSecondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1330,7 +1332,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1,
   },
-  heroSecondaryBtnText: { fontSize: 13, fontWeight: '600' },
+  heroSecondaryBtnText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '600' },
   heroIconBtn: {
     width: 40,
     height: 40,
@@ -1341,7 +1343,7 @@ const st = StyleSheet.create({
   },
 
   // Section Sub Header
-  sectionSubTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
+  sectionSubTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
 
   // Song Row in Setlist Detail
   songCardRow: {
@@ -1360,10 +1362,10 @@ const st = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  indexBadgeText: { fontSize: 13, fontWeight: '700' },
+  indexBadgeText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '700' },
   songText: { flex: 1, paddingRight: 8 },
-  songTitle: { fontSize: 15, fontWeight: '600' },
-  songSub: { fontSize: 12, marginTop: 2 },
+  songTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 15, fontWeight: '600' },
+  songSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, marginTop: 2 },
   removeBtn: { padding: 4 },
   reorderBtn: { padding: 2 },
 
@@ -1396,14 +1398,14 @@ const st = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700' },
-  sheetCancel: { fontSize: 14, fontWeight: '500' },
+  sheetTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
+  sheetCancel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 14, fontWeight: '500' },
   doneChipBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 99,
   },
-  doneChipText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+  doneChipText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#1E1909', fontSize: 13, fontWeight: '700' },
 
   // Add Songs Search
   modalSearchWrap: { paddingHorizontal: 16, paddingVertical: 12 },
@@ -1415,7 +1417,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 12,
     height: 42,
   },
-  modalSearchInput: { flex: 1, fontSize: 14, padding: 0 },
+  modalSearchInput: { fontFamily: 'AnthropicSerifText-Medium', flex: 1, fontSize: 14, padding: 0 },
   selectRowCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1427,8 +1429,8 @@ const st = StyleSheet.create({
 
   // Create Form
   formPadding: { padding: 18, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
-  label: { fontSize: 10, fontWeight: '700', marginTop: 14, marginBottom: 6, letterSpacing: 0.8 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  label: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 10, fontWeight: '700', marginTop: 14, marginBottom: 6, letterSpacing: 0.8 },
+  input: { fontFamily: 'AnthropicSerifText-Medium', borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   saveBtn: {
     marginTop: 24,
     height: 46,
@@ -1437,7 +1439,7 @@ const st = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  saveBtnText: { color: '#1E1909', fontSize: 14, fontWeight: '700' },
+  saveBtnText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#1E1909', fontSize: 14, fontWeight: '700' },
 
   // Performance Mode Modal
   perfTopBar: {
@@ -1448,8 +1450,8 @@ const st = StyleSheet.create({
     paddingHorizontal: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  perfTitle: { fontSize: 16, fontWeight: '700' },
-  perfSub: { fontSize: 12, marginTop: 1 },
+  perfTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
+  perfSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, marginTop: 1 },
   toggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1458,7 +1460,7 @@ const st = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  toggleLabel: { fontSize: 12, fontWeight: '700' },
+  toggleLabel: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 12, fontWeight: '700' },
   perfExitPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1467,7 +1469,7 @@ const st = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  perfExitPillText: { fontSize: 12, fontWeight: '600' },
+  perfExitPillText: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 12, fontWeight: '600' },
 
   perfSubBar: {
     flexDirection: 'row',
@@ -1478,7 +1480,7 @@ const st = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   keyControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  toolbarLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  toolbarLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   stepBtn: {
     width: 30,
     height: 30,
@@ -1487,18 +1489,18 @@ const st = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepBtnLabel: { fontSize: 16, fontWeight: '600' },
-  keyValue: { fontSize: 13, fontWeight: '700', minWidth: 32, textAlign: 'center' },
+  stepBtnLabel: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '600' },
+  keyValue: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '700', minWidth: 32, textAlign: 'center' },
   navStepBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
-  navStepLabel: { fontSize: 13, fontWeight: '600' },
+  navStepLabel: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '600' },
 
-  perfSongTitle: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  perfSongSub: { fontSize: 13, marginBottom: 16 },
+  perfSongTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  perfSongSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, marginBottom: 16 },
 
   // Auto-scroll control bar
   perfAutoScrollBar: {
@@ -1521,14 +1523,14 @@ const st = StyleSheet.create({
     borderWidth: 1,
     borderColor: AMBER,
   },
-  perfScrollBtnText: { fontSize: 13, fontWeight: '700', marginLeft: 6 },
+  perfScrollBtnText: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '700', marginLeft: 6 },
   perfSpeedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  speedLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  speedLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   speedPillWrap: {
     flexDirection: 'row',
     borderRadius: 12,
@@ -1539,7 +1541,7 @@ const st = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
   },
-  speedChipText: { fontSize: 12, fontWeight: '500' },
+  speedChipText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500' },
 });
 
 export default SetlistsScreen;

@@ -340,7 +340,7 @@ const st = StyleSheet.create({
     height: 46,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, padding: 0, fontWeight: '500' },
+  searchInput: { flex: 1, fontFamily: 'AnthropicSerifText-Medium', fontSize: 15, padding: 0, fontWeight: '500' },
 
   // Dual filter rows block
   filtersBlock: {
@@ -352,6 +352,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
   },
   filterLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -372,7 +373,7 @@ const st = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chipText: { fontSize: 12, fontWeight: '500' },
+  chipText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500' },
   chipTextActive: { fontWeight: '700' },
 
   // Summary bar
@@ -384,8 +385,8 @@ const st = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  summaryText: { fontSize: 12, fontWeight: '500' },
-  resetText: { fontSize: 12, fontWeight: '600' },
+  summaryText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500' },
+  resetText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '600' },
 
   // Imported banner
   importedBanner: {
@@ -399,8 +400,8 @@ const st = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  importedBannerText: { flex: 1, fontSize: 13, fontWeight: '500' },
-  importedBannerAction: { fontSize: 13, fontWeight: '600' },
+  importedBannerText: { flex: 1, fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, fontWeight: '500' },
+  importedBannerAction: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '600' },
 
   // List
   listContent: {
@@ -435,6 +436,7 @@ const st = StyleSheet.create({
     flexWrap: 'wrap',
   },
   songTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '700',
     flexShrink: 1,
@@ -446,7 +448,7 @@ const st = StyleSheet.create({
     borderRadius: 6,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  badgeText: { fontSize: 10, fontWeight: '500' },
+  badgeText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 10, fontWeight: '500' },
   audioBadge: {
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -466,6 +468,7 @@ const st = StyleSheet.create({
     marginRight: 8,
   },
   metaText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12.5,
     fontWeight: '400',
   },
@@ -485,6 +488,7 @@ const st = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   tagText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -507,11 +511,13 @@ const st = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 6,
   },
   emptyHint: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -524,6 +530,7 @@ const st = StyleSheet.create({
     borderWidth: 1,
   },
   emptyResetBtnText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     fontWeight: '600',
   },

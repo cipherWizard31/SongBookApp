@@ -136,6 +136,7 @@ const st = StyleSheet.create({
     borderRadius: 4,
   },
   badgeLabel: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
@@ -157,6 +158,7 @@ const st = StyleSheet.create({
     fontSize: 12,
   },
   playLabel: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 13,
@@ -171,14 +173,15 @@ const st = StyleSheet.create({
     marginVertical: 8,
   },
   fallbackText: { flex: 1, paddingRight: 12 },
-  fallbackTitle: { fontSize: 15, fontWeight: '500' },
-  fallbackSub: { fontSize: 13, marginTop: 2 },
+  fallbackTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 15, fontWeight: '500' },
+  fallbackSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, marginTop: 2 },
   playPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
   },
   playPillLabel: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 12,
     fontWeight: '600',
   },

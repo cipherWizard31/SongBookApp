@@ -1,9 +1,28 @@
 // Selah Kignit Design System ("Reverent Liturgical Modernism")
 // Configured from Stitch Project ID: 2364343143090962598
+
+export const FONTS = {
+  title: 'AnthropicSansDisplay-Bold',
+  body: 'AnthropicSerifText-Medium',
+};
+
+// Global typography styles mapped to design tokens
+export const typography = {
+  title: {
+    fontFamily: FONTS.title,
+  },
+  body: {
+    fontFamily: FONTS.body,
+  },
+};
+
 export const getTheme = (isDarkMode) => {
+  const fonts = FONTS;
+
   if (isDarkMode) {
     return {
       // Dark Mode (Midnight Sanctuary)
+      fonts,
       bg: '#101319',                  // Base Obsidian Canvas
       secondaryBg: '#141821',         // Elevated Stage Surface
       cardBg: '#1D2026',              // Acoustic Chamber Card Container
@@ -42,6 +61,7 @@ export const getTheme = (isDarkMode) => {
 
   return {
     // Light Mode (Warm Parchment Reader)
+    fonts,
     bg: '#FBF7EE',                    // Warm Liturgical Parchment
     secondaryBg: '#F5EFE0',           // Parchment Surface
     cardBg: '#EDE6D5',                // Acoustic Chamber Card (Light)

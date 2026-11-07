@@ -154,6 +154,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
   },
   topBarTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
@@ -213,6 +214,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
   },
   hintText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
@@ -232,6 +234,7 @@ const st = StyleSheet.create({
     borderRadius: 20,
   },
   rescanBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#1E1909',
     fontSize: 13,
     fontWeight: '700',
@@ -252,12 +255,14 @@ const st = StyleSheet.create({
     marginBottom: 20,
   },
   permissionTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 10,
   },
   permissionSub: {
+    fontFamily: 'AnthropicSerifText-Medium',
     color: '#94A3B8',
     fontSize: 14,
     textAlign: 'center',
@@ -270,6 +275,7 @@ const st = StyleSheet.create({
     borderRadius: 14,
   },
   permissionBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#1E1909',
     fontSize: 14,
     fontWeight: '700',

@@ -84,7 +84,7 @@ const TabItem = ({ tab, active, onSelectTab, theme }) => {
         <Text
           style={[
             st.tabLabel,
-            { color: active ? activeColor : inactiveColor },
+            { color: active ? activeColor : inactiveColor, fontFamily: theme.fonts?.body || 'System' },
             active && st.tabLabelActive,
           ]}
           numberOfLines={1}>

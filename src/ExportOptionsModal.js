@@ -163,10 +163,12 @@ const st = StyleSheet.create({
     marginRight: 12,
   },
   title: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 17,
     fontWeight: '700',
   },
   subtitle: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     marginTop: 2,
     lineHeight: 16,
@@ -184,6 +186,7 @@ const st = StyleSheet.create({
     marginBottom: 16,
   },
   badgeText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -211,11 +214,13 @@ const st = StyleSheet.create({
     marginRight: 8,
   },
   optionTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 3,
   },
   optionDesc: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     lineHeight: 16,
   },
@@ -228,6 +233,7 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelBtnText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 14,
     fontWeight: '600',
   },

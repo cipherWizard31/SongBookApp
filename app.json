@@ -34,6 +34,15 @@
       }
     },
     "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Sans-Display-Bold-Static.otf",
+            "./assets/fonts/Serif-Text-Medium-Static.otf"
+          ]
+        }
+      ],
       "expo-sharing",
       [
         "expo-camera",

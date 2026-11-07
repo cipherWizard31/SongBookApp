@@ -287,11 +287,13 @@ const st = StyleSheet.create({
     marginBottom: 16,
   },
   greetingSub: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   greetingTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.3,
@@ -335,22 +337,26 @@ const st = StyleSheet.create({
     marginRight: 6,
   },
   heroBadgeText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     color: '#E5A93C',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
   heroDateText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     fontWeight: '500',
   },
   heroTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   heroSubtitle: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     fontWeight: '400',
     marginBottom: 6,
@@ -370,12 +376,14 @@ const st = StyleSheet.create({
     marginBottom: 10,
   },
   emptyHeroTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 4,
     textAlign: 'center',
   },
   emptyHeroSub: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
@@ -400,11 +408,13 @@ const st = StyleSheet.create({
     borderBottomColor: 'rgba(150, 150, 150, 0.15)',
   },
   heroSongNum: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '700',
     width: 22,
   },
   heroSongTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
@@ -417,10 +427,12 @@ const st = StyleSheet.create({
     marginLeft: 8,
   },
   heroScaleText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '600',
   },
   moreSongsText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     marginTop: 6,
     marginBottom: 2,
@@ -445,6 +457,7 @@ const st = StyleSheet.create({
     elevation: 4,
   },
   startServiceBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.2,
@@ -462,11 +475,13 @@ const st = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   seeAllLink: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -492,10 +507,12 @@ const st = StyleSheet.create({
     flex: 1,
   },
   recentTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 15,
     fontWeight: '600',
   },
   recentSubtitle: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     marginTop: 2,
   },
@@ -511,6 +528,7 @@ const st = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   recentTagText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '600',
   },
@@ -525,6 +543,7 @@ const st = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
   },
 });

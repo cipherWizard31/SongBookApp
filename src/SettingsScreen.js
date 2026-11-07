@@ -376,6 +376,7 @@ const st = StyleSheet.create({
   content: { paddingVertical: 16, paddingBottom: 48 },
 
   sectionLabel: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -384,6 +385,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionFooter: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     marginTop: -4,
     marginBottom: 8,
@@ -420,17 +422,18 @@ const st = StyleSheet.create({
     marginRight: 12,
   },
   rowLeft: { flex: 1, paddingRight: 12 },
-  rowTitle: { fontSize: 15, fontWeight: '600' },
-  rowSub: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+  rowTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 15, fontWeight: '600' },
+  rowSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, marginTop: 2, lineHeight: 16 },
 
-  appTitle: { fontSize: 16, fontWeight: '700' },
-  appSub: { fontSize: 12, fontWeight: '500' },
-  appDesc: { fontSize: 12.5, lineHeight: 18 },
+  appTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
+  appSub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500' },
+  appDesc: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12.5, lineHeight: 18 },
 
   inputWrap: {
     marginBottom: 4,
   },
   inputLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 6,
@@ -438,6 +441,7 @@ const st = StyleSheet.create({
     letterSpacing: 0.5,
   },
   inputField: {
+    fontFamily: 'AnthropicSerifText-Medium',
     height: 44,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
@@ -454,6 +458,7 @@ const st = StyleSheet.create({
     marginTop: 14,
   },
   saveProfileBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#1E1909',
     fontSize: 13.5,
     fontWeight: '700',
@@ -487,13 +492,13 @@ const st = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700' },
+  sheetTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
   doneChipBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 99,
   },
-  doneChipText: { color: '#1E1909', fontSize: 13, fontWeight: '700' },
+  doneChipText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#1E1909', fontSize: 13, fontWeight: '700' },
 
   statsContent: { padding: 18, paddingBottom: Platform.OS === 'ios' ? 36 : 24 },
   statGrid: {
@@ -510,18 +515,18 @@ const st = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
   },
-  statValue: { fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  statLabel: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  statValue: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 22, fontWeight: '700', lineHeight: 26 },
+  statLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500', marginTop: 2 },
 
-  distLabel: { fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 0.2 },
+  distLabel: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 14, fontWeight: '700', marginBottom: 12, letterSpacing: 0.2 },
   barRow: { marginBottom: 12 },
   barMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  barName: { fontSize: 13, fontWeight: '600' },
-  barCount: { fontSize: 12 },
+  barName: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '600' },
+  barCount: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12 },
   barTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 3 },
 });

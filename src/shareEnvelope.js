@@ -21,20 +21,102 @@ export function envelopeToString(type, payload) {
 
 // ── Parse & validate envelope ───────────────────────────────────────────────
 /**
+ * Strips UTF-8 Byte Order Mark (BOM) and trims whitespace.
+ */
+function cleanRawJsonString(str) {
+  if (typeof str !== 'string') return str;
+  // Strip BOM if present (0xFEFF) and whitespace
+  return str.replace(/^\uFEFF/, '').trim();
+}
+
+/**
+ * Robustly parses Selah Kignit JSON payloads.
+ * Accepts:
+ *  1. Standard envelope: { sk: 'selah_kignit', type: 'backup'|'song'|'setlist', payload: {...} }
+ *  2. Un-enveloped legacy backup: { songs: [...], setlists: [...] }
+ *  3. Song array backup: [ { title: '...', ... }, ... ]
+ *  4. Single setlist: { setlist: {...}, songs: [...] } or { title: '...', songIds: [...] }
+ *  5. Single song: { title: '...', content: '...' }
+ *
  * Returns { ok: true, type, payload } or { ok: false, error: string }
  */
 export function parseEnvelope(raw) {
   try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (parsed?.sk !== ENVELOPE_ID) {
-      return { ok: false, error: 'Not a Selah Kignit file.' };
+    const text = typeof raw === 'string' ? cleanRawJsonString(raw) : raw;
+    const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+
+    if (!parsed || typeof parsed !== 'object') {
+      return { ok: false, error: 'File content is not valid JSON.' };
     }
-    if (!parsed.type || !parsed.payload) {
-      return { ok: false, error: 'File is missing required fields.' };
+
+    // 1. Standard envelope
+    if (parsed.sk === ENVELOPE_ID) {
+      if (!parsed.type || !parsed.payload) {
+        return { ok: false, error: 'File is missing required fields.' };
+      }
+      return { ok: true, type: parsed.type, payload: parsed.payload };
     }
-    return { ok: true, type: parsed.type, payload: parsed.payload };
-  } catch {
-    return { ok: false, error: 'Could not read file – it may be corrupted.' };
+
+    // 2. Raw setlist object { setlist: {...}, songs: [...] }
+    if (parsed.setlist && typeof parsed.setlist === 'object' && parsed.setlist.title) {
+      return {
+        ok: true,
+        type: 'setlist',
+        payload: {
+          setlist: parsed.setlist,
+          songs: Array.isArray(parsed.songs) ? parsed.songs : [],
+        },
+      };
+    }
+    if (parsed.title && Array.isArray(parsed.songIds)) {
+      return {
+        ok: true,
+        type: 'setlist',
+        payload: {
+          setlist: parsed,
+          songs: Array.isArray(parsed.songs) ? parsed.songs : [],
+        },
+      };
+    }
+
+    // 3. Legacy / un-enveloped backup object { songs: [...] }
+    if (Array.isArray(parsed.songs)) {
+      return {
+        ok: true,
+        type: 'backup',
+        payload: {
+          songs: parsed.songs,
+          setlists: Array.isArray(parsed.setlists) ? parsed.setlists : [],
+          styles: parsed.styles,
+          scales: parsed.scales,
+        },
+      };
+    }
+
+    // 4. Raw array of songs [{ title: ... }]
+    if (Array.isArray(parsed)) {
+      return {
+        ok: true,
+        type: 'backup',
+        payload: {
+          songs: parsed,
+          setlists: [],
+        },
+      };
+    }
+
+    // 5. Raw single song
+    if (typeof parsed.title === 'string' && (parsed.content !== undefined || parsed.chords !== undefined || parsed.lyrics !== undefined)) {
+      return {
+        ok: true,
+        type: 'song',
+        payload: parsed,
+      };
+    }
+
+    return { ok: false, error: 'Not a recognized Selah Kignit backup, song, or setlist file.' };
+  } catch (err) {
+    return { ok: false, error: 'Could not read file – ' + (err?.message || 'it may be corrupted.') };
   }
 }
 
@@ -82,6 +164,6 @@ export function validateSetlistPayload(payload) {
 export function validateBackupPayload(payload) {
   if (!payload || typeof payload !== 'object') return 'Invalid backup data.';
   if (!Array.isArray(payload.songs)) return 'Backup is missing songs array.';
-  if (!Array.isArray(payload.setlists)) return 'Backup is missing setlists array.';
+  if (payload.setlists !== undefined && !Array.isArray(payload.setlists)) return 'Backup setlists field is malformed.';
   return null;
 }

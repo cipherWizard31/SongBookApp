@@ -13,7 +13,7 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFi
             resizeMode="contain"
           />
         </View>
-        <Text style={[styles.title, { color: theme.text }]}>Selah Kignit</Text>
+        <Text style={[styles.title, { color: theme.text, fontFamily: theme.fonts?.title || 'System' }]}>Selah Kignit</Text>
       </View>
 
       {/* Right: Actions */}

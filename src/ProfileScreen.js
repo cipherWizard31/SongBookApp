@@ -362,10 +362,12 @@ const st = StyleSheet.create({
     gap: 4,
   },
   subviewBackText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 15,
     fontWeight: '600',
   },
   subviewHeaderTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -406,11 +408,13 @@ const st = StyleSheet.create({
     flex: 1,
   },
   profileName: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
   profileRole: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     marginTop: 2,
     fontWeight: '400',
@@ -430,10 +434,12 @@ const st = StyleSheet.create({
     flex: 1,
   },
   statVal: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '700',
   },
   statLbl: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     marginTop: 2,
     fontWeight: '500',
@@ -445,6 +451,7 @@ const st = StyleSheet.create({
 
   // Section Headers
   sectionHeaderLabel: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -477,11 +484,13 @@ const st = StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 2,
   },
   menuSubtitle: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
   },
   rowSeparator: {
@@ -494,12 +503,14 @@ const st = StyleSheet.create({
     marginBottom: 4,
   },
   inputLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '600',
     marginBottom: 6,
     letterSpacing: 0.4,
   },
   inputField: {
+    fontFamily: 'AnthropicSerifText-Medium',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -515,6 +526,7 @@ const st = StyleSheet.create({
     marginTop: 14,
   },
   saveProfileBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     color: '#1E1909',
     fontSize: 14,
     fontWeight: '700',

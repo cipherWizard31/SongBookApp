@@ -240,7 +240,7 @@ const st = StyleSheet.create({
     height: 46,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, padding: 0, fontWeight: '500' },
+  searchInput: { flex: 1, fontFamily: 'AnthropicSerifText-Medium', fontSize: 15, padding: 0, fontWeight: '500' },
 
   // Summary bar
   summaryBar: {
@@ -251,8 +251,8 @@ const st = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  summaryText: { fontSize: 12, fontWeight: '500' },
-  resetText: { fontSize: 12, fontWeight: '600' },
+  summaryText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '500' },
+  resetText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '600' },
 
   // List
   listContent: {
@@ -287,6 +287,7 @@ const st = StyleSheet.create({
     flexWrap: 'wrap',
   },
   songTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '700',
     flexShrink: 1,
@@ -311,6 +312,7 @@ const st = StyleSheet.create({
     marginRight: 8,
   },
   metaText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12.5,
     fontWeight: '400',
   },
@@ -330,6 +332,7 @@ const st = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   tagText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -359,11 +362,13 @@ const st = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 6,
   },
   emptyHint: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -376,6 +381,7 @@ const st = StyleSheet.create({
     borderWidth: 1,
   },
   emptyResetBtnText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     fontWeight: '600',
   },

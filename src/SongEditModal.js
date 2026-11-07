@@ -630,9 +630,9 @@ const st = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  sheetTitle: { fontSize: 17, fontWeight: '600' },
-  headerAction: { fontSize: 17, fontWeight: '400' },
-  headerActionPrimary: { fontWeight: '600' },
+  sheetTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 17, fontWeight: '600' },
+  headerAction: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 17, fontWeight: '400' },
+  headerActionPrimary: { fontFamily: 'AnthropicSansDisplay-Bold', fontWeight: '600' },
 
   form: {
     paddingHorizontal: 16,
@@ -640,12 +640,14 @@ const st = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 36 : 24,
   },
   label: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12, fontWeight: '500',
     marginTop: 16, marginBottom: 6,
     letterSpacing: 0.4,
   },
-  hint: { fontSize: 12, marginBottom: 6, lineHeight: 16 },
+  hint: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, marginBottom: 6, lineHeight: 16 },
   input: {
+    fontFamily: 'AnthropicSerifText-Medium',
     borderWidth: 1, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 12,
     fontSize: 16,
@@ -658,19 +660,20 @@ const st = StyleSheet.create({
     borderRadius: 16, borderWidth: 1,
     justifyContent: 'center', alignItems: 'center',
   },
-  chipLabel: { fontSize: 13 },
+  chipLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13 },
   chipActive: { fontWeight: '600' },
 
   saveBtn: {
     marginTop: 24, height: 48, borderRadius: 10,
     justifyContent: 'center', alignItems: 'center',
   },
-  saveBtnLabel: { fontSize: 16, fontWeight: '600' },
+  saveBtnLabel: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '600' },
 
   chordPaletteContainer: {
     marginTop: 14,
   },
   chordPaletteLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
@@ -696,6 +699,7 @@ const st = StyleSheet.create({
     shadowRadius: 2,
   },
   chordBtnText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -718,6 +722,7 @@ const st = StyleSheet.create({
     borderWidth: 1,
   },
   extendBtnText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -739,10 +744,12 @@ const st = StyleSheet.create({
     gap: 4,
   },
   fullscreenActionText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 16,
     fontWeight: '600',
   },
   fullscreenTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 17,
     fontWeight: '600',
     flex: 1,
@@ -753,6 +760,7 @@ const st = StyleSheet.create({
     padding: 16,
   },
   fullscreenTextInput: {
+    fontFamily: 'AnthropicSerifText-Medium',
     flex: 1,
     fontSize: 18,
     lineHeight: 26,

@@ -479,7 +479,7 @@ const st = StyleSheet.create({
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  screenLabelText: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
+  screenLabelText: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 10, fontWeight: '700', letterSpacing: 1.2 },
   topNavRight: { flexDirection: 'row', alignItems: 'center', gap: 2 },
 
   // Overflow
@@ -490,7 +490,7 @@ const st = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
   },
   overflowMenuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
-  overflowMenuText: { fontSize: 14, fontWeight: '600' },
+  overflowMenuText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 14, fontWeight: '600' },
 
   // Scroll
   scrollPadding: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 72 },
@@ -526,10 +526,12 @@ const st = StyleSheet.create({
     borderWidth: 1,
   },
   actionChipText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 12,
     fontWeight: '700',
   },
   mainTitle: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 24, fontWeight: '700', letterSpacing: -0.4,
     lineHeight: 30, marginBottom: 8,
   },
@@ -545,10 +547,12 @@ const st = StyleSheet.create({
     alignItems: 'center',
   },
   metaDot: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 12,
     marginHorizontal: 2,
   },
   artistSub: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 13, fontWeight: '500',
   },
   tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
@@ -557,13 +561,13 @@ const st = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 8, borderWidth: 1,
   },
-  kignitPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
+  kignitPillText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
   rhythmPill: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 8, borderWidth: 1,
   },
-  rhythmPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
+  rhythmPillText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
 
   // Live Toolbar
   liveToolbar: {
@@ -574,21 +578,21 @@ const st = StyleSheet.create({
   },
   toolGroup: { alignItems: 'center', flex: 1 },
   toolDivider: { width: 1, height: 28 },
-  toolLabel: { fontSize: 9, fontWeight: '700', letterSpacing: 0.9, marginBottom: 4 },
+  toolLabel: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 9, fontWeight: '700', letterSpacing: 0.9, marginBottom: 4 },
   stepper: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 10, borderWidth: StyleSheet.hairlineWidth,
     height: 32, paddingHorizontal: 2,
   },
   stepBtn: { width: 26, height: 30, justifyContent: 'center', alignItems: 'center' },
-  stepSign: { fontSize: 13, fontWeight: '700' },
-  stepVal: { fontSize: 12, fontWeight: '700', minWidth: 32, textAlign: 'center' },
+  stepSign: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 13, fontWeight: '700' },
+  stepVal: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 12, fontWeight: '700', minWidth: 32, textAlign: 'center' },
   toggleBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     height: 32, paddingHorizontal: 10, borderRadius: 10,
     borderWidth: 1,
   },
-  toggleText: { fontSize: 12, fontWeight: '700' },
+  toggleText: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 12, fontWeight: '700' },
 
   // Content Card
   contentCard: {
@@ -612,6 +616,7 @@ const st = StyleSheet.create({
     borderRadius: 6,
   },
   lyricsPillText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -622,6 +627,7 @@ const st = StyleSheet.create({
     borderRadius: 6,
   },
   transposedBadgeText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -633,14 +639,14 @@ const st = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#27272A',
   },
-  perfTitle: { fontSize: 22, fontWeight: '700', color: '#F1F5F9', marginBottom: 2 },
-  perfMeta: { fontSize: 13, color: '#94A3B8' },
+  perfTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 22, fontWeight: '700', color: '#F1F5F9', marginBottom: 2 },
+  perfMeta: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, color: '#94A3B8' },
   perfExitBtn: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#27272A', paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: 10, gap: 6,
   },
-  perfExitText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  perfExitText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#FFF', fontSize: 13, fontWeight: '600' },
   perfContentPadding: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 96 },
   perfControlBar: {
     position: 'absolute', bottom: 24, left: 20, right: 20,
@@ -661,7 +667,7 @@ const st = StyleSheet.create({
     backgroundColor: '#27272A', paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 10, gap: 6,
   },
-  perfBarBtnText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  perfBarBtnText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#FFF', fontSize: 13, fontWeight: '600' },
   perfSpeedRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -673,6 +679,7 @@ const st = StyleSheet.create({
     width: '100%',
   },
   speedLabel: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 10,
     fontWeight: '700',
     color: '#94A3B8',
@@ -680,15 +687,15 @@ const st = StyleSheet.create({
   },
   speedPillWrap: { flexDirection: 'row', backgroundColor: '#27272A', borderRadius: 8, padding: 2, gap: 4 },
   speedChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
-  speedChipText: { color: '#94A3B8', fontSize: 11, fontWeight: '600' },
+  speedChipText: { fontFamily: 'AnthropicSerifText-Medium', color: '#94A3B8', fontSize: 11, fontWeight: '600' },
   perfFontStepper: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#27272A', borderRadius: 10,
     paddingHorizontal: 6, height: 36, gap: 6,
   },
   fontStepBtn: { paddingHorizontal: 6, paddingVertical: 4 },
-  fontStepText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  fontValText: { color: '#94A3B8', fontSize: 12, fontWeight: '600', minWidth: 20, textAlign: 'center' },
+  fontStepText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#FFF', fontSize: 13, fontWeight: '600' },
+  fontValText: { fontFamily: 'AnthropicSerifText-Medium', color: '#94A3B8', fontSize: 12, fontWeight: '600', minWidth: 20, textAlign: 'center' },
 });
 
 export default SongDetailModal;

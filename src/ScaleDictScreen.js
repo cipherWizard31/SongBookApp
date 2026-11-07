@@ -123,8 +123,8 @@ const st = StyleSheet.create({
     padding: 6,
     borderRadius: 8,
   },
-  title: { fontSize: 19, fontWeight: '700', letterSpacing: -0.2 },
-  sub: { fontSize: 13, marginTop: 4, lineHeight: 19 },
+  title: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 19, fontWeight: '700', letterSpacing: -0.2 },
+  sub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, marginTop: 4, lineHeight: 19 },
 
   searchWrap: {
     paddingHorizontal: 16,
@@ -140,7 +140,7 @@ const st = StyleSheet.create({
     height: 46,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14.5, padding: 0, fontWeight: '500' },
+  searchInput: { fontFamily: 'AnthropicSerifText-Medium', flex: 1, fontSize: 14.5, padding: 0, fontWeight: '500' },
 
   list: { paddingHorizontal: 16, paddingTop: 4, gap: 10 },
   card: {
@@ -154,7 +154,7 @@ const st = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  scaleName: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  scaleName: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
   notesPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,15 +163,15 @@ const st = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  scaleNotes: { fontSize: 12, fontWeight: '700' },
-  scaleDesc: { fontSize: 13.5, lineHeight: 19 },
+  scaleNotes: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, fontWeight: '700' },
+  scaleDesc: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13.5, lineHeight: 19 },
 
   empty: {
     alignItems: 'center',
     paddingVertical: 48,
   },
-  emptyTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  emptySub: { fontSize: 13, textAlign: 'center' },
+  emptyTitle: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  emptySub: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 13, textAlign: 'center' },
 });
 
 export default ScaleDictScreen;

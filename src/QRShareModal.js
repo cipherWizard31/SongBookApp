@@ -151,8 +151,8 @@ const st = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  title: { fontSize: 16, fontWeight: '700' },
-  subtitle: { fontSize: 12, marginTop: 2 },
+  title: { fontFamily: 'AnthropicSansDisplay-Bold', fontSize: 16, fontWeight: '700' },
+  subtitle: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, marginTop: 2 },
   closeBtn: { padding: 4 },
   qrBox: {
     padding: 12,
@@ -170,7 +170,7 @@ const st = StyleSheet.create({
     marginBottom: 18,
     width: '100%',
   },
-  instructionText: { fontSize: 12, lineHeight: 17, flex: 1 },
+  instructionText: { fontFamily: 'AnthropicSerifText-Medium', fontSize: 12, lineHeight: 17, flex: 1 },
   doneBtn: {
     width: '100%',
     height: 44,
@@ -179,5 +179,5 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  doneBtnText: { color: '#1E1909', fontSize: 14, fontWeight: '700' },
+  doneBtnText: { fontFamily: 'AnthropicSansDisplay-Bold', color: '#1E1909', fontSize: 14, fontWeight: '700' },
 });

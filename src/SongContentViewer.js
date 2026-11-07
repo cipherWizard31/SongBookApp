@@ -117,12 +117,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   chordText: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontWeight: '700',
     marginBottom: 2,
     paddingRight: 3,
     letterSpacing: 0.4,
   },
   lyricText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontWeight: '400',
   },
   sectionHeaderWrap: {
@@ -135,6 +137,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   sectionHeader: {
+    fontFamily: 'AnthropicSansDisplay-Bold',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.2,
@@ -145,9 +148,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
+    fontFamily: 'AnthropicSerifText-Medium',
     fontSize: 14,
     fontStyle: 'italic',
     textAlign: 'center',
   },
 });
-
+
