@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'; // React is used for JSX and hooks
+import React, { useState, useRef } from 'react';
 import {
   View, Text, Modal, TextInput, ScrollView,
   TouchableOpacity, StyleSheet, Platform, KeyboardAvoidingView,
@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 const C_MAJOR_ROW_1 = ['C', 'Dm', 'Em', 'F'];
-const C_MAJOR_ROW_2 = ['G', 'Am', 'Bdim']; // Ensure 'Bdim' is a valid chord
+const C_MAJOR_ROW_2 = ['G', 'Am', 'Bdim'];
 
 export const SongEditModal = ({
   modalVisible, setModalVisible,
@@ -38,17 +38,17 @@ export const SongEditModal = ({
     // const timeSinceLastTap = now - lastTapRef.current;
     lastTapRef.current = now;
 
-  //   if (timeSinceLastTap < 450) {
-  //     // Double tap detected! Open keyboard
-  //     setKeyboardMode(true);
-  //     const inputRef = isFull ? fullInputRef : mainInputRef;
-  //     setTimeout(() => {
-  //       inputRef.current?.focus();
-  //     }, 50);
-  //   } else if (!keyboardMode) {
-  //     // Single tap: keep keyboard dismissed so chords can be inserted without interference
-  //     Keyboard.dismiss();
-  //   }
+    //   if (timeSinceLastTap < 450) {
+    //     // Double tap detected! Open keyboard
+    //     setKeyboardMode(true);
+    //     const inputRef = isFull ? fullInputRef : mainInputRef;
+    //     setTimeout(() => {
+    //       inputRef.current?.focus();
+    //     }, 50);
+    //   } else if (!keyboardMode) {
+    //     // Single tap: keep keyboard dismissed so chords can be inserted without interference
+    //     Keyboard.dismiss();
+    //   }
   };
 
   const handleSelectionChange = (newSelection) => {
@@ -82,6 +82,28 @@ export const SongEditModal = ({
 
     const newPos = safeStart + chordTag.length;
     const nextSel = { start: newPos, end: newPos };
+    selectionRef.current = nextSel;
+    setSelection(nextSel);
+  };
+
+  const handleInsertSpace = () => {
+    const curContent = content || '';
+    const { start = curContent.length } = selectionRef.current || {};
+    const safeStart = Math.max(0, Math.min(start, curContent.length));
+    const newContent = curContent.slice(0, safeStart) + ' ' + curContent.slice(safeStart);
+    setContent(newContent);
+    const nextSel = { start: safeStart + 1, end: safeStart + 1 };
+    selectionRef.current = nextSel;
+    setSelection(nextSel);
+  };
+
+  const handleInsertEnter = () => {
+    const curContent = content || '';
+    const { start = curContent.length } = selectionRef.current || {};
+    const safeStart = Math.max(0, Math.min(start, curContent.length));
+    const newContent = curContent.slice(0, safeStart) + '\n' + curContent.slice(safeStart);
+    setContent(newContent);
+    const nextSel = { start: safeStart + 1, end: safeStart + 1 };
     selectionRef.current = nextSel;
     setSelection(nextSel);
   };
@@ -431,6 +453,28 @@ export const SongEditModal = ({
                   <Ionicons name="backspace-outline" size={22} color={theme.subText || theme.text} />
                 </TouchableOpacity>
               </View>
+
+              {/* Row 3: Enter | Space | Delete */}
+              <View style={[st.chordRow, { marginTop: 8 }]}>
+                <TouchableOpacity
+                  style={[st.chordBtn, { backgroundColor: theme.cardBg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                  activeOpacity={0.65}
+                  onPress={handleInsertEnter}>
+                  <Ionicons name="return-down-back-outline" size={20} color={theme.subText || theme.text} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[st.chordBtn, { flex: 2, backgroundColor: theme.cardBg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                  activeOpacity={0.65}
+                  onPress={handleInsertSpace}>
+                  <Text style={[st.utilBtnText, { color: theme.subText || theme.text }]}>space</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[st.chordBtn, { backgroundColor: theme.cardBg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                  activeOpacity={0.65}
+                  onPress={handleBackspace}>
+                  <Ionicons name="backspace-outline" size={20} color={theme.subText || theme.text} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Bottom primary button */}
@@ -592,6 +636,28 @@ export const SongEditModal = ({
                     <Ionicons name="backspace-outline" size={22} color={theme.subText || theme.text} />
                   </TouchableOpacity>
                 </View>
+
+                {/* Row 3: Enter | Space | Delete */}
+                <View style={[st.chordRow, { marginTop: 8 }]}>
+                  <TouchableOpacity
+                    style={[st.chordBtn, { backgroundColor: theme.bg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                    activeOpacity={0.65}
+                    onPress={handleInsertEnter}>
+                    <Ionicons name="return-down-back-outline" size={20} color={theme.subText || theme.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[st.chordBtn, { flex: 2, backgroundColor: theme.bg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                    activeOpacity={0.65}
+                    onPress={handleInsertSpace}>
+                    <Text style={[st.utilBtnText, { color: theme.subText || theme.text }]}>space</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[st.chordBtn, { backgroundColor: theme.bg || '#f2f2f7', borderColor: theme.border || '#ccc' }]}
+                    activeOpacity={0.65}
+                    onPress={handleBackspace}>
+                    <Ionicons name="backspace-outline" size={20} color={theme.subText || theme.text} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </KeyboardAvoidingView>
           </SafeAreaView>
@@ -703,6 +769,12 @@ const st = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  utilBtnText: {
+    fontFamily: 'AnthropicSerifText-Medium',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
 
   lyricsHeaderRow: {
