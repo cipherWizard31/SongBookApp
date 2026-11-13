@@ -421,7 +421,7 @@ export const SongEditModal = ({
                 ))}
               </View>
 
-              {/* Row 2: G, Am, Bdim + Backspace */} // Ensure 'Bdim' is valid
+              {/* Row 2: G, Am, Bdim */}
               <View style={[st.chordRow, { marginTop: 8 }]}>
                 {C_MAJOR_ROW_2.map((chord) => (
                   <TouchableOpacity
@@ -440,7 +440,7 @@ export const SongEditModal = ({
                     </Text>
                   </TouchableOpacity>
                 ))}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={[
                     st.chordBtn,
                     {
@@ -451,7 +451,7 @@ export const SongEditModal = ({
                   activeOpacity={0.65}
                   onPress={handleBackspace}>
                   <Ionicons name="backspace-outline" size={22} color={theme.subText || theme.text} />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
 
               {/* Row 3: Enter | Space | Delete */}

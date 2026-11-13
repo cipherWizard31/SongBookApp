@@ -13,6 +13,7 @@ import {
   BackHandler,
   Platform,
   Pressable,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -1049,7 +1050,10 @@ export const SetlistsScreen = ({
         animationType="slide"
         transparent
         onRequestClose={() => setCreateModalVisible(false)}>
-        <View style={st.sheetOverlay}>
+        <KeyboardAvoidingView
+          style={st.sheetOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setCreateModalVisible(false)} />
           <View style={[st.sheet, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={[st.handle, { backgroundColor: theme.border }]} />
@@ -1091,7 +1095,7 @@ export const SetlistsScreen = ({
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

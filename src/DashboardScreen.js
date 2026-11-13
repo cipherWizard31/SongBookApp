@@ -44,7 +44,7 @@ export const DashboardScreen = ({
         <View>
           <Text style={[st.greetingSub, { color: theme.subText }]}>{getGreeting()}</Text>
           <Text style={[st.greetingTitle, { color: theme.text }]}>
-            Selah Kignit
+            Dashboard
           </Text>
         </View>
         <TouchableOpacity
