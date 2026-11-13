@@ -440,18 +440,6 @@ export const SongEditModal = ({
                     </Text>
                   </TouchableOpacity>
                 ))}
-                {/* <TouchableOpacity
-                  style={[
-                    st.chordBtn,
-                    {
-                      backgroundColor: theme.cardBg || '#f2f2f7',
-                      borderColor: theme.border || '#ccc',
-                    },
-                  ]}
-                  activeOpacity={0.65}
-                  onPress={handleBackspace}>
-                  <Ionicons name="backspace-outline" size={22} color={theme.subText || theme.text} />
-                </TouchableOpacity> */}
               </View>
 
               {/* Row 3: Enter | Space | Delete */}

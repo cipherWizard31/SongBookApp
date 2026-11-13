@@ -51,8 +51,10 @@ import { SongDetailModal } from './src/SongDetailModal';
 import { BottomNavBar } from './src/BottomNavBar';
 import { QRScannerModal } from './src/QRScannerModal';
 import { ExportOptionsModal } from './src/ExportOptionsModal';
+import { OnboardingModal } from './src/OnboardingModal';
 
 const SETLISTS_KEY = '@songbook_setlists';
+const ONBOARDING_KEY = '@selah_onboarding_done';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -66,6 +68,7 @@ export default function App() {
   const [scales, setScales] = useState(DEFAULT_SCALES);
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [performanceSetlistId, setPerformanceSetlistId] = useState(null);
@@ -244,6 +247,12 @@ export default function App() {
       if (storedProfile) {
         setProfile(JSON.parse(storedProfile));
       }
+
+      // Show onboarding only on first launch
+      const onboardingDone = await AsyncStorage.getItem(ONBOARDING_KEY);
+      if (!onboardingDone) {
+        setShowOnboarding(true);
+      }
     } catch (e) {
       console.error('Error loading initial data', e);
     }
@@ -388,6 +397,23 @@ export default function App() {
     } catch (e) {
       console.error('Error saving profile', e);
     }
+  };
+
+  const handleOnboardingComplete = async (data) => {
+    setShowOnboarding(false);
+    if (data.darkMode !== null && data.darkMode !== undefined) {
+      setIsDarkMode(data.darkMode);
+    }
+    const updatedProfile = {
+      ...profile,
+      name: data.name || profile.name,
+      instrument: data.instrument,
+      purpose: data.purpose,
+      source: data.source,
+      role: data.instrument || profile.role,
+    };
+    await handleSaveProfile(updatedProfile);
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'done');
   };
 
   const handleDeleteSong = (songId) => {
@@ -1100,6 +1126,13 @@ export default function App() {
           onSaveToFile={handleSaveBackupToFile}
           onShareToApp={handleShareBackupToApp}
           theme={theme}
+        />
+        <OnboardingModal
+          visible={showOnboarding}
+          theme={theme}
+          onComplete={handleOnboardingComplete}
+          onImportBackup={handleImportFile}
+          onThemeChange={setIsDarkMode}
         />
     </SafeAreaProvider>
   );
