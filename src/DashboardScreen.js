@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Computed outside the component — no re-creation on every render
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';
@@ -23,6 +22,7 @@ export const DashboardScreen = ({
   onNavigateToScreen,
   onStartWorshipService,
   theme,
+  profile,
 }) => {
   const recentSongs = songs.slice(0, 5);
   const recentSetlists = setlists.slice(0, 4);
@@ -42,9 +42,8 @@ export const DashboardScreen = ({
       {/* ── TOP GREETING HEADER ── */}
       <View style={st.greetingHeader}>
         <View>
-          <Text style={[st.greetingSub, { color: theme.subText }]}>{getGreeting()}</Text>
           <Text style={[st.greetingTitle, { color: theme.text }]}>
-            Dashboard
+            {getGreeting()}, {(profile?.name || 'Musician').split(' ')[0]}
           </Text>
         </View>
         <TouchableOpacity
@@ -123,7 +122,6 @@ export const DashboardScreen = ({
               <Ionicons name="calendar-outline" size={12} color={theme.subText} style={{ marginRight: 4 }} />
               <Text style={[st.heroBadgeText, { color: theme.subText }]}>NO UPCOMING SETLIST</Text>
             </View>
-            <Text style={[st.heroDateText, { color: theme.subText }]}>Worship Schedule</Text>
           </View>
 
           <View style={st.emptyBannerContent}>

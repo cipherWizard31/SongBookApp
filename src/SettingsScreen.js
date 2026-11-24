@@ -118,7 +118,7 @@ export const SettingsScreen = ({
           </View>
           <View style={st.rowLeft}>
             <Text style={[st.rowTitle, { color: theme.text }]}>Dark Mode</Text>
-            <Text style={[st.rowSub, { color: theme.subText }]}>Switch interface color theme</Text>
+
           </View>
           <Switch
             value={isDarkMode}
@@ -149,50 +149,12 @@ export const SettingsScreen = ({
         </TouchableOpacity>
       </View>
 
-      {/* ─── Section: Backup & Restore ─── */}
-      <Text style={[st.sectionLabel, { color: theme.subText }]}>BACKUP & RESTORE</Text>
-      <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={[st.rowPressable, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.divider }]}
-          onPress={handleExportSongs}>
-          <View style={[st.rowIconBox, { backgroundColor: 'rgba(52, 211, 153, 0.15)' }]}>
-            <Ionicons name="cloud-upload" size={18} color="#34D399" />
-          </View>
-          <View style={st.rowLeft}>
-            <Text style={[st.rowTitle, { color: theme.text }]}>Export Backup</Text>
-            <Text style={[st.rowSub, { color: theme.subText }]}>
-              Export full catalog and setlists as JSON
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={st.rowPressable}
-          onPress={handleImportSongs}>
-          <View style={[st.rowIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-            <Ionicons name="cloud-download" size={18} color="#A855F7" />
-          </View>
-          <View style={st.rowLeft}>
-            <Text style={[st.rowTitle, { color: theme.text }]}>Import Backup</Text>
-            <Text style={[st.rowSub, { color: theme.subText }]}>
-              Restore full library from a backup JSON file
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
-        </TouchableOpacity>
-      </View>
 
       {/* ─── Section: Imported content (conditional) ─── */}
       {(importedSongs > 0 || importedSetlists > 0) && (
         <>
           <Text style={[st.sectionLabel, { color: theme.subText }]}>IMPORTED DATA MANAGEMENT</Text>
-          <Text style={[st.sectionFooter, { color: theme.subText }]}>
-            {importedSongs} imported song{importedSongs !== 1 ? 's' : ''} and{' '}
-            {importedSetlists} imported setlist{importedSetlists !== 1 ? 's' : ''}
-          </Text>
+
           <View style={[st.group, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             {importedSetlists > 0 && handleClearImportedSetlists && (
               <TouchableOpacity
@@ -206,9 +168,7 @@ export const SettingsScreen = ({
                   <Text style={[st.rowTitle, { color: '#EF4444' }]}>
                     Remove Imported Setlists
                   </Text>
-                  <Text style={[st.rowSub, { color: theme.subText }]}>
-                    Delete setlists added via import
-                  </Text>
+
                 </View>
               </TouchableOpacity>
             )}
@@ -228,9 +188,7 @@ export const SettingsScreen = ({
                   <Text style={[st.rowTitle, { color: '#EF4444' }]}>
                     Remove Imported Songs
                   </Text>
-                  <Text style={[st.rowSub, { color: theme.subText }]}>
-                    Delete songs added via import
-                  </Text>
+
                 </View>
               </TouchableOpacity>
             )}
@@ -247,9 +205,7 @@ export const SettingsScreen = ({
                   <Text style={[st.rowTitle, { color: '#EF4444', fontWeight: '600' }]}>
                     Remove All Imported Content
                   </Text>
-                  <Text style={[st.rowSub, { color: theme.subText }]}>
-                    Deletes all imported songs and setlists at once
-                  </Text>
+
                 </View>
               </TouchableOpacity>
             )}
@@ -383,14 +339,6 @@ const st = StyleSheet.create({
     marginTop: 18,
     marginBottom: 8,
     paddingHorizontal: 20,
-  },
-  sectionFooter: {
-    fontFamily: 'AnthropicSerifText-Medium',
-    fontSize: 12,
-    marginTop: -4,
-    marginBottom: 8,
-    paddingHorizontal: 20,
-    lineHeight: 17,
   },
 
   group: {

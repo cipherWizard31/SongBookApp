@@ -43,15 +43,12 @@ import { SongsScreen } from './src/SongsScreen';
 import { SetlistsScreen } from './src/SetlistsScreen';
 import { ProfileScreen } from './src/ProfileScreen';
 import { ScaleDictScreen } from './src/ScaleDictScreen';
-import { SettingsScreen } from './src/SettingsScreen';
-import { AlbumsScreen } from './src/AlbumsScreen';
-import { ArtistsScreen } from './src/ArtistsScreen';
 import { SongEditModal } from './src/SongEditModal';
 import { SongDetailModal } from './src/SongDetailModal';
 import { BottomNavBar } from './src/BottomNavBar';
-import { QRScannerModal } from './src/QRScannerModal';
 import { ExportOptionsModal } from './src/ExportOptionsModal';
 import { OnboardingModal } from './src/OnboardingModal';
+import { SongSharePickerModal } from './src/SongSharePickerModal';
 
 const SETLISTS_KEY = '@songbook_setlists';
 const ONBOARDING_KEY = '@selah_onboarding_done';
@@ -76,8 +73,7 @@ export default function App() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [songDetailModal, setSongDetailModal] = useState(null);
-  const [qrScannerVisible, setQrScannerVisible] = useState(false);
-
+  const [songSharePickerVisible, setSongSharePickerVisible] = useState(false);
   const [transposeKey, setTransposeKey] = useState(0);
   const [showChords, setShowChords] = useState(true);
 
@@ -179,10 +175,6 @@ export default function App() {
   // Android hardware back button / system edge back swipe support
   useEffect(() => {
     const onBackPress = () => {
-      if (qrScannerVisible) {
-        setQrScannerVisible(false);
-        return true;
-      }
       if (songDetailModal) {
         setSongDetailModal(null);
         return true;
@@ -200,7 +192,7 @@ export default function App() {
 
     const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSubscription.remove();
-  }, [currentScreen, songDetailModal, modalVisible, qrScannerVisible]);
+  }, [currentScreen, songDetailModal, modalVisible]);
 
   // ----------------------------------------------------
   // INITIALIZATION & PERSISTENCE
@@ -799,22 +791,6 @@ export default function App() {
 
   const handleImportSongs = handleImportFile;
 
-  // Handle direct in-app import from scanned QR code (SONG ONLY)
-  const handleInAppQRImport = async (type, payload) => {
-    try {
-      if (type !== 'song') {
-        Alert.alert(
-          'Unsupported QR',
-          'QR sharing only supports single songs. Setlists and backups must be shared via files.'
-        );
-        return;
-      }
-      await importSingleSongInternal(payload);
-    } catch (err) {
-      console.error('QR import error:', err);
-      Alert.alert('Import Failed', 'Could not save the scanned song.');
-    }
-  };
 
   const handleSaveSong = async () => {
     if (!title.trim()) {
@@ -878,6 +854,7 @@ export default function App() {
             setlists={setlists}
             scales={scales}
             styles={styles}
+            profile={profile}
             onSelectSong={(song) => {
               setSongDetailModal(song);
               setTransposeKey(0);
@@ -942,11 +919,9 @@ export default function App() {
             }}
             onToggleFavorite={handleToggleFavorite}
             onNavigateToScreen={navigateToScreen}
-            onOpenNewSongModal={() => setModalVisible(true)}
             onClearImportedSongs={handleClearImportedSongs}
             onClearImportedSetlists={handleClearImportedSetlists}
             onClearAllImportedData={handleClearAllImportedData}
-            onDeleteSong={handleDeleteSong}
             handleExportSongs={handleExportSongs}
             handleImportSongs={handleImportSongs}
             isDarkMode={isDarkMode}
@@ -956,82 +931,6 @@ export default function App() {
         );
       case 'dictionary':
         return <ScaleDictScreen theme={theme} />;
-      case 'albums':
-        return (
-          <AlbumsScreen
-            songs={songs}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        );
-      case 'artists':
-        return (
-          <ArtistsScreen
-            songs={songs}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            theme={theme}
-            isDarkMode={isDarkMode}
-          />
-        );
-      case 'settings':
-        return (
-          <SettingsScreen
-            songs={songs}
-            setSongs={setSongs}
-            setlists={setlists}
-            styles={styles}
-            setStyles={setStyles}
-            scales={scales}
-            setScales={setScales}
-            profile={profile}
-            handleSaveProfile={handleSaveProfile}
-            handleExportSongs={handleExportSongs}
-            handleImportSongs={handleImportSongs}
-            handleClearImportedSetlists={handleClearImportedSetlists}
-            handleClearImportedSongs={handleClearImportedSongs}
-            handleClearAllImportedData={handleClearAllImportedData}
-            isDarkMode={isDarkMode}
-            setIsDarkMode={setIsDarkMode}
-            theme={theme}
-          />
-        );
-      case 'favourites':
-        return (
-          <ProfileScreen
-            songs={songs}
-            setlists={setlists}
-            styles={styles}
-            scales={scales}
-            setSongs={setSongs}
-            setStyles={setStyles}
-            setScales={setScales}
-            profile={profile}
-            handleSaveProfile={handleSaveProfile}
-            onSelectSong={(song) => {
-              setSongDetailModal(song);
-              setTransposeKey(0);
-            }}
-            onToggleFavorite={handleToggleFavorite}
-            onNavigateToScreen={navigateToScreen}
-            onOpenNewSongModal={() => setModalVisible(true)}
-            onClearImportedSongs={handleClearImportedSongs}
-            onClearImportedSetlists={handleClearImportedSetlists}
-            onClearAllImportedData={handleClearAllImportedData}
-            onDeleteSong={handleDeleteSong}
-            handleExportSongs={handleExportSongs}
-            handleImportSongs={handleImportSongs}
-            isDarkMode={isDarkMode}
-            setIsDarkMode={setIsDarkMode}
-            theme={theme}
-          />
-        );
       default:
         return null;
     }
@@ -1047,8 +946,7 @@ export default function App() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top', 'bottom', 'left', 'right']}>
         <Header
           theme={theme}
-          onNavigateToProfile={() => navigateToScreen('profile')}
-          onOpenQRScanner={() => setQrScannerVisible(true)}
+          onOpenShare={() => setSongSharePickerVisible(true)}
           onImportFile={handleImportFile}
         />
 
@@ -1106,14 +1004,6 @@ export default function App() {
           isDarkMode={isDarkMode}
         />
 
-        {/* Direct In-App QR Scanner */}
-        <QRScannerModal
-          visible={qrScannerVisible}
-          onClose={() => setQrScannerVisible(false)}
-          onImportData={handleInAppQRImport}
-          theme={theme}
-        />
-
         {/* Export Backup Options Modal */}
         <ExportOptionsModal
           visible={exportOptionsVisible}
@@ -1131,6 +1021,14 @@ export default function App() {
           onComplete={handleOnboardingComplete}
           onImportBackup={handleImportFile}
           onThemeChange={setIsDarkMode}
+        />
+
+        {/* Multi-song JSON Share Modal */}
+        <SongSharePickerModal
+          visible={songSharePickerVisible}
+          onClose={() => setSongSharePickerVisible(false)}
+          songs={songs}
+          theme={theme}
         />
     </SafeAreaProvider>
   );

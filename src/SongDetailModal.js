@@ -17,7 +17,6 @@ import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline, extractKeyRoot, transposeNote } from './chordParser';
 import { CHROMATIC_NOTES } from './constants';
 import { AudioPreviewBanner } from './AudioPreviewBanner';
-import { QRShareModal } from './QRShareModal';
 import { ExportOptionsModal } from './ExportOptionsModal';
 import { buildEnvelope } from './shareEnvelope';
 import { saveJsonToFile, shareJsonToApp } from './exportUtils';
@@ -49,7 +48,6 @@ export const SongDetailModal = ({
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  const [qrShareVisible, setQrShareVisible] = useState(false);
   const [exportOptionsVisible, setExportOptionsVisible] = useState(false);
 
   const scrollViewRef = useRef(null);
@@ -101,16 +99,8 @@ export const SongDetailModal = ({
   };
 
   const getSongExportData = () => {
-    return buildEnvelope('song', {
-      id: song.id,
-      title: song.title,
-      author: song.author,
-      album: song.album,
-      style: song.style,
-      scale: song.scale,
-      content: song.content,
-      audioUrl: song.audioUrl,
-    });
+    const { id, title, author, album, style, scale, content, audioUrl } = song;
+    return buildEnvelope('song', { id, title, author, album, style, scale, content, audioUrl });
   };
 
   const handleSaveSongToFile = async () => {
@@ -399,15 +389,6 @@ export const SongDetailModal = ({
               style={st.overflowMenuItem}
               onPress={() => {
                 setShowOverflowMenu(false);
-                setQrShareVisible(true);
-              }}>
-              <Ionicons name="qr-code-outline" size={16} color={CYAN} style={{ marginRight: 8 }} />
-              <Text style={[st.overflowMenuText, { color: theme.text }]}>Share In-App (QR Code)</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={st.overflowMenuItem}
-              onPress={() => {
-                setShowOverflowMenu(false);
                 setExportOptionsVisible(true);
               }}>
               <Ionicons name="share-outline" size={16} color={theme.text} style={{ marginRight: 8 }} />
@@ -427,17 +408,6 @@ export const SongDetailModal = ({
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Direct In-App QR Share Modal */}
-        <QRShareModal
-          visible={qrShareVisible}
-          onClose={() => setQrShareVisible(false)}
-          title={song.title}
-          subtitle="Scan with Selah Kignit to import song"
-          song={song}
-          onFallbackToFile={() => setExportOptionsVisible(true)}
-          theme={theme}
-        />
 
         {/* Export Song Options Modal */}
         <ExportOptionsModal

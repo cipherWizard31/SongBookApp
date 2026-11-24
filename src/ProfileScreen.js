@@ -6,15 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   BackHandler,
-  TextInput,
-  Switch,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AlbumsScreen } from './AlbumsScreen';
 import { ArtistsScreen } from './ArtistsScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { FavouritesScreen } from './FavouritesScreen';
+import { ReportBugModal } from './ReportBugModal';
 
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
@@ -43,19 +41,7 @@ export const ProfileScreen = ({
 }) => {
   // activeSubView: null (shows Profile Hub) | 'favourites' | 'albums' | 'artists' | 'settings'
   const [activeSubView, setActiveSubView] = useState(null);
-
-  // Profile Edit State within Profile Hub
-  const [profileName, setProfileName] = useState(profile?.name || 'Worship Musician');
-  const [profileRole, setProfileRole] = useState(profile?.role || 'Sanctuary Director • Selah Kignit');
-  const [isSaved, setIsSaved] = useState(false);
-  const [statsModalVisible, setStatsModalVisible] = useState(false);
-
-  useEffect(() => {
-    if (profile) {
-      if (profile.name) setProfileName(profile.name);
-      if (profile.role) setProfileRole(profile.role);
-    }
-  }, [profile]);
+  const [reportBugVisible, setReportBugVisible] = useState(false);
 
   // Handle hardware back button inside Profile sub-views
   useEffect(() => {
@@ -70,18 +56,6 @@ export const ProfileScreen = ({
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSub.remove();
   }, [activeSubView]);
-
-  const onSaveProfilePress = () => {
-    const updated = {
-      name: profileName.trim() || 'Worship Musician',
-      role: profileRole.trim() || 'Sanctuary Director • Selah Kignit',
-    };
-    if (handleSaveProfile) {
-      handleSaveProfile(updated);
-    }
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
-  };
 
   // Compute metrics
   const favouriteSongs = songs.filter((s) => s.isFavorite);
@@ -276,6 +250,38 @@ export const ProfileScreen = ({
         </TouchableOpacity>
       </View>
 
+      {/* ── SECTION: BACKUP & DATA ── */}
+      <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>BACKUP & RESTORE</Text>
+      <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={handleExportSongs}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(52, 211, 153, 0.18)' }]}>
+            <Ionicons name="cloud-upload-outline" size={20} color="#34D399" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Export Backup</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
+
+        <View style={[st.rowSeparator, { backgroundColor: theme.divider }]} />
+
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={handleImportSongs}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(168, 85, 247, 0.18)' }]}>
+            <Ionicons name="cloud-download-outline" size={20} color="#A855F7" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Import Backup</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
+      </View>
+
       {/* ── SECTION: APP SETTINGS BUTTON ── */}
       <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>APP PREFERENCES</Text>
       <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
@@ -287,55 +293,32 @@ export const ProfileScreen = ({
             <Ionicons name="settings-sharp" size={20} color="#60A5FA" />
           </View>
           <View style={st.menuTextCol}>
-            <Text style={[st.menuTitle, { color: theme.text }]}>Settings & Data</Text>
-            <Text style={[st.menuSubtitle, { color: theme.subText }]}>
-              Theme, Backup/Export, Import, and Database
-            </Text>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Settings</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
+
+        <View style={[st.rowSeparator, { backgroundColor: theme.divider }]} />
+
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={() => setReportBugVisible(true)}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(239, 68, 68, 0.18)' }]}>
+            <Ionicons name="bug-outline" size={20} color="#EF4444" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>Report Bug</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
       </View>
 
-      {/* ── SECTION: EDIT PROFILE DETAILS ── */}
-      <Text style={[st.sectionHeaderLabel, { color: theme.subText }]}>EDIT MUSICIAN IDENTITY</Text>
-      <View style={[st.menuCard, { backgroundColor: theme.cardBg, borderColor: theme.border, padding: 16 }]}>
-        <View style={st.inputWrap}>
-          <Text style={[st.inputLabel, { color: theme.subText }]}>Display Name</Text>
-          <TextInput
-            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-            value={profileName}
-            onChangeText={setProfileName}
-            placeholder="e.g. Worship Musician"
-            placeholderTextColor={theme.subText}
-          />
-        </View>
-
-        <View style={[st.inputWrap, { marginTop: 12 }]}>
-          <Text style={[st.inputLabel, { color: theme.subText }]}>Ministry Role & Title</Text>
-          <TextInput
-            style={[st.inputField, { color: theme.text, backgroundColor: theme.secondaryBg, borderColor: theme.border }]}
-            value={profileRole}
-            onChangeText={setProfileRole}
-            placeholder="e.g. Sanctuary Director • Selah Kignit"
-            placeholderTextColor={theme.subText}
-          />
-        </View>
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[st.saveProfileBtn, { backgroundColor: isSaved ? '#10B981' : AMBER }]}
-          onPress={onSaveProfilePress}>
-          <Ionicons
-            name={isSaved ? 'checkmark-circle' : 'save-outline'}
-            size={16}
-            color="#1E1909"
-            style={{ marginRight: 6 }}
-          />
-          <Text style={st.saveProfileBtnText}>
-            {isSaved ? 'Profile Saved Locally!' : 'Save Profile Changes'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ReportBugModal
+        visible={reportBugVisible}
+        onClose={() => setReportBugVisible(false)}
+        theme={theme}
+      />
 
       <View style={{ height: 40 }} />
     </ScrollView>

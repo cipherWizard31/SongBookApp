@@ -25,7 +25,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SongContentViewer } from './SongContentViewer';
 import { migrateSongToInline } from './chordParser';
 import { ExportOptionsModal } from './ExportOptionsModal';
-import { buildEnvelope, parseEnvelope, validateSetlistPayload } from './shareEnvelope';
+import { parseEnvelope, validateSetlistPayload } from './shareEnvelope';
 import { saveJsonToFile, shareJsonToApp, readFileTextAsync } from './exportUtils';
 
 // Design Accent Tokens

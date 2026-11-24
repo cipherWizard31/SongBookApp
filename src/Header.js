@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFile }) => {
+export const Header = ({ theme, onOpenShare, onImportFile }) => {
   return (
     <View style={[styles.appBar, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
       {/* Left: App Logo & Identity */}
@@ -23,31 +23,20 @@ export const Header = ({ theme, onNavigateToProfile, onOpenQRScanner, onImportFi
             onPress={onImportFile}
             style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             activeOpacity={0.75}
-            accessibilityLabel="Import from file"
+            accessibilityLabel="Import JSON from file"
             accessibilityRole="button">
-            <Ionicons name="folder-open-outline" size={17} color={theme.tint} />
+            <Ionicons name="cloud-download-outline" size={19} color={theme.tint} />
           </TouchableOpacity>
         ) : null}
 
-        {onOpenQRScanner ? (
+        {onOpenShare ? (
           <TouchableOpacity
-            onPress={onOpenQRScanner}
+            onPress={onOpenShare}
             style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             activeOpacity={0.75}
-            accessibilityLabel="Scan In-App QR"
+            accessibilityLabel="Share songs as JSON"
             accessibilityRole="button">
-            <Ionicons name="qr-code-outline" size={17} color={theme.tint} />
-          </TouchableOpacity>
-        ) : null}
-
-        {onNavigateToProfile ? (
-          <TouchableOpacity
-            onPress={onNavigateToProfile}
-            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.75}
-            accessibilityLabel="Open profile"
-            accessibilityRole="button">
-            <Ionicons name="person" size={17} color={theme.tint} />
+            <Ionicons name="share-social-outline" size={18} color={theme.tint} />
           </TouchableOpacity>
         ) : null}
       </View>
