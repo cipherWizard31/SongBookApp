@@ -123,7 +123,6 @@ export default function App() {
       onStartShouldSetPanResponderCapture: () => false,
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
         const cur = currentScreenRef.current;
-        if (cur === 'profile') return false;
         // On songs, only block left-swipe over filter chips
         if (cur === 'songs' && gestureState.dx < 0) {
           const touchY = evt.nativeEvent.pageY;
@@ -134,7 +133,6 @@ export default function App() {
       },
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const cur = currentScreenRef.current;
-        if (cur === 'profile') return false;
         if (cur === 'songs' && gestureState.dx < 0) {
           const touchY = evt.nativeEvent.pageY;
           if (touchY > 140 && touchY < 250) return false;
