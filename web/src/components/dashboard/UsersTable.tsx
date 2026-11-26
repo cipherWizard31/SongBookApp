@@ -81,7 +81,6 @@ export function UsersTable({
             }}
           >
             <option value="">All Platforms</option>
-            <option value="ios">iOS</option>
             <option value="android">Android</option>
           </select>
         </div>

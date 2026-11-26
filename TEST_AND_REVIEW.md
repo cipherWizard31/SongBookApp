@@ -27,14 +27,14 @@ Use this checklist to test and review both the **Next.js Web Controller** (`web/
 ## 2. Web Controller — Auth & Dashboard Review
 Start locally with `cd web && npm run dev` (or open your Vercel deployment):
 - [ ] **Protected Routes**:
-  - [ ] Visiting `/dashboard` while logged out redirects to `/login`
-  - [ ] Calling `/api/admin/metrics` while logged out returns `401 Unauthorized`
-  - [ ] Signing in at `/login` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` redirects to `/dashboard`
-  - [ ] Clicking **Sign Out** clears the session cookie and returns to `/login`
+  - [X] Visiting `/dashboard` while logged out redirects to `/login`
+  - [X] Calling `/api/admin/metrics` while logged out returns `401 Unauthorized`
+  - [X] Signing in at `/login` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` redirects to `/dashboard`
+  - [X] Clicking **Sign Out** clears the session cookie and returns to `/login`
 - [ ] **Users & Metrics Tab**:
   - [ ] Verify Total Installs, DAU, MAU, and Blocked Devices cards render
   - [ ] Verify Platform Breakdown and App Version Distribution bars render
-  - [ ] Search by install ID / version and filter by platform (`ios` / `android`)
+  - [ ] Search by install ID / version and filter by platform (`android`)
   - [ ] Click **Block** / **Unblock** on a device and confirm status updates
 - [ ] **Updates & Notices Tab**:
   - [ ] Publish a new `AppUpdate` with a higher version (e.g., `1.0.1`), release notes, and an Android `.apk` download URL in **Store / download URL**

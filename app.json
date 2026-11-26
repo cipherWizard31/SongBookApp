@@ -6,9 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/music-player.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

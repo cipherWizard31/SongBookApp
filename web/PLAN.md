@@ -25,7 +25,7 @@ A Next.js admin dashboard and backend controller for **SelahKignit** to manage u
 - [x] **Overview Metrics**
   - [x] Total installs / registered users count
   - [x] Daily / Monthly Active Users (DAU / MAU)
-  - [x] Platform breakdown (iOS vs Android) & App Version distribution chart
+  - [x] Platform breakdown (Android) & App Version distribution chart
 - [x] **User Management Table**
   - [x] Search & filter users by ID, platform, app version, or status
   - [x] View user details (first seen, last active, device info)
