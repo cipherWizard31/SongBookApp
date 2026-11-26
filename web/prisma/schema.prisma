@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DeviceUser {
+  id         String   @id @default(cuid())
+  installId  String   @unique
+  platform   String
+  appVersion String
+  isBlocked  Boolean  @default(false)
+  notes      String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([platform])
+  @@index([lastSeenAt])
+  @@map("users")
+}
+
+model AppUpdate {
+  id                  String   @id @default(cuid())
+  version             String
+  minSupportedVersion String
+  releaseNotes        String
+  forceUpdate         Boolean  @default(false)
+  storeUrl            String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("app_updates")
+}
+
+model Announcement {
+  id            String    @id @default(cuid())
+  title         String
+  message       String
+  type          String    @default("info") // info | warning | release
+  targetVersion String?
+  startsAt      DateTime  @default(now())
+  endsAt        DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@index([isActive, startsAt])
+  @@map("announcements")
+}
+
+model Song {
+  id          String   @id @default(cuid())
+  title       String
+  artist      String?
+  kignit      String
+  lyrics      String
+  chords      String?
+  tags        String[] @default([])
+  isPublished Boolean  @default(true)
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kignit])
+  @@index([isPublished])
+  @@map("songs")
+}
+
+model DictionaryVersion {
+  id        String   @id @default("global")
+  version   Int      @default(1)
+  checksum  String?
+  updatedAt DateTime @updatedAt
+
+  @@map("dictionary_versions")
+}
+
