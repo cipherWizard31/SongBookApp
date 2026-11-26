@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from './components/AnimatedPressable';
 
 export const Header = ({ theme, onOpenShare, onImportFile }) => {
   return (
@@ -19,25 +20,25 @@ export const Header = ({ theme, onOpenShare, onImportFile }) => {
       {/* Right: Actions */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {onImportFile ? (
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={onImportFile}
-            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.75}
+            rippleColor={theme.rippleColor}
+            style={[styles.iconBtn, { backgroundColor: theme.surface2 || theme.cardBg, borderColor: theme.border }]}
             accessibilityLabel="Import JSON from file"
             accessibilityRole="button">
-            <Ionicons name="cloud-download-outline" size={19} color={theme.tint} />
-          </TouchableOpacity>
+            <Ionicons name="cloud-download-outline" size={20} color={theme.tint} />
+          </AnimatedPressable>
         ) : null}
 
         {onOpenShare ? (
-          <TouchableOpacity
+          <AnimatedPressable
             onPress={onOpenShare}
-            style={[styles.iconBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-            activeOpacity={0.75}
+            rippleColor={theme.rippleColor}
+            style={[styles.iconBtn, { backgroundColor: theme.surface2 || theme.cardBg, borderColor: theme.border }]}
             accessibilityLabel="Share songs as JSON"
             accessibilityRole="button">
-            <Ionicons name="share-social-outline" size={18} color={theme.tint} />
-          </TouchableOpacity>
+            <Ionicons name="share-social-outline" size={19} color={theme.tint} />
+          </AnimatedPressable>
         ) : null}
       </View>
     </View>
@@ -46,7 +47,7 @@ export const Header = ({ theme, onOpenShare, onImportFile }) => {
 
 const styles = StyleSheet.create({
   appBar: {
-    height: 52,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -64,11 +65,6 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
   },
   logo: { width: 22, height: 22 },
   title: {
@@ -77,10 +73,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1.5,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },

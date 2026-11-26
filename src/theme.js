@@ -24,10 +24,15 @@ export const getTheme = (isDarkMode) => {
       // Dark Mode (Midnight Sanctuary)
       fonts,
       bg: '#101319',                  // Base Obsidian Canvas
-      secondaryBg: '#141821',         // Elevated Stage Surface
-      cardBg: '#1D2026',              // Acoustic Chamber Card Container
+      secondaryBg: '#161A23',         // Elevated Stage Surface (surface1)
+      cardBg: '#1D2230',              // Acoustic Chamber Card Container (surface2)
+      surface0: '#101319',
+      surface1: '#161A23',
+      surface2: '#1D2230',
       inputBg: '#191C22',             // Input Fill
       headerBg: '#101319',            // Navigation Bar
+      pressScale: 0.97,
+      rippleColor: 'rgba(229, 169, 60, 0.16)',
 
       // Typography
       text: '#E1E2EB',                // Primary Fidel & English Text (High Emphasis)
@@ -63,10 +68,15 @@ export const getTheme = (isDarkMode) => {
     // Light Mode (Warm Parchment Reader)
     fonts,
     bg: '#FBF7EE',                    // Warm Liturgical Parchment
-    secondaryBg: '#F5EFE0',           // Parchment Surface
-    cardBg: '#EDE6D5',                // Acoustic Chamber Card (Light)
+    secondaryBg: '#F3EBD8',           // Parchment Surface (surface1)
+    cardBg: '#EAE0C8',                // Acoustic Chamber Card (surface2)
+    surface0: '#FBF7EE',
+    surface1: '#F3EBD8',
+    surface2: '#EAE0C8',
     inputBg: '#F3ECE0',               // Input Fill
     headerBg: '#FBF7EE',              // Navigation Bar
+    pressScale: 0.97,
+    rippleColor: 'rgba(217, 119, 6, 0.16)',
 
     // Typography
     text: '#1C1917',                  // Deep Liturgical Ink

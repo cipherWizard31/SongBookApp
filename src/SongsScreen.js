@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from './components/AnimatedPressable';
 
 export const SongsScreen = ({
   songs = [],
@@ -215,15 +216,15 @@ export const SongsScreen = ({
           const hasStyle = item.style && item.style !== 'Uncategorized';
 
           return (
-            <TouchableOpacity
+            <AnimatedPressable
               style={[
                 st.card,
                 {
-                  backgroundColor: theme.secondaryBg,
+                  backgroundColor: theme.surface1 || theme.secondaryBg,
                   borderColor: theme.divider,
                 },
               ]}
-              activeOpacity={0.7}
+              rippleColor={theme.rippleColor}
               onPress={() => onSelectSong(item)}
               accessibilityRole="button"
               accessibilityLabel={`${item.title}${author ? ` by ${author}` : ''}`}>
@@ -304,20 +305,20 @@ export const SongsScreen = ({
 
               {/* Right Chevron */}
               <Ionicons name="chevron-forward" size={18} color={theme.subText} style={st.chevronIcon} />
-            </TouchableOpacity>
+            </AnimatedPressable>
           );
         }}
       />
 
       {/* ── Floating Action Button (New Song) ── */}
-      <TouchableOpacity
+      <AnimatedPressable
         style={[st.fab, { backgroundColor: theme.tint }]}
-        activeOpacity={0.85}
+        rippleColor="rgba(16, 19, 25, 0.2)"
         onPress={onOpenNewSongModal}
         accessibilityRole="button"
         accessibilityLabel="Add new song">
         <Ionicons name="add" size={28} color={theme.fabText || '#101319'} />
-      </TouchableOpacity>
+      </AnimatedPressable>
     </View>
   );
 };
@@ -535,21 +536,18 @@ const st = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // FAB — sits right above the bottom nav bar (nav bar total ~82px on Android, ~92px iOS)
+  // FAB — sits right above the bottom nav bar
   fab: {
     position: 'absolute',
-    right: 18,
-    bottom: 18,
+    right: 16,
+    bottom: 16,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#E5A93C',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
   },
 });
 

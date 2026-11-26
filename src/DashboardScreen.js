@@ -5,7 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from './components/AnimatedPressable';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -46,12 +48,12 @@ export const DashboardScreen = ({
             {getGreeting()}, {(profile?.name || 'Musician').split(' ')[0]}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[st.quickAddHeaderBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
-          onPress={onOpenNewSongModal}
-          activeOpacity={0.7}>
+        <AnimatedPressable
+          style={[st.quickAddHeaderBtn, { backgroundColor: theme.surface2 || theme.cardBg, borderColor: theme.border }]}
+          rippleColor={theme.rippleColor}
+          onPress={onOpenNewSongModal}>
           <Ionicons name="add" size={22} color={theme.tint} />
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
       {activeSetlist ? (
@@ -76,13 +78,13 @@ export const DashboardScreen = ({
           {activeSetlistSongs.length > 0 && (
             <View style={[st.heroSongPreviewBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               {activeSetlistSongs.slice(0, 3).map((song, idx) => (
-                <TouchableOpacity
+                <AnimatedPressable
                   key={song.id || `setlist-s-${idx}`}
+                  rippleColor={theme.rippleColor}
                   style={[
                     st.heroSongRow,
                     idx === Math.min(activeSetlistSongs.length, 3) - 1 && { borderBottomWidth: 0 },
                   ]}
-                  activeOpacity={0.7}
                   onPress={() => onSelectSong(song)}>
                   <Text style={[st.heroSongNum, { color: theme.tint }]}>0{idx + 1}</Text>
                   <Text style={[st.heroSongTitle, { color: theme.text }]} numberOfLines={1}>
@@ -93,7 +95,7 @@ export const DashboardScreen = ({
                       <Text style={[st.heroScaleText, { color: theme.tint }]}>{song.scale}</Text>
                     </View>
                   ) : null}
-                </TouchableOpacity>
+                </AnimatedPressable>
               ))}
               {activeSetlistSongs.length > 3 && (
                 <Text style={[st.moreSongsText, { color: theme.subText }]}>
@@ -104,15 +106,15 @@ export const DashboardScreen = ({
           )}
 
           {/* Start Service Button */}
-          <TouchableOpacity
+          <AnimatedPressable
             style={[st.startServiceBtn, { backgroundColor: theme.tint }]}
-            onPress={() => onStartWorshipService ? onStartWorshipService(activeSetlist) : onNavigateToScreen('setlists')}
-            activeOpacity={0.85}>
+            rippleColor="rgba(16, 19, 25, 0.2)"
+            onPress={() => onStartWorshipService ? onStartWorshipService(activeSetlist) : onNavigateToScreen('setlists')}>
             <Ionicons name="play" size={18} color={theme.fabText || '#101319'} />
             <Text style={[st.startServiceBtnText, { color: theme.fabText || '#101319' }]}>
               Start Worship Service
             </Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
       ) : (
         /* Empty Setlist Banner State */
@@ -162,18 +164,20 @@ export const DashboardScreen = ({
             <Text style={[st.emptyText, { color: theme.subText }]}>No songs in library yet.</Text>
           </View>
         ) : (
-          recentSongs.map((item) => {
+          recentSongs.map((item, idx) => {
             const author = item.author?.trim();
             const album = item.album?.trim();
             const hasScale = item.scale && item.scale !== 'Uncategorized';
             const hasStyle = item.style && item.style !== 'Uncategorized';
 
             return (
-              <TouchableOpacity
+              <Animated.View
                 key={item.id}
-                style={[st.recentSongCard, { backgroundColor: theme.secondaryBg, borderColor: theme.divider }]}
-                activeOpacity={0.7}
-                onPress={() => onSelectSong(item)}>
+                entering={FadeInDown.delay(idx * 40).springify().damping(18)}>
+                <AnimatedPressable
+                  style={[st.recentSongCard, { backgroundColor: theme.surface1 || theme.secondaryBg, borderColor: theme.divider }]}
+                  rippleColor={theme.rippleColor}
+                  onPress={() => onSelectSong(item)}>
 
                 {/* Left Avatar Tile */}
                 <View style={[st.songAvatarTile, { backgroundColor: theme.cardBg }]}>
@@ -213,7 +217,8 @@ export const DashboardScreen = ({
                 </View>
 
                 <Ionicons name="chevron-forward" size={18} color={theme.subText} />
-              </TouchableOpacity>
+                </AnimatedPressable>
+              </Animated.View>
             );
           })
         )}
@@ -234,14 +239,16 @@ export const DashboardScreen = ({
             <Text style={[st.emptyText, { color: theme.subText }]}>No setlists created yet.</Text>
           </View>
         ) : (
-          recentSetlists.map((setlist) => {
+          recentSetlists.map((setlist, idx) => {
             const songCount = setlist.songIds?.length ?? 0;
             return (
-              <TouchableOpacity
+              <Animated.View
                 key={setlist.id}
-                style={[st.recentSongCard, { backgroundColor: theme.secondaryBg, borderColor: theme.divider }]}
-                activeOpacity={0.7}
-                onPress={() => onNavigateToScreen('setlists', setlist.id)}>
+                entering={FadeInDown.delay(idx * 40).springify().damping(18)}>
+                <AnimatedPressable
+                  style={[st.recentSongCard, { backgroundColor: theme.surface1 || theme.secondaryBg, borderColor: theme.divider }]}
+                  rippleColor={theme.rippleColor}
+                  onPress={() => onNavigateToScreen('setlists', setlist.id)}>
 
                 {/* Left Icon Tile */}
                 <View style={[st.songAvatarTile, { backgroundColor: theme.cardBg }]}>
@@ -259,7 +266,8 @@ export const DashboardScreen = ({
                 </View>
 
                 <Ionicons name="chevron-forward" size={18} color={theme.subText} />
-              </TouchableOpacity>
+                </AnimatedPressable>
+              </Animated.View>
             );
           })
         )}
@@ -298,9 +306,9 @@ const st = StyleSheet.create({
     marginTop: 2,
   },
   quickAddHeaderBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
@@ -443,16 +451,13 @@ const st = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 46,
-    borderRadius: 23,
-    paddingHorizontal: 20,
-    marginTop: 6,
+    height: 48,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    marginTop: 8,
     gap: 8,
-    shadowColor: '#E5A93C',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   startServiceBtnText: {
     fontFamily: 'AnthropicSansDisplay-Bold',

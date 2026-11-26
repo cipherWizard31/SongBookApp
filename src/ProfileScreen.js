@@ -348,34 +348,28 @@ export const ProfileScreen = ({
           </View>
           <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity
-        onPress={handleCheckForUpdates}
-        disabled={checkingUpdate}
-        style={[
-          st.menuCard,
-          st.menuRow,
-          {
-            backgroundColor: theme.surface,
-            borderColor: theme.border,
-            minHeight: 56,
-          },
-        ]}
-      >
-        <View style={[st.menuIconTile, { backgroundColor: 'rgba(99, 102, 241, 0.14)' }]}>
-          <Ionicons name="cloud-download-outline" size={20} color="#6366F1" />
-        </View>
-        <View style={st.menuTextCol}>
-          <Text style={[st.menuTitle, { color: theme.text }]}>
-            {checkingUpdate ? 'Checking for Updates...' : 'Check for Updates'}
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-            Current version v{getAppVersion()}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-      </TouchableOpacity>
+        <View style={[st.rowSeparator, { backgroundColor: theme.divider }]} />
+
+        <TouchableOpacity
+          style={st.menuRow}
+          activeOpacity={0.7}
+          onPress={handleCheckForUpdates}
+          disabled={checkingUpdate}>
+          <View style={[st.menuIconTile, { backgroundColor: 'rgba(99, 102, 241, 0.18)' }]}>
+            <Ionicons name="cloud-download-outline" size={20} color="#6366F1" />
+          </View>
+          <View style={st.menuTextCol}>
+            <Text style={[st.menuTitle, { color: theme.text }]}>
+              {checkingUpdate ? 'Checking for Updates...' : 'Check for Updates'}
+            </Text>
+            <Text style={{ color: theme.subText, fontSize: 12, marginTop: 2 }}>
+              Current version v{getAppVersion()}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.subText} />
+        </TouchableOpacity>
+      </View>
 
       <UpdateModal
         visible={updateModalVisible}

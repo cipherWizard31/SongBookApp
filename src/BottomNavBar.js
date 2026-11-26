@@ -1,6 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import AnimatedPressable from './components/AnimatedPressable';
 
 const TAB_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid', outlineIcon: 'grid-outline' },
@@ -25,56 +31,14 @@ const hexToRgba = (hex, alpha) => {
 };
 
 const TabItem = ({ tab, active, onSelectTab, theme }) => {
-  const animValue = useRef(new Animated.Value(active ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(animValue, {
-      toValue: active ? 1 : 0,
-      friction: 9,
-      tension: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [active, animValue]);
-
   const activeColor = theme.tint || '#E5A93C';
   const inactiveColor = theme.subText || '#94A3B8';
   const iconName = active ? tab.icon : tab.outlineIcon;
 
-  // Zoom scale animation
-  const scale = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.85, 1],
-  });
-
-  // Glass opacity
-  const glassOpacity = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const bgRgba = hexToRgba(activeColor, 0.22);
-  const borderRgba = hexToRgba(activeColor, 0.6);
-
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       style={st.tabTouch}
-      activeOpacity={0.8}
       onPress={() => onSelectTab(tab.key)}>
-
-      {/* Animated Glass Active Background Card */}
-      <Animated.View
-        style={[
-          st.glassActiveCard,
-          {
-            backgroundColor: bgRgba,
-            borderColor: borderRgba,
-            opacity: glassOpacity,
-            transform: [{ scale }],
-          },
-        ]}
-      />
-
-      {/* Foreground Content Stack */}
       <View style={st.contentStack}>
         <Ionicons
           name={iconName}
@@ -91,14 +55,41 @@ const TabItem = ({ tab, active, onSelectTab, theme }) => {
           {tab.label}
         </Text>
       </View>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 };
 
 export const BottomNavBar = ({ currentTab, onSelectTab, theme }) => {
+  const [containerWidth, setContainerWidth] = useState(0);
+  const activeIndex = Math.max(0, TAB_ITEMS.findIndex((t) => t.key === currentTab));
+  const translateX = useSharedValue(0);
+
+  const horizontalPadding = 8;
+  const innerWidth = Math.max(0, containerWidth - horizontalPadding * 2);
+  const tabWidth = innerWidth / TAB_ITEMS.length;
+
+  useEffect(() => {
+    if (tabWidth > 0) {
+      translateX.value = withSpring(activeIndex * tabWidth, {
+        damping: 20,
+        stiffness: 240,
+        mass: 0.8,
+      });
+    }
+  }, [activeIndex, tabWidth, translateX]);
+
+  const activeColor = theme.tint || '#E5A93C';
+  const bgRgba = hexToRgba(activeColor, 0.2);
+  const borderRgba = hexToRgba(activeColor, 0.55);
+
+  const sliderStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
   return (
     <View style={[st.dockWrapper, { backgroundColor: 'transparent' }]} pointerEvents="box-none">
       <View
+        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
         style={[
           st.floatingContainer,
           {
@@ -106,6 +97,23 @@ export const BottomNavBar = ({ currentTab, onSelectTab, theme }) => {
             borderColor: theme.border || '#32353C',
           },
         ]}>
+        {/* Gliding Active Pill Indicator */}
+        {tabWidth > 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              st.glidingPill,
+              {
+                width: tabWidth - 8,
+                left: horizontalPadding + 4,
+                backgroundColor: bgRgba,
+                borderColor: borderRgba,
+              },
+              sliderStyle,
+            ]}
+          />
+        )}
+
         {TAB_ITEMS.map((tab) => (
           <TabItem
             key={tab.key}
@@ -123,50 +131,37 @@ export const BottomNavBar = ({ currentTab, onSelectTab, theme }) => {
 const st = StyleSheet.create({
   dockWrapper: {
     paddingHorizontal: 16,
-    paddingBottom: Platform.OS === 'ios' ? 14 : 10,
+    paddingBottom: 12,
     paddingTop: 4,
     backgroundColor: 'transparent',
   },
   floatingContainer: {
     height: 64,
-    borderRadius: 32, // Ultra-rounded container capsule
-    borderWidth: 1,
+    borderRadius: 32,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     overflow: 'hidden',
-
-    // Soft Ambient Elevation Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    position: 'relative',
+  },
+  glidingPill: {
+    position: 'absolute',
+    top: 6,
+    bottom: 6,
+    borderRadius: 26,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   tabTouch: {
     flex: 1,
+    minHeight: 48,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     backgroundColor: 'transparent',
-  },
-  glassActiveCard: {
-    position: 'absolute',
-    top: 5,
-    bottom: 5,
-    left: 3,
-    right: 3,
-    borderRadius: 26, // Ultra-rounded button pill capsule
-    borderWidth: 1.5,
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
-
-    shadowColor: '#E5A93C',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    borderRadius: 26,
   },
   contentStack: {
     alignItems: 'center',
