@@ -49,6 +49,14 @@ import { BottomNavBar } from './src/BottomNavBar';
 import { ExportOptionsModal } from './src/ExportOptionsModal';
 import { OnboardingModal } from './src/OnboardingModal';
 import { SongSharePickerModal } from './src/SongSharePickerModal';
+import UpdateModal from './src/UpdateModal';
+import {
+  sendHeartbeat,
+  fetchRemoteConfig,
+  syncGlobalDictionary,
+  compareSemver,
+  getAppVersion,
+} from './src/services/controllerApi';
 
 const SETLISTS_KEY = '@songbook_setlists';
 const ONBOARDING_KEY = '@selah_onboarding_done';
@@ -58,6 +66,35 @@ export default function App() {
     'AnthropicSansDisplay-Bold': require('./assets/fonts/Sans-Display-Bold-Static.otf'),
     'AnthropicSerifText-Medium': require('./assets/fonts/Serif-Text-Medium-Static.otf'),
   });
+  const [pendingUpdate, setPendingUpdate] = useState(null);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await sendHeartbeat();
+      } catch {
+        // Ignore offline heartbeat errors
+      }
+      try {
+        await syncGlobalDictionary();
+      } catch {
+        // Ignore offline dictionary sync errors
+      }
+      try {
+        const config = await fetchRemoteConfig();
+        if (
+          config?.update?.version &&
+          compareSemver(config.update.version, getAppVersion()) > 0
+        ) {
+          setPendingUpdate(config.update);
+          setUpdateModalVisible(true);
+        }
+      } catch {
+        // Ignore offline update check errors
+      }
+    })();
+  }, []);
 
   const [songs, setSongs] = useState([]);
   const [setlists, setSetlists] = useState([]);
@@ -1029,6 +1066,12 @@ export default function App() {
           onClose={() => setSongSharePickerVisible(false)}
           songs={songs}
           theme={theme}
+        />
+
+        <UpdateModal
+          visible={updateModalVisible}
+          update={pendingUpdate}
+          onClose={() => setUpdateModalVisible(false)}
         />
     </SafeAreaProvider>
   );

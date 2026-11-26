@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Alert,
   View,
   Text,
   TouchableOpacity,
@@ -13,6 +14,12 @@ import { ArtistsScreen } from './ArtistsScreen';
 import { SettingsScreen } from './SettingsScreen';
 import { FavouritesScreen } from './FavouritesScreen';
 import { ReportBugModal } from './ReportBugModal';
+import UpdateModal from './UpdateModal';
+import {
+  fetchRemoteConfig,
+  compareSemver,
+  getAppVersion,
+} from './services/controllerApi';
 
 const AMBER = '#E5A93C';
 const CYAN = '#38BDF8';
@@ -42,6 +49,35 @@ export const ProfileScreen = ({
   // activeSubView: null (shows Profile Hub) | 'favourites' | 'albums' | 'artists' | 'settings'
   const [activeSubView, setActiveSubView] = useState(null);
   const [reportBugVisible, setReportBugVisible] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [availableUpdate, setAvailableUpdate] = useState(null);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+
+  async function handleCheckForUpdates() {
+    setCheckingUpdate(true);
+    try {
+      const config = await fetchRemoteConfig();
+      if (
+        config?.update?.version &&
+        compareSemver(config.update.version, getAppVersion()) > 0
+      ) {
+        setAvailableUpdate(config.update);
+        setUpdateModalVisible(true);
+      } else {
+        Alert.alert(
+          'Up to Date',
+          `You are running the latest version (v${getAppVersion()}).`
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Update Check Failed',
+        'Could not reach the controller server. Please check your connection.'
+      );
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
 
   // Handle hardware back button inside Profile sub-views
   useEffect(() => {
@@ -313,6 +349,39 @@ export const ProfileScreen = ({
           <Ionicons name="chevron-forward" size={18} color={theme.subText} />
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        onPress={handleCheckForUpdates}
+        disabled={checkingUpdate}
+        style={[
+          st.menuCard,
+          st.menuRow,
+          {
+            backgroundColor: theme.surface,
+            borderColor: theme.border,
+            minHeight: 56,
+          },
+        ]}
+      >
+        <View style={[st.menuIconTile, { backgroundColor: 'rgba(99, 102, 241, 0.14)' }]}>
+          <Ionicons name="cloud-download-outline" size={20} color="#6366F1" />
+        </View>
+        <View style={st.menuTextCol}>
+          <Text style={[st.menuTitle, { color: theme.text }]}>
+            {checkingUpdate ? 'Checking for Updates...' : 'Check for Updates'}
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
+            Current version v{getAppVersion()}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+      </TouchableOpacity>
+
+      <UpdateModal
+        visible={updateModalVisible}
+        update={availableUpdate}
+        onClose={() => setUpdateModalVisible(false)}
+      />
 
       <ReportBugModal
         visible={reportBugVisible}

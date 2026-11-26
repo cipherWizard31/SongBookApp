@@ -52,9 +52,9 @@ A Next.js admin dashboard and backend controller for **SelahKignit** to manage u
   - [ ] Preview how songs will render in the mobile app
 
 ## 6. Mobile App Integration (`SelahKignit` Expo App)
-- [ ] Add lightweight telemetry/heartbeat on app launch (registers/updates user count & last seen)
-- [ ] Add startup check against `/api/config` for universal updates, force-update modal, and announcements
-- [ ] Add Global Dictionary sync service (fetch initial songs on install, cache locally, and sync updates in background)
+- [x] Add lightweight telemetry/heartbeat on app launch (registers/updates user count & last seen)
+- [x] Add startup check against `/api/config` for universal updates, force-update modal, and announcements
+- [x] Add Global Dictionary sync service (fetch initial songs on install, cache locally, and sync updates in background)
 - [ ] Handle blocked/disabled user state gracefully
 
 ## 7. Security, Testing & Deployment
