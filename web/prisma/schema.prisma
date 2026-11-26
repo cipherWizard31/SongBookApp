@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -59,7 +59,7 @@ model Song {
   kignit      String
   lyrics      String
   chords      String?
-  tags        String[] @default([])
+  tags        String   @default("[]")
   isPublished Boolean  @default(true)
   version     Int      @default(1)
   createdAt   DateTime @default(now())

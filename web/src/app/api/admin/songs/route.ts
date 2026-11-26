@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           kignit: body.kignit,
           lyrics: body.lyrics,
           chords: body.chords,
-          tags: body.tags ?? [],
+          tags: JSON.stringify(body.tags ?? []),
           isPublished: body.isPublished ?? true,
         },
       }),

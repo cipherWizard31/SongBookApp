@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
         ...(search
           ? {
               OR: [
-                { installId: { contains: search, mode: 'insensitive' } },
-                { appVersion: { contains: search, mode: 'insensitive' } },
+                { installId: { contains: search } },
+                { appVersion: { contains: search } },
               ],
             }
           : {}),
