@@ -71,7 +71,12 @@ export async function fetchRemoteConfig() {
 
 export async function syncGlobalDictionary() {
   const cachedVersionStr = await AsyncStorage.getItem(DICT_VERSION_KEY);
-  const sinceVersion = cachedVersionStr ? parseInt(cachedVersionStr, 10) : 0;
+  const cached = await AsyncStorage.getItem(DICT_SONGS_KEY);
+  const cachedSongs = cached ? JSON.parse(cached) : [];
+  const sinceVersion =
+    cachedVersionStr && cachedSongs.length > 0
+      ? parseInt(cachedVersionStr, 10)
+      : 0;
   const data = await apiFetch(
     `/api/mobile/dictionary?sinceVersion=${sinceVersion}`
   );
@@ -80,8 +85,7 @@ export async function syncGlobalDictionary() {
     await AsyncStorage.setItem(DICT_VERSION_KEY, String(data.version));
     return data.songs;
   }
-  const cached = await AsyncStorage.getItem(DICT_SONGS_KEY);
-  return cached ? JSON.parse(cached) : [];
+  return cachedSongs;
 }
 
 export async function downloadAndInstallApk(apkUrl, onProgress) {

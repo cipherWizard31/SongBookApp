@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       prisma.dictionaryVersion.upsert({
         where: { id: 'global' },
         update: { version: { increment: 1 } },
-        create: { id: 'global', version: 1 },
+        create: { id: 'global', version: 2 },
       }),
     ]);
 

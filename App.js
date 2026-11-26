@@ -77,11 +77,6 @@ export default function App() {
         // Ignore offline heartbeat errors
       }
       try {
-        await syncGlobalDictionary();
-      } catch {
-        // Ignore offline dictionary sync errors
-      }
-      try {
         const config = await fetchRemoteConfig();
         if (
           config?.update?.version &&
@@ -256,14 +251,44 @@ export default function App() {
       }
 
       const storedSongs = await AsyncStorage.getItem(STORAGE_KEY);
-      if (storedSongs) {
-        const parsedSongs = JSON.parse(storedSongs);
-        const migratedSongs = parsedSongs.map((s) => ({
-          ...s,
-          content: s.content !== undefined ? s.content : migrateSongToInline(s),
-        }));
-        setSongs(migratedSongs);
+      const localSongs = storedSongs
+        ? JSON.parse(storedSongs).map((s) => ({
+            ...s,
+            content: s.content !== undefined ? s.content : migrateSongToInline(s),
+          }))
+        : [];
+
+      // Sync global dictionary from web controller and merge/replace global songs
+      let mergedSongs = localSongs;
+      try {
+        const remoteSongs = await syncGlobalDictionary();
+        if (Array.isArray(remoteSongs)) {
+          // Map remote songs to app format keyed with global_ prefix
+          const globalSongs = remoteSongs.map((rs) => ({
+            id: `global_${rs.id}`,
+            title: rs.title,
+            author: rs.artist || '',
+            album: '',
+            style: 'Uncategorized',
+            scale: rs.kignit || 'Uncategorized',
+            content: rs.lyrics,
+            audioUrl: '',
+          }));
+          const globalIds = new Set(globalSongs.map((s) => s.id));
+          // Keep only user-created songs (not global_*), then prepend fresh global songs
+          const userSongs = localSongs.filter(
+            (s) => !String(s.id).startsWith('global_')
+          );
+          mergedSongs = [...globalSongs, ...userSongs];
+          // Persist merged result if anything changed
+          if (globalSongs.length > 0 || globalIds.size !== localSongs.filter((s) => String(s.id).startsWith('global_')).length) {
+            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mergedSongs)).catch(() => {});
+          }
+        }
+      } catch {
+        // Offline — just use local songs
       }
+      setSongs(mergedSongs);
 
       const storedSetlists = await AsyncStorage.getItem(SETLISTS_KEY);
       if (storedSetlists) {

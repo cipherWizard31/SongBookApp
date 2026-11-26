@@ -26,7 +26,7 @@ Use this checklist to test and review both the **Next.js Web Controller** (`web/
 
 ## 2. Web Controller — Auth & Dashboard Review
 Start locally with `cd web && npm run dev` (or open your Vercel deployment):
-- [ ] **Protected Routes**:
+- [X] **Protected Routes**:
   - [X] Visiting `/dashboard` while logged out redirects to `/login`
   - [X] Calling `/api/admin/metrics` while logged out returns `401 Unauthorized`
   - [X] Signing in at `/login` with `ADMIN_EMAIL` / `ADMIN_PASSWORD` redirects to `/dashboard`
