@@ -16,6 +16,7 @@ import { UpdatesPanel } from '@/components/dashboard/UpdatesPanel';
 import { AnnouncementsPanel } from '@/components/dashboard/AnnouncementsPanel';
 import { SongDictionaryPanel } from '@/components/dashboard/SongDictionaryPanel';
 import { SettingsView } from '@/components/dashboard/SettingsView';
+import { ActivityLogsView } from '@/components/dashboard/ActivityLogsView';
 
 interface MetricsResponse {
   totalUsers: number;
@@ -214,29 +215,7 @@ export default function DashboardPage() {
 
           {activeSection === 'settings' && <SettingsView />}
 
-          {activeSection === 'logs' && (
-            <div
-              className="rounded-xl p-6"
-              style={{
-                backgroundColor: theme.colors.background.secondary,
-                border: `1px solid ${theme.colors.border.subtle}`,
-              }}
-            >
-              <h2
-                className="text-base font-semibold mb-2"
-                style={{ color: theme.colors.text.primary }}
-              >
-                Activity Logs
-              </h2>
-              <p
-                className="text-sm"
-                style={{ color: theme.colors.text.secondary }}
-              >
-                System events, dictionary syncs, and admin actions are recorded
-                here.
-              </p>
-            </div>
-          )}
+          {activeSection === 'logs' && <ActivityLogsView />}
         </main>
       </div>
     </div>

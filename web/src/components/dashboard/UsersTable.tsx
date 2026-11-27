@@ -16,19 +16,18 @@ interface UsersTableProps {
   users: DeviceUserRow[];
   loading: boolean;
   search: string;
-  platformFilter: string;
   onSearchChange: (value: string) => void;
-  onPlatformChange: (value: string) => void;
   onToggleBlock: (user: DeviceUserRow) => void;
+  // kept for API compatibility
+  platformFilter?: string;
+  onPlatformChange?: (value: string) => void;
 }
 
 export function UsersTable({
   users,
   loading,
   search,
-  platformFilter,
   onSearchChange,
-  onPlatformChange,
   onToggleBlock,
 }: UsersTableProps) {
   return (
