@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  /* Semantic Surface & Background Tokens */
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-subtle: #f1f3f5;
+  /* Semantic Surface & Background Tokens (Light) */
+  --bg-primary: #F8F9FB;
+  --bg-secondary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-subtle: #F1F3F5;
 
   /* Semantic Text Tokens */
-  --text-primary: #111318;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
+  --text-primary: #171717;
+  --text-secondary: #737373;
+  --text-muted: #8E8E93;
 
   /* Semantic Border & Accent Tokens */
-  --border-subtle: rgba(17, 19, 24, 0.08);
-  --border-focus: rgba(79, 70, 229, 0.45);
-  --accent-primary: #4f46e5;
-  --accent-primary-hover: #4338ca;
-  --accent-foreground: #ffffff;
+  --border-subtle: #EAEAEA;
+  --border-focus: rgba(217, 119, 6, 0.45);
+  --accent-primary: #D97706;
+  --accent-primary-hover: #B45309;
+  --accent-foreground: #FFFFFF;
 
   /* Status Tokens */
   --status-success: #16a34a;
@@ -53,10 +53,10 @@
     --text-muted: #6b7280;
 
     --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-focus: rgba(129, 140, 248, 0.5);
-    --accent-primary: #6366f1;
-    --accent-primary-hover: #818cf8;
-    --accent-foreground: #ffffff;
+    --border-focus: rgba(229, 169, 60, 0.5);
+    --accent-primary: #E5A93C;
+    --accent-primary-hover: #FABC4D;
+    --accent-foreground: #101319;
 
     --shadow-ambient: 0 4px 24px -2px rgba(0, 0, 0, 0.28),
                       0 2px 8px -1px rgba(0, 0, 0, 0.18);

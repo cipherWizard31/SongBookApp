@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { theme } from '@/lib/theme';
+import { Sidebar, NavSectionId } from '@/components/dashboard/Sidebar';
+import { Topbar } from '@/components/dashboard/Topbar';
+import { OverviewView } from '@/components/dashboard/OverviewView';
 import { StatCard } from '@/components/dashboard/StatCard';
 import {
   BreakdownCard,
@@ -12,6 +15,7 @@ import { DeviceUserRow, UsersTable } from '@/components/dashboard/UsersTable';
 import { UpdatesPanel } from '@/components/dashboard/UpdatesPanel';
 import { AnnouncementsPanel } from '@/components/dashboard/AnnouncementsPanel';
 import { SongDictionaryPanel } from '@/components/dashboard/SongDictionaryPanel';
+import { SettingsView } from '@/components/dashboard/SettingsView';
 
 interface MetricsResponse {
   totalUsers: number;
@@ -22,13 +26,28 @@ interface MetricsResponse {
   versionBreakdown: BreakdownItem[];
 }
 
-type DashboardTab = 'users' | 'updates' | 'dictionary';
+const SECTION_TITLES: Record<NavSectionId, string> = {
+  overview: 'Overview',
+  songs: 'Songs Library',
+  kignits: 'Kignits & Categories',
+  users: 'Users',
+  analytics: 'Analytics',
+  content: 'Content Management',
+  updates: 'App Updates',
+  notifications: 'Notifications',
+  settings: 'Settings',
+  logs: 'Activity Logs',
+};
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<DashboardTab>('users');
+  const [activeSection, setActiveSection] = useState<NavSectionId>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [totalSongs, setTotalSongs] = useState(0);
   const [users, setUsers] = useState<DeviceUserRow[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -36,10 +55,17 @@ export default function DashboardPage() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/metrics');
-      if (res.ok) {
-        const data = (await res.json()) as MetricsResponse;
+      const [metricsRes, songsRes] = await Promise.all([
+        fetch('/api/admin/metrics'),
+        fetch('/api/admin/songs'),
+      ]);
+      if (metricsRes.ok) {
+        const data = (await metricsRes.json()) as MetricsResponse;
         setMetrics(data);
+      }
+      if (songsRes.ok) {
+        const songsData = (await songsRes.json()) as { songs?: unknown[] };
+        setTotalSongs(songsData.songs?.length ?? 0);
       }
     } finally {
       setMetricsLoading(false);
@@ -86,126 +112,89 @@ export default function DashboardPage() {
     router.refresh();
   }
 
-  const tabs: { id: DashboardTab; label: string }[] = [
-    { id: 'users', label: 'Users & Metrics' },
-    { id: 'updates', label: 'Updates & Notices' },
-    { id: 'dictionary', label: 'Song Dictionary' },
-  ];
-
   return (
-    <main
-      className="min-h-screen"
-      style={{
-        backgroundColor: theme.colors.background.primary,
-        padding: theme.spacing.lg,
-      }}
+    <div
+      className="min-h-screen flex"
+      style={{ backgroundColor: theme.colors.background.primary }}
     >
-      <div
-        className="mx-auto max-w-6xl flex flex-col"
-        style={{ gap: theme.spacing.md }}
-      >
-        <header
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
-          style={{
-            backgroundColor: theme.colors.background.secondary,
-            border: `1px solid ${theme.colors.border.subtle}`,
-            borderRadius: theme.radii.outer,
-            padding: theme.spacing.md,
-            boxShadow: theme.elevation.ambient,
-            gap: theme.spacing.sm,
-          }}
-        >
-          <div>
-            <h1
-              className="text-lg font-semibold"
-              style={{ color: theme.colors.text.primary }}
-            >
-              SelahKignit Web Controller
-            </h1>
-            <p
-              className="text-sm font-medium"
-              style={{ color: theme.colors.text.secondary }}
-            >
-              Users, universal updates, and global song dictionary
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="min-h-[44px] text-sm font-semibold cursor-pointer self-start sm:self-auto"
-            style={{
-              backgroundColor: theme.colors.background.subtle,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: `0 ${theme.spacing.sm}`,
-            }}
-          >
-            Sign Out
-          </button>
-        </header>
+      <Sidebar
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
+      />
 
-        <nav className="flex flex-wrap" style={{ gap: theme.spacing.xs }}>
-          {tabs.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className="min-h-[44px] text-sm font-semibold cursor-pointer"
-                style={{
-                  backgroundColor: active
-                    ? theme.colors.accent.primary
-                    : theme.colors.background.secondary,
-                  color: active
-                    ? theme.colors.accent.foreground
-                    : theme.colors.text.secondary,
-                  border: `1px solid ${theme.colors.border.subtle}`,
-                  borderRadius: theme.radii.inner,
-                  padding: `0 ${theme.spacing.md}`,
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Topbar
+          title={SECTION_TITLES[activeSection]}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onOpenSearch={() => setActiveSection('songs')}
+          onNavigate={setActiveSection}
+          onLogout={handleLogout}
+          unreadCount={0}
+        />
 
-        {activeTab === 'users' && (
-          <>
-            <section
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-              style={{ gap: theme.spacing.sm }}
-            >
-              <StatCard
-                label="Total Installs"
-                value={metrics?.totalUsers ?? 0}
-                loading={metricsLoading}
-              />
-              <StatCard
-                label="Daily Active (DAU)"
-                value={metrics?.dau ?? 0}
-                hint="Last 24 hours"
-                loading={metricsLoading}
-              />
-              <StatCard
-                label="Monthly Active (MAU)"
-                value={metrics?.mau ?? 0}
-                hint="Last 30 days"
-                loading={metricsLoading}
-              />
-              <StatCard
-                label="Blocked Devices"
-                value={metrics?.blockedUsers ?? 0}
-                loading={metricsLoading}
-              />
-            </section>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {activeSection === 'overview' && (
+            <OverviewView
+              totalSongs={totalSongs}
+              totalUsers={metrics?.totalUsers ?? 0}
+              dau={metrics?.dau ?? 0}
+              mau={metrics?.mau ?? 0}
+              loading={metricsLoading}
+              onNavigate={setActiveSection}
+            />
+          )}
 
-            <section
-              className="grid grid-cols-1 md:grid-cols-2"
-              style={{ gap: theme.spacing.sm }}
-            >
+          {(activeSection === 'songs' ||
+            activeSection === 'kignits' ||
+            activeSection === 'content') && <SongDictionaryPanel />}
+
+          {activeSection === 'users' && (
+            <div className="space-y-6">
+              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard
+                  label="Total Users"
+                  value={metrics?.totalUsers ?? 0}
+                  hint="Registered Android devices"
+                  loading={metricsLoading}
+                />
+                <StatCard
+                  label="Daily Active (DAU)"
+                  value={metrics?.dau ?? 0}
+                  hint="Active in last 24h"
+                  loading={metricsLoading}
+                />
+                <StatCard
+                  label="Monthly Active (MAU)"
+                  value={metrics?.mau ?? 0}
+                  hint="Active in last 30d"
+                  loading={metricsLoading}
+                />
+                <StatCard
+                  label="Blocked Devices"
+                  value={metrics?.blockedUsers ?? 0}
+                  hint="Access revoked"
+                  loading={metricsLoading}
+                />
+              </section>
+
+              <UsersTable
+                users={users}
+                loading={usersLoading}
+                search={search}
+                platformFilter={platformFilter}
+                onSearchChange={setSearch}
+                onPlatformChange={setPlatformFilter}
+                onToggleBlock={handleToggleBlock}
+              />
+            </div>
+          )}
+
+          {activeSection === 'analytics' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <BreakdownCard
                 title="Platform Breakdown"
                 items={metrics?.platformBreakdown ?? []}
@@ -216,29 +205,40 @@ export default function DashboardPage() {
                 items={metrics?.versionBreakdown ?? []}
                 loading={metricsLoading}
               />
-            </section>
+            </div>
+          )}
 
-            <UsersTable
-              users={users}
-              loading={usersLoading}
-              search={search}
-              platformFilter={platformFilter}
-              onSearchChange={setSearch}
-              onPlatformChange={setPlatformFilter}
-              onToggleBlock={handleToggleBlock}
-            />
-          </>
-        )}
+          {activeSection === 'updates' && <UpdatesPanel />}
 
-        {activeTab === 'updates' && (
-          <div className="flex flex-col" style={{ gap: theme.spacing.md }}>
-            <UpdatesPanel />
-            <AnnouncementsPanel />
-          </div>
-        )}
+          {activeSection === 'notifications' && <AnnouncementsPanel />}
 
-        {activeTab === 'dictionary' && <SongDictionaryPanel />}
+          {activeSection === 'settings' && <SettingsView />}
+
+          {activeSection === 'logs' && (
+            <div
+              className="rounded-xl p-6"
+              style={{
+                backgroundColor: theme.colors.background.secondary,
+                border: `1px solid ${theme.colors.border.subtle}`,
+              }}
+            >
+              <h2
+                className="text-base font-semibold mb-2"
+                style={{ color: theme.colors.text.primary }}
+              >
+                Activity Logs
+              </h2>
+              <p
+                className="text-sm"
+                style={{ color: theme.colors.text.secondary }}
+              >
+                System events, dictionary syncs, and admin actions are recorded
+                here.
+              </p>
+            </div>
+          )}
+        </main>
       </div>
-    </main>
+    </div>
   );
 }

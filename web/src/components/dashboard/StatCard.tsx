@@ -12,6 +12,7 @@ interface StatCardProps {
 export function StatCard({ label, value, hint, loading }: StatCardProps) {
   return (
     <div
+      className="transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       style={{
         backgroundColor: theme.colors.background.secondary,
         border: `1px solid ${theme.colors.border.subtle}`,
@@ -21,7 +22,7 @@ export function StatCard({ label, value, hint, loading }: StatCardProps) {
       }}
     >
       <p
-        className="text-sm font-medium"
+        className="text-xs font-medium uppercase tracking-wider"
         style={{ color: theme.colors.text.secondary }}
       >
         {label}
@@ -37,7 +38,7 @@ export function StatCard({ label, value, hint, loading }: StatCardProps) {
         />
       ) : (
         <p
-          className="text-2xl font-semibold tracking-tight"
+          className="text-2xl font-semibold tracking-tight tabular-nums"
           style={{
             color: theme.colors.text.primary,
             marginTop: theme.spacing.xs,

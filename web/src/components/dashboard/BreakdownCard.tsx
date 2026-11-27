@@ -67,7 +67,10 @@ export function BreakdownCard({ title, items, loading }: BreakdownCardProps) {
                   <span style={{ color: theme.colors.text.primary }}>
                     {item.label}
                   </span>
-                  <span style={{ color: theme.colors.text.secondary }}>
+                  <span
+                    className="tabular-nums"
+                    style={{ color: theme.colors.text.secondary }}
+                  >
                     {item.count} ({pct}%)
                   </span>
                 </div>

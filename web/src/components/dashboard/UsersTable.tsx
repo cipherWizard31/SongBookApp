@@ -67,22 +67,6 @@ export function UsersTable({
               padding: `0 ${theme.spacing.sm}`,
             }}
           />
-
-          <select
-            value={platformFilter}
-            onChange={(e) => onPlatformChange(e.target.value)}
-            className="min-h-[44px] text-sm outline-none cursor-pointer"
-            style={{
-              backgroundColor: theme.colors.background.subtle,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: `0 ${theme.spacing.sm}`,
-            }}
-          >
-            <option value="">All Platforms</option>
-            <option value="android">Android</option>
-          </select>
         </div>
       </div>
 
@@ -154,10 +138,13 @@ export function UsersTable({
                     {user.appVersion}
                   </td>
                   <td
-                    className="py-3 pr-4 text-xs"
+                    className="py-3 pr-4 text-xs tabular-nums"
                     style={{ color: theme.colors.text.muted }}
                   >
-                    {new Date(user.lastSeenAt).toLocaleDateString()}
+                    {new Date(user.lastSeenAt).toLocaleString([], {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
                   </td>
                   <td className="py-3 pr-4 text-xs font-semibold">
                     <span
