@@ -27,8 +27,8 @@ export async function saveJsonToFile({ data, fileName, dialogTitle, successAlert
           Alert.alert(successAlertTitle, `${successMessage}\n${fileName}`);
           return;
         }
-      } catch (safErr) {
-        console.log('SAF error, falling back:', safErr);
+      } catch {
+        // Fallback to sharing if SAF fails
       }
     }
 
