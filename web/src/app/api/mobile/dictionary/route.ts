@@ -35,9 +35,45 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const songs = await prisma.song.findMany({
+    const rawSongs = await prisma.song.findMany({
       where: { isPublished: true },
       orderBy: { title: 'asc' },
+    });
+
+    const songs = rawSongs.map((s) => {
+      let album = '';
+      let style = s.kignit || 'Uncategorized';
+      let scale = 'Uncategorized';
+      let audioUrl = '';
+
+      try {
+        const parsed = JSON.parse(s.tags) as unknown;
+        if (parsed && !Array.isArray(parsed) && typeof parsed === 'object') {
+          const meta = parsed as Record<string, unknown>;
+          if (typeof meta.album === 'string') album = meta.album;
+          if (typeof meta.rhythmStyle === 'string') style = meta.rhythmStyle;
+          if (typeof meta.scale === 'string') scale = meta.scale;
+          if (typeof meta.audioUrl === 'string') audioUrl = meta.audioUrl;
+        } else if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (typeof item === 'string' && item.startsWith('album:')) {
+              album = item.slice(6);
+            }
+          }
+        }
+      } catch {
+        // Ignore malformed tags JSON
+      }
+
+      return {
+        ...s,
+        author: s.artist ?? '',
+        album,
+        style,
+        scale,
+        content: s.lyrics,
+        audioUrl,
+      };
     });
 
     return NextResponse.json({

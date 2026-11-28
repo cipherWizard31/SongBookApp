@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 interface ImportSongInput {
+  id?: string;
   title?: string;
   artist?: string | null;
   author?: string | null;
@@ -11,8 +12,11 @@ interface ImportSongInput {
   content?: string;
   chords?: string | null;
   style?: string;
+  rhythmStyle?: string;
   album?: string;
-  tags?: string[] | string;
+  audioUrl?: string | null;
+  audioUri?: string | null;
+  tags?: string[] | string | Record<string, string>;
   isPublished?: boolean;
 }
 
@@ -44,17 +48,17 @@ export async function POST(request: NextRequest) {
           rawLyrics = `${rawLyrics}\n\n${rawChords}`;
         }
         const rawArtist = (s.artist ?? s.author)?.trim() || null;
-        const rawKignit = (s.kignit ?? s.scale)?.trim() || 'Tizita';
+        const rawStyle = (s.style ?? s.rhythmStyle)?.trim() || '';
+        const rawScale = (s.scale ?? s.kignit)?.trim() || '';
+        const rawKignit = rawStyle || rawScale || 'Uncategorized';
+        const rawAlbum = s.album?.trim() || '';
+        const rawAudioUrl = (s.audioUrl ?? s.audioUri)?.trim() || '';
 
-        const extraTags: string[] = [];
-        if (s.style?.trim()) extraTags.push(s.style.trim());
-        if (s.album?.trim()) extraTags.push(`album:${s.album.trim()}`);
-
-        const baseTags = Array.isArray(s.tags)
-          ? s.tags
-          : typeof s.tags === 'string'
-            ? (JSON.parse(s.tags) as string[])
-            : [];
+        const tagsMeta: Record<string, string> = {};
+        if (rawAlbum) tagsMeta.album = rawAlbum;
+        if (rawStyle) tagsMeta.rhythmStyle = rawStyle;
+        if (rawScale) tagsMeta.scale = rawScale;
+        if (rawAudioUrl) tagsMeta.audioUrl = rawAudioUrl;
 
         return {
           title: String(s.title).trim(),
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
           kignit: rawKignit,
           lyrics: rawLyrics,
           chords: rawChords,
-          tags: JSON.stringify([...baseTags, ...extraTags]),
+          tags: JSON.stringify(Object.keys(tagsMeta).length ? tagsMeta : (s.tags ?? [])),
           isPublished: s.isPublished ?? true,
         };
       });
