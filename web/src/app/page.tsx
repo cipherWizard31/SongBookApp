@@ -181,7 +181,7 @@ export default async function HomePage() {
             </div>
 
             <div className="lg:col-span-5">
-              <PhoneMockup variant="home" />
+              <PhoneMockup variant="dashboard" priority />
             </div>
           </div>
         </section>
@@ -270,19 +270,19 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
-                  variant: 'home' as const,
+                  variant: 'dashboard' as const,
                   title: 'Worship Dashboard',
                   desc: 'Jump straight into your active setlist or recently played songs.',
                 },
                 {
-                  variant: 'library' as const,
+                  variant: 'songs' as const,
                   title: 'Song Library & Kignit',
                   desc: 'Filter instantly by Kignit scale, rhythm style, or lyrics.',
                 },
                 {
-                  variant: 'song' as const,
-                  title: 'Lyrics & Chords',
-                  desc: 'Clear chord callouts with instant key transposition.',
+                  variant: 'setlists' as const,
+                  title: 'Setlists & Service Flow',
+                  desc: 'Organize, sort, and import setlists for your worship services.',
                 },
               ].map((item) => (
                 <div key={item.title} className="space-y-4 text-center">

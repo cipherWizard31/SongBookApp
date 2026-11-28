@@ -13,8 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Selah Kignit — Admin Console",
-  description: "Selah Kignit SaaS administration dashboard for songs, users, updates, and notifications.",
+  title: "Selah Kignit — Ethiopian Protestant Worship Songbook",
+  description:
+    "Discover and organize Ethiopian Protestant mezmur. Explore songs, Kignit, chords, and download the Selah Kignit Android application.",
+  metadataBase: new URL("https://selahkignit.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Selah Kignit — Ethiopian Protestant Worship Songbook",
+    description:
+      "Discover, organize, and access Ethiopian Protestant mezmur in one beautifully designed Android application.",
+    url: "https://selahkignit.vercel.app",
+    siteName: "Selah Kignit",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
