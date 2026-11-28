@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       title?: string;
       artist?: string;
+      album?: string;
+      rhythmStyle?: string;
+      scale?: string;
+      audioUrl?: string;
       kignit?: string;
       lyrics?: string;
       chords?: string;
@@ -26,22 +30,29 @@ export async function POST(request: NextRequest) {
       isPublished?: boolean;
     };
 
-    if (!body.title || !body.kignit || !body.lyrics) {
+    if (!body.title || !body.lyrics) {
       return NextResponse.json(
-        { error: 'title, kignit, and lyrics are required' },
+        { error: 'title and lyrics are required' },
         { status: 400 }
       );
     }
+
+    // Pack extra metadata into tags JSON
+    const tagsMeta: Record<string, string> = {};
+    if (body.album) tagsMeta.album = body.album;
+    if (body.rhythmStyle) tagsMeta.rhythmStyle = body.rhythmStyle;
+    if (body.scale) tagsMeta.scale = body.scale;
+    if (body.audioUrl) tagsMeta.audioUrl = body.audioUrl;
 
     const [song] = await prisma.$transaction([
       prisma.song.create({
         data: {
           title: body.title,
           artist: body.artist,
-          kignit: body.kignit,
+          kignit: body.rhythmStyle ?? body.kignit ?? 'Uncategorized',
           lyrics: body.lyrics,
           chords: body.chords,
-          tags: JSON.stringify(body.tags ?? []),
+          tags: JSON.stringify(Object.keys(tagsMeta).length ? tagsMeta : (body.tags ?? [])),
           isPublished: body.isPublished ?? true,
         },
       }),

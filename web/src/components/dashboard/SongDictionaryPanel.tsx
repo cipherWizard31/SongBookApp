@@ -25,6 +25,10 @@ export function SongDictionaryPanel() {
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [album, setAlbum] = useState('');
+  const [rhythmStyle, setRhythmStyle] = useState('Uncategorized');
+  const [scale, setScale] = useState('Uncategorized');
+  const [audioUrl, setAudioUrl] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [chords, setChords] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -71,6 +75,10 @@ export function SongDictionaryPanel() {
         body: JSON.stringify({
           title,
           artist: artist || undefined,
+          album: album || undefined,
+          rhythmStyle,
+          scale,
+          audioUrl: audioUrl || undefined,
           lyrics,
           chords: chords || undefined,
         }),
@@ -78,6 +86,10 @@ export function SongDictionaryPanel() {
       if (res.ok) {
         setTitle('');
         setArtist('');
+        setAlbum('');
+        setRhythmStyle('Uncategorized');
+        setScale('Uncategorized');
+        setAudioUrl('');
         setLyrics('');
         setChords('');
         setShowAddForm(false);
@@ -295,7 +307,7 @@ export function SongDictionaryPanel() {
       {showAddForm && (
         <form
           onSubmit={handleCreate}
-          className="grid grid-cols-1 md:grid-cols-3"
+          className="flex flex-col"
           style={{
             gap: theme.spacing.sm,
             marginBottom: theme.spacing.md,
@@ -304,63 +316,99 @@ export function SongDictionaryPanel() {
             borderRadius: theme.radii.inner,
           }}
         >
-          <input
-            required
-            aria-label="Song title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Song title"
-            className="min-h-[44px] text-sm outline-none"
-            style={{
-              backgroundColor: theme.colors.background.secondary,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: `0 ${theme.spacing.sm}`,
-            }}
-          />
-          <input
-            aria-label="Artist"
-            value={artist}
-            onChange={(e) => setArtist(e.target.value)}
-            placeholder="Artist (optional)"
-            className="min-h-[44px] text-sm outline-none"
-            style={{
-              backgroundColor: theme.colors.background.secondary,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: `0 ${theme.spacing.sm}`,
-            }}
-          />
-          <textarea
-            required
-            aria-label="Lyrics and inline chords"
-            rows={5}
-            value={lyrics}
-            onChange={(e) => setLyrics(e.target.value)}
-            placeholder="Lyrics with inline chords, e.g. Yefikir [G]Amlak [Em]getaye..."
-            className="text-sm font-mono outline-none md:col-span-3"
-            style={{
-              backgroundColor: theme.colors.background.secondary,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: theme.spacing.sm,
-            }}
-          />
+          {/* Row 1: Title + Artist */}
+          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: theme.spacing.sm }}>
+            {[
+              { label: 'TITLE *', value: title, set: setTitle, placeholder: 'Song title', required: true },
+              { label: 'ARTIST / AUTHOR', value: artist, set: setArtist, placeholder: 'Artist or composer' },
+            ].map(({ label, value, set, placeholder, required }) => (
+              <div key={label} className="flex flex-col" style={{ gap: '4px' }}>
+                <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>{label}</label>
+                <input
+                  required={required}
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                  placeholder={placeholder}
+                  className="min-h-[44px] text-sm outline-none"
+                  style={{ backgroundColor: theme.colors.background.secondary, color: theme.colors.text.primary, border: `1px solid ${theme.colors.border.subtle}`, borderRadius: theme.radii.inner, padding: `0 ${theme.spacing.sm}` }}
+                />
+              </div>
+            ))}
+          </div>
 
-          <div className="flex justify-end md:col-span-3">
+          {/* Row 2: Album */}
+          <div className="flex flex-col" style={{ gap: '4px' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>ALBUM / COLLECTION</label>
+            <input
+              value={album}
+              onChange={(e) => setAlbum(e.target.value)}
+              placeholder="Album or collection (optional)"
+              className="min-h-[44px] text-sm outline-none"
+              style={{ backgroundColor: theme.colors.background.secondary, color: theme.colors.text.primary, border: `1px solid ${theme.colors.border.subtle}`, borderRadius: theme.radii.inner, padding: `0 ${theme.spacing.sm}` }}
+            />
+          </div>
+
+          {/* Row 3: Rhythm/Style chips */}
+          <div className="flex flex-col" style={{ gap: '4px' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>RHYTHM / STYLE</label>
+            <div className="flex flex-wrap" style={{ gap: theme.spacing.xs }}>
+              {['Uncategorized','Waltz (3/4)','Ballad (4/4)','Wollo (6/8)','Reggae (2/4)','Chikchika (6/8)','Disco (4/4)','Swing(4/4)'].map((s) => (
+                <button key={s} type="button" onClick={() => setRhythmStyle(s)}
+                  className="text-xs font-medium cursor-pointer"
+                  style={{ padding: `4px ${theme.spacing.sm}`, borderRadius: theme.radii.inner, border: `1px solid ${theme.colors.border.subtle}`, backgroundColor: rhythmStyle === s ? theme.colors.accent.primary : theme.colors.background.secondary, color: rhythmStyle === s ? theme.colors.accent.foreground : theme.colors.text.secondary }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 4: Scale chips */}
+          <div className="flex flex-col" style={{ gap: '4px' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>SCALE (QENET)</label>
+            <div className="flex flex-wrap" style={{ gap: theme.spacing.xs }}>
+              {['Uncategorized','1st (C Major/Tizeta)','2nd (D Minor/Natural)','5th (C Major/Ambassel)','6th (D Minor/Bati)','C Minor (Anchihoye)','C Minor (Tizeta)','C Minor (Ambassel)','C Minor (Blues)'].map((s) => (
+                <button key={s} type="button" onClick={() => setScale(s)}
+                  className="text-xs font-medium cursor-pointer"
+                  style={{ padding: `4px ${theme.spacing.sm}`, borderRadius: theme.radii.inner, border: `1px solid ${theme.colors.border.subtle}`, backgroundColor: scale === s ? theme.colors.accent.primary : theme.colors.background.secondary, color: scale === s ? theme.colors.accent.foreground : theme.colors.text.secondary }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 5: Audio URL */}
+          <div className="flex flex-col" style={{ gap: '4px' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>AUDIO URL (OPTIONAL)</label>
+            <input
+              type="url"
+              value={audioUrl}
+              onChange={(e) => setAudioUrl(e.target.value)}
+              placeholder="https://..."
+              className="min-h-[44px] text-sm outline-none"
+              style={{ backgroundColor: theme.colors.background.secondary, color: theme.colors.text.primary, border: `1px solid ${theme.colors.border.subtle}`, borderRadius: theme.radii.inner, padding: `0 ${theme.spacing.sm}` }}
+            />
+          </div>
+
+          {/* Row 6: Lyrics */}
+          <div className="flex flex-col" style={{ gap: '4px' }}>
+            <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: theme.colors.text.muted }}>LYRICS & CHORDS *</label>
+            <textarea
+              required
+              rows={8}
+              value={lyrics}
+              onChange={(e) => setLyrics(e.target.value)}
+              placeholder={'Inline chord format: Yefikir [G]Amlak [Em]getaye...\nChords go inside [ ] right before the syllable they fall on.'}
+              className="text-sm font-mono outline-none"
+              style={{ backgroundColor: theme.colors.background.secondary, color: theme.colors.text.primary, border: `1px solid ${theme.colors.border.subtle}`, borderRadius: theme.radii.inner, padding: theme.spacing.sm, resize: 'vertical' }}
+            />
+          </div>
+
+          <div className="flex justify-end">
             <button
               type="submit"
               disabled={submitting}
               className="min-h-[44px] text-sm font-semibold cursor-pointer disabled:opacity-60"
-              style={{
-                backgroundColor: theme.colors.accent.primary,
-                color: theme.colors.accent.foreground,
-                borderRadius: theme.radii.inner,
-                padding: `0 ${theme.spacing.md}`,
-              }}
+              style={{ backgroundColor: theme.colors.accent.primary, color: theme.colors.accent.foreground, borderRadius: theme.radii.inner, padding: `0 ${theme.spacing.md}` }}
             >
               {submitting ? 'Saving...' : 'Save Song'}
             </button>
