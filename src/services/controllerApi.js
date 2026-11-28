@@ -39,18 +39,30 @@ export async function getOrCreateInstallId() {
 }
 
 async function apiFetch(path, options = {}) {
-  const res = await fetch(`${CONTROLLER_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': MOBILE_API_KEY,
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Controller API error: ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${CONTROLLER_BASE_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': MOBILE_API_KEY,
+        ...(options.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Controller API error: ${res.status}`);
+    }
+    return res.json();
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json();
 }
 
 export async function sendHeartbeat() {

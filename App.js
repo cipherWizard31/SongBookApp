@@ -50,6 +50,7 @@ import { ExportOptionsModal } from './src/ExportOptionsModal';
 import { OnboardingModal } from './src/OnboardingModal';
 import { SongSharePickerModal } from './src/SongSharePickerModal';
 import UpdateModal from './src/UpdateModal';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import {
   sendHeartbeat,
   fetchRemoteConfig,
@@ -1125,5 +1126,6 @@ export default function App() {
           onClose={() => setUpdateModalVisible(false)}
         />
     </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
