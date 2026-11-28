@@ -6,6 +6,7 @@ import {
   Platform,
   Linking,
   PanResponder,
+  AppState,
 } from 'react-native';
 
 import { StatusBar } from 'expo-status-bar';
@@ -71,12 +72,16 @@ export default function App() {
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    const ping = async () => {
       try {
         await sendHeartbeat();
       } catch {
         // Ignore offline heartbeat errors
       }
+    };
+
+    (async () => {
+      await ping();
       try {
         const config = await fetchRemoteConfig();
         if (
@@ -90,6 +95,20 @@ export default function App() {
         // Ignore offline update check errors
       }
     })();
+
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void ping();
+      }
+    });
+    const timer = setInterval(() => {
+      void ping();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      sub.remove();
+      clearInterval(timer);
+    };
   }, []);
 
   const [songs, setSongs] = useState([]);
