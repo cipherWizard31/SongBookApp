@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   /* Semantic Surface & Background Tokens (Light) */
   --bg-primary: #F8F9FB;
