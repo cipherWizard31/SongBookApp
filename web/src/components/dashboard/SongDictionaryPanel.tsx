@@ -241,7 +241,7 @@ export function SongDictionaryPanel() {
           className="text-xs font-medium"
           style={{
             color: theme.colors.text.primary,
-            backgroundColor: theme.colors.background.subtle,
+            backgroundColor: theme.colors.background.subtle,  
             borderRadius: theme.radii.inner,
             padding: theme.spacing.xs,
             marginBottom: theme.spacing.sm,
