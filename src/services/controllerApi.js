@@ -9,7 +9,7 @@ const DICT_VERSION_KEY = '@selah_dict_version';
 const DICT_SONGS_KEY = '@selah_dict_songs';
 
 const CONTROLLER_BASE_URL =
-  process.env.EXPO_PUBLIC_CONTROLLER_URL || 'http://localhost:3000';
+  process.env.EXPO_PUBLIC_CONTROLLER_URL || 'https://selahkignit.vercel.app';
 const MOBILE_API_KEY =
   process.env.EXPO_PUBLIC_MOBILE_API_KEY || 'dev-mobile-api-key';
 
