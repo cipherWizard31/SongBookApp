@@ -263,17 +263,41 @@ export default function App() {
       try {
         const remoteSongs = await syncGlobalDictionary();
         if (Array.isArray(remoteSongs)) {
+          // Index existing local global_* songs so we don't wipe out locally added chords on reload
+          const localGlobalMap = new Map(
+            localSongs
+              .filter((s) => String(s.id).startsWith('global_'))
+              .map((s) => [s.id, s])
+          );
+
           // Map remote songs to app format keyed with global_ prefix
-          const globalSongs = remoteSongs.map((rs) => ({
-            id: `global_${rs.id}`,
-            title: rs.title,
-            author: rs.artist || '',
-            album: '',
-            style: 'Uncategorized',
-            scale: rs.kignit || 'Uncategorized',
-            content: rs.lyrics,
-            audioUrl: '',
-          }));
+          const globalSongs = remoteSongs.map((rs) => {
+            const globalId = `global_${rs.id}`;
+            const existingLocal = localGlobalMap.get(globalId);
+            let remoteContent = rs.lyrics || '';
+            if (rs.chords && !remoteContent.includes('[')) {
+              remoteContent = `${remoteContent}\n\n${rs.chords}`;
+            }
+            // Preserve local content if it has inline chords that the server copy lacks
+            const hasLocalChords = existingLocal?.content?.includes('[');
+            const hasRemoteChords = remoteContent.includes('[');
+            const finalContent =
+              hasLocalChords && !hasRemoteChords
+                ? existingLocal.content
+                : remoteContent;
+
+            return {
+              id: globalId,
+              title: rs.title,
+              author: rs.artist || '',
+              album: '',
+              style: 'Uncategorized',
+              scale: rs.kignit || 'Uncategorized',
+              content: finalContent,
+              audioUrl: '',
+              isFavorite: existingLocal?.isFavorite ?? false,
+            };
+          });
           // Keep only user-created songs (not global_*), then prepend fresh global songs
           // This automatically removes any global_* song that was deleted from the server.
           const userSongs = localSongs.filter(
