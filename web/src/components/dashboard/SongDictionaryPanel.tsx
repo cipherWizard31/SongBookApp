@@ -7,7 +7,6 @@ interface SongRow {
   id: string;
   title: string;
   artist: string | null;
-  kignit: string;
   lyrics: string;
   chords: string | null;
   tags: string;
@@ -26,7 +25,6 @@ export function SongDictionaryPanel() {
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [kignit, setKignit] = useState('Tizita');
   const [lyrics, setLyrics] = useState('');
   const [chords, setChords] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +71,6 @@ export function SongDictionaryPanel() {
         body: JSON.stringify({
           title,
           artist: artist || undefined,
-          kignit,
           lyrics,
           chords: chords || undefined,
         }),
@@ -336,25 +333,6 @@ export function SongDictionaryPanel() {
               padding: `0 ${theme.spacing.sm}`,
             }}
           />
-          <select
-            aria-label="Kignit scale"
-            value={kignit}
-            onChange={(e) => setKignit(e.target.value)}
-            className="min-h-[44px] text-sm outline-none cursor-pointer"
-            style={{
-              backgroundColor: theme.colors.background.secondary,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: `0 ${theme.spacing.sm}`,
-            }}
-          >
-            <option value="Tizita">Tizita</option>
-            <option value="Bati">Bati</option>
-            <option value="Ambassel">Ambassel</option>
-            <option value="Anchihoye">Anchihoye</option>
-          </select>
-
           <textarea
             required
             aria-label="Lyrics and inline chords"
@@ -435,7 +413,7 @@ export function SongDictionaryPanel() {
                       className="text-xs"
                       style={{ color: theme.colors.text.secondary }}
                     >
-                      Kignit: {song.kignit} • v{song.version} •{' '}
+                      v{song.version} •{' '}
                       {isExpanded ? 'Hide preview' : 'Show lyrics & chords'}
                     </p>
                   </button>

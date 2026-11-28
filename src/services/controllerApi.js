@@ -11,7 +11,7 @@ const DICT_SONGS_KEY = '@selah_dict_songs';
 const CONTROLLER_BASE_URL =
   process.env.EXPO_PUBLIC_CONTROLLER_URL || 'https://selahkignit.vercel.app';
 const MOBILE_API_KEY =
-  process.env.EXPO_PUBLIC_MOBILE_API_KEY || 'dev-mobile-api-key';
+  process.env.EXPO_PUBLIC_MOBILE_API_KEY || '5daa144d37c39e1ec89834bcb4c6f5b0586e284b4d3bf826e64d9a3a63da0ed9';
 
 export function getAppVersion() {
   return Constants.expoConfig?.version || '1.0.0';

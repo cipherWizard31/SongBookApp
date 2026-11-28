@@ -3,10 +3,7 @@
 import {
   LayoutDashboard,
   Music,
-  Tags,
   Users,
-  BarChart3,
-  FileText,
   Download,
   Bell,
   Settings,
@@ -20,10 +17,7 @@ import { theme } from '@/lib/theme';
 export type NavSectionId =
   | 'overview'
   | 'songs'
-  | 'kignits'
   | 'users'
-  | 'analytics'
-  | 'content'
   | 'updates'
   | 'notifications'
   | 'settings'
@@ -41,15 +35,12 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { id: 'overview', label: 'Overview', icon: LayoutDashboard },
       { id: 'songs', label: 'Songs Library', icon: Music },
-      { id: 'kignits', label: 'Kignits & Categories', icon: Tags },
       { id: 'users', label: 'Users', icon: Users },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     ],
   },
   {
     title: 'Management',
     items: [
-      { id: 'content', label: 'Content Management', icon: FileText },
       { id: 'updates', label: 'App Updates', icon: Download },
       { id: 'notifications', label: 'Notifications', icon: Bell },
     ],

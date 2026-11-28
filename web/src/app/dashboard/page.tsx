@@ -7,10 +7,6 @@ import { Sidebar, NavSectionId } from '@/components/dashboard/Sidebar';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { OverviewView } from '@/components/dashboard/OverviewView';
 import { StatCard } from '@/components/dashboard/StatCard';
-import {
-  BreakdownCard,
-  BreakdownItem,
-} from '@/components/dashboard/BreakdownCard';
 import { DeviceUserRow, UsersTable } from '@/components/dashboard/UsersTable';
 import { UpdatesPanel } from '@/components/dashboard/UpdatesPanel';
 import { AnnouncementsPanel } from '@/components/dashboard/AnnouncementsPanel';
@@ -23,17 +19,14 @@ interface MetricsResponse {
   dau: number;
   mau: number;
   blockedUsers: number;
-  platformBreakdown: BreakdownItem[];
-  versionBreakdown: BreakdownItem[];
+  platformBreakdown: { label: string; count: number }[];
+  versionBreakdown: { label: string; count: number }[];
 }
 
 const SECTION_TITLES: Record<NavSectionId, string> = {
   overview: 'Overview',
   songs: 'Songs Library',
-  kignits: 'Kignits & Categories',
   users: 'Users',
-  analytics: 'Analytics',
-  content: 'Content Management',
   updates: 'App Updates',
   notifications: 'Notifications',
   settings: 'Settings',
@@ -149,9 +142,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {(activeSection === 'songs' ||
-            activeSection === 'kignits' ||
-            activeSection === 'content') && <SongDictionaryPanel />}
+          {activeSection === 'songs' && <SongDictionaryPanel />}
 
           {activeSection === 'users' && (
             <div className="space-y-6">
@@ -190,21 +181,6 @@ export default function DashboardPage() {
                 onSearchChange={setSearch}
                 onPlatformChange={setPlatformFilter}
                 onToggleBlock={handleToggleBlock}
-              />
-            </div>
-          )}
-
-          {activeSection === 'analytics' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <BreakdownCard
-                title="Platform Breakdown"
-                items={metrics?.platformBreakdown ?? []}
-                loading={metricsLoading}
-              />
-              <BreakdownCard
-                title="App Version Distribution"
-                items={metrics?.versionBreakdown ?? []}
-                loading={metricsLoading}
               />
             </div>
           )}
