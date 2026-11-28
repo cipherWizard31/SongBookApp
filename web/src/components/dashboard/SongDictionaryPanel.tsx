@@ -22,6 +22,7 @@ export function SongDictionaryPanel() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -64,41 +65,94 @@ export function SongDictionaryPanel() {
     });
   }, [songs, search, statusFilter]);
 
-  async function handleCreate(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function resetForm() {
+    setTitle('');
+    setArtist('');
+    setAlbum('');
+    setRhythmStyle('Uncategorized');
+    setScale('Uncategorized');
+    setAudioUrl('');
+    setLyrics('');
+    setChords('');
+    setEditingId(null);
+    setShowAddForm(false);
+  }
+
+  function startEdit(song: SongRow) {
+    let parsedAlbum = '';
+    let parsedStyle = 'Uncategorized';
+    let parsedScale = 'Uncategorized';
+    let parsedAudio = '';
+    try {
+      const meta = JSON.parse(song.tags) as Record<string, unknown>;
+      if (meta && !Array.isArray(meta)) {
+        if (typeof meta.album === 'string') parsedAlbum = meta.album;
+        if (typeof meta.rhythmStyle === 'string') parsedStyle = meta.rhythmStyle;
+        if (typeof meta.scale === 'string') parsedScale = meta.scale;
+        if (typeof meta.audioUrl === 'string') parsedAudio = meta.audioUrl;
+      }
+    } catch {
+      // ignore
+    }
+    setTitle(song.title);
+    setArtist(song.artist ?? '');
+    setAlbum(parsedAlbum);
+    setRhythmStyle(parsedStyle);
+    setScale(parsedScale);
+    setAudioUrl(parsedAudio);
+    setLyrics(song.lyrics);
+    setChords(song.chords ?? '');
+    setEditingId(song.id);
+    setShowAddForm(true);
+  }
+
+  async function submitSong(isPublished: boolean) {
+    if (!title.trim() || !lyrics.trim()) {
+      setFeedback('Title and lyrics are required.');
+      return;
+    }
     setSubmitting(true);
     setFeedback(null);
     try {
-      const res = await fetch('/api/admin/songs', {
-        method: 'POST',
+      const url = editingId ? `/api/admin/songs/${editingId}` : '/api/admin/songs';
+      const method = editingId ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title,
-          artist: artist || undefined,
-          album: album || undefined,
+          title: title.trim(),
+          artist: artist.trim() || undefined,
+          album: album.trim() || undefined,
           rhythmStyle,
           scale,
-          audioUrl: audioUrl || undefined,
-          lyrics,
-          chords: chords || undefined,
+          audioUrl: audioUrl.trim() || undefined,
+          lyrics: lyrics.trim(),
+          chords: chords.trim() || undefined,
+          isPublished,
         }),
       });
       if (res.ok) {
-        setTitle('');
-        setArtist('');
-        setAlbum('');
-        setRhythmStyle('Uncategorized');
-        setScale('Uncategorized');
-        setAudioUrl('');
-        setLyrics('');
-        setChords('');
-        setShowAddForm(false);
-        setFeedback('Song added to global dictionary.');
+        const wasEditing = Boolean(editingId);
+        resetForm();
+        setFeedback(
+          wasEditing
+            ? 'Song updated.'
+            : isPublished
+              ? 'Song published to global dictionary.'
+              : 'Song saved as draft.'
+        );
         await loadSongs();
+      } else {
+        setFeedback('Failed to save song.');
       }
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleCreate(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await submitSong(true);
   }
 
   async function handleImportFile(e: ChangeEvent<HTMLInputElement>) {
@@ -145,17 +199,56 @@ export function SongDictionaryPanel() {
   }
 
   async function handleDelete(song: SongRow) {
+    if (!window.confirm(`Delete "${song.title}"? This cannot be undone.`)) {
+      return;
+    }
     const res = await fetch(`/api/admin/songs/${song.id}`, {
       method: 'DELETE',
     });
     if (res.ok) {
       if (expandedId === song.id) setExpandedId(null);
+      if (editingId === song.id) resetForm();
       await loadSongs();
     }
   }
 
   function handleExportJson() {
-    const blob = new Blob([JSON.stringify(songs, null, 2)], {
+    const exportedSongs = songs.map((s) => {
+      let album = '';
+      let style = 'Uncategorized';
+      let scale = 'Uncategorized';
+      let audioUrl = '';
+      try {
+        const meta = JSON.parse(s.tags) as Record<string, unknown>;
+        if (meta && !Array.isArray(meta)) {
+          if (typeof meta.album === 'string') album = meta.album;
+          if (typeof meta.rhythmStyle === 'string') style = meta.rhythmStyle;
+          if (typeof meta.scale === 'string') scale = meta.scale;
+          if (typeof meta.audioUrl === 'string') audioUrl = meta.audioUrl;
+        }
+      } catch {
+        // ignore
+      }
+      return {
+        id: s.id,
+        title: s.title,
+        author: s.artist ?? '',
+        album,
+        style,
+        scale,
+        content: s.lyrics,
+        audioUrl,
+      };
+    });
+
+    const payload = {
+      songs: exportedSongs,
+      setlists: [],
+      styles: ['All', 'Waltz (3/4)', 'Ballad (4/4)', 'Wollo (6/8)', 'Reggae (2/4)', 'Chikchika (6/8)', 'Disco (4/4)', 'Swing(4/4)', 'Uncategorized'],
+      scales: ['All', '1st (C Major/Tizeta)', '2nd (D Minor/Natural)', '5th (C Major/Ambassel)', '6th (D Minor/Bati)', 'C Minor (Anchihoye)', 'C Minor (Tizeta)', 'C Minor (Ambassel)', 'C Minor (Blues)', 'Uncategorized'],
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -403,14 +496,29 @@ export function SongDictionaryPanel() {
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end" style={{ gap: theme.spacing.xs }}>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => void submitSong(false)}
+              className="min-h-[44px] text-sm font-semibold cursor-pointer disabled:opacity-60"
+              style={{
+                backgroundColor: theme.colors.background.secondary,
+                color: theme.colors.text.primary,
+                border: `1px solid ${theme.colors.border.subtle}`,
+                borderRadius: theme.radii.inner,
+                padding: `0 ${theme.spacing.md}`,
+              }}
+            >
+              Save as Draft
+            </button>
             <button
               type="submit"
               disabled={submitting}
               className="min-h-[44px] text-sm font-semibold cursor-pointer disabled:opacity-60"
               style={{ backgroundColor: theme.colors.accent.primary, color: theme.colors.accent.foreground, borderRadius: theme.radii.inner, padding: `0 ${theme.spacing.md}` }}
             >
-              {submitting ? 'Saving...' : 'Save Song'}
+              {submitting ? 'Saving...' : editingId ? 'Update Song' : 'Publish Song'}
             </button>
           </div>
         </form>
@@ -467,6 +575,21 @@ export function SongDictionaryPanel() {
                   </button>
 
                   <div className="flex items-center" style={{ gap: theme.spacing.xs }}>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(song)}
+                      className="min-h-[44px] text-xs font-semibold cursor-pointer"
+                      style={{
+                        backgroundColor: theme.colors.background.secondary,
+                        color: theme.colors.text.primary,
+                        border: `1px solid ${theme.colors.border.subtle}`,
+                        borderRadius: theme.radii.inner,
+                        padding: `0 ${theme.spacing.sm}`,
+                      }}
+                    >
+                      Edit
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => togglePublished(song)}
