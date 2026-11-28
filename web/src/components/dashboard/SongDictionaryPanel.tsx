@@ -380,27 +380,12 @@ export function SongDictionaryPanel() {
 
           <textarea
             required
-            aria-label="Lyrics"
-            rows={3}
+            aria-label="Lyrics and inline chords"
+            rows={5}
             value={lyrics}
             onChange={(e) => setLyrics(e.target.value)}
-            placeholder="Lyrics..."
-            className="text-sm outline-none md:col-span-2"
-            style={{
-              backgroundColor: theme.colors.background.secondary,
-              color: theme.colors.text.primary,
-              border: `1px solid ${theme.colors.border.subtle}`,
-              borderRadius: theme.radii.inner,
-              padding: theme.spacing.sm,
-            }}
-          />
-          <textarea
-            aria-label="Chords"
-            rows={3}
-            value={chords}
-            onChange={(e) => setChords(e.target.value)}
-            placeholder="Chords / notation (optional)"
-            className="text-sm outline-none"
+            placeholder="Lyrics with inline chords, e.g. Yefikir [G]Amlak [Em]getaye..."
+            className="text-sm font-mono outline-none md:col-span-3"
             style={{
               backgroundColor: theme.colors.background.secondary,
               color: theme.colors.text.primary,

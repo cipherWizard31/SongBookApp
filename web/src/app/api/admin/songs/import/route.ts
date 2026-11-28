@@ -37,7 +37,12 @@ export async function POST(request: NextRequest) {
         return hasTitle && hasLyrics;
       })
       .map((s) => {
-        const rawLyrics = (s.lyrics ?? s.content ?? '').trim();
+        let rawLyrics = (s.lyrics ?? s.content ?? '').trim();
+        const rawChords = s.chords ? String(s.chords).trim() : null;
+        // Preserve chords if provided separately and lyrics don't already contain inline [chords]
+        if (rawChords && !rawLyrics.includes('[')) {
+          rawLyrics = `${rawLyrics}\n\n${rawChords}`;
+        }
         const rawArtist = (s.artist ?? s.author)?.trim() || null;
         const rawKignit = (s.kignit ?? s.scale)?.trim() || 'Tizita';
 
@@ -56,7 +61,7 @@ export async function POST(request: NextRequest) {
           artist: rawArtist,
           kignit: rawKignit,
           lyrics: rawLyrics,
-          chords: s.chords ? String(s.chords).trim() : null,
+          chords: rawChords,
           tags: JSON.stringify([...baseTags, ...extraTags]),
           isPublished: s.isPublished ?? true,
         };
