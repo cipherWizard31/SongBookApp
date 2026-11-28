@@ -1030,6 +1030,7 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <SafeAreaProvider>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top', 'bottom', 'left', 'right']}>
