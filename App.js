@@ -274,14 +274,16 @@ export default function App() {
             content: rs.lyrics,
             audioUrl: '',
           }));
-          const globalIds = new Set(globalSongs.map((s) => s.id));
           // Keep only user-created songs (not global_*), then prepend fresh global songs
+          // This automatically removes any global_* song that was deleted from the server.
           const userSongs = localSongs.filter(
             (s) => !String(s.id).startsWith('global_')
           );
           mergedSongs = [...globalSongs, ...userSongs];
-          // Persist merged result if anything changed
-          if (globalSongs.length > 0 || globalIds.size !== localSongs.filter((s) => String(s.id).startsWith('global_')).length) {
+          // Always persist — covers additions, updates, AND removals
+          const prevGlobalCount = localSongs.filter((s) => String(s.id).startsWith('global_')).length;
+          const nextGlobalCount = globalSongs.length;
+          if (prevGlobalCount !== nextGlobalCount || nextGlobalCount > 0) {
             AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mergedSongs)).catch(() => {});
           }
         }

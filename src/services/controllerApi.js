@@ -77,15 +77,32 @@ export async function syncGlobalDictionary() {
     cachedVersionStr && cachedSongs.length > 0
       ? parseInt(cachedVersionStr, 10)
       : 0;
+
   const data = await apiFetch(
     `/api/mobile/dictionary?sinceVersion=${sinceVersion}`
   );
+
+  // Always derive the final song list, handling both full updates and up-to-date responses.
+  // The server always returns publishedIds so we can purge removed songs even when upToDate.
+  let finalSongs = cachedSongs;
+
   if (!data.upToDate && Array.isArray(data.songs)) {
-    await AsyncStorage.setItem(DICT_SONGS_KEY, JSON.stringify(data.songs));
+    // New version: replace entire cached dictionary
+    finalSongs = data.songs;
+    await AsyncStorage.setItem(DICT_SONGS_KEY, JSON.stringify(finalSongs));
     await AsyncStorage.setItem(DICT_VERSION_KEY, String(data.version));
-    return data.songs;
+  } else if (data.upToDate && Array.isArray(data.publishedIds) && data.publishedIds.length > 0) {
+    // Version unchanged but check for songs that were removed from the server
+    const serverIdSet = new Set(data.publishedIds.map(String));
+    const prunedSongs = cachedSongs.filter((s) => serverIdSet.has(String(s.id)));
+    if (prunedSongs.length !== cachedSongs.length) {
+      // Some songs were removed — persist the pruned list
+      finalSongs = prunedSongs;
+      await AsyncStorage.setItem(DICT_SONGS_KEY, JSON.stringify(finalSongs));
+    }
   }
-  return cachedSongs;
+
+  return finalSongs;
 }
 
 export async function downloadAndInstallApk(apkUrl, onProgress) {

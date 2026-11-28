@@ -17,10 +17,20 @@ export async function GET(request: NextRequest) {
 
     const currentVersion = dictVersion?.version ?? 1;
 
+    // Always fetch the full published ID list so the client can purge removed songs
+    const publishedIds = await prisma.song.findMany({
+      where: { isPublished: true },
+      select: { id: true },
+      orderBy: { title: 'asc' },
+    });
+    const allPublishedIds = publishedIds.map((s) => s.id);
+
     if (sinceVersion >= currentVersion) {
+      // Up-to-date: no song data needed, but send IDs so client can detect deletions
       return NextResponse.json({
         upToDate: true,
         version: currentVersion,
+        publishedIds: allPublishedIds,
         songs: [],
       });
     }
@@ -33,6 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       upToDate: false,
       version: currentVersion,
+      publishedIds: allPublishedIds,
       songs,
     });
   } catch {
