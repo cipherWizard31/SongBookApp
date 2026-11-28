@@ -20,7 +20,6 @@ export function SongDictionaryPanel() {
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [kignitFilter, setKignitFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -35,9 +34,7 @@ export function SongDictionaryPanel() {
 
   const loadSongs = useCallback(async () => {
     try {
-      const params = new URLSearchParams();
-      if (kignitFilter) params.set('kignit', kignitFilter);
-      const res = await fetch(`/api/admin/songs?${params.toString()}`);
+      const res = await fetch('/api/admin/songs');
       if (res.ok) {
         const data = (await res.json()) as { songs: SongRow[] };
         setSongs(data.songs);
@@ -45,7 +42,7 @@ export function SongDictionaryPanel() {
     } finally {
       setLoading(false);
     }
-  }, [kignitFilter]);
+  }, []);
 
   useEffect(() => {
     void loadSongs();
@@ -276,26 +273,6 @@ export function SongDictionaryPanel() {
             padding: `0 ${theme.spacing.sm}`,
           }}
         />
-
-        <select
-          aria-label="Filter by Kignit"
-          value={kignitFilter}
-          onChange={(e) => setKignitFilter(e.target.value)}
-          className="min-h-[44px] text-sm outline-none cursor-pointer"
-          style={{
-            backgroundColor: theme.colors.background.subtle,
-            color: theme.colors.text.primary,
-            border: `1px solid ${theme.colors.border.subtle}`,
-            borderRadius: theme.radii.inner,
-            padding: `0 ${theme.spacing.sm}`,
-          }}
-        >
-          <option value="">All Kignits</option>
-          <option value="Tizita">Tizita</option>
-          <option value="Bati">Bati</option>
-          <option value="Ambassel">Ambassel</option>
-          <option value="Anchihoye">Anchihoye</option>
-        </select>
 
         <select
           aria-label="Filter by publish status"
