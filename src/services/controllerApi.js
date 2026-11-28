@@ -67,10 +67,23 @@ async function apiFetch(path, options = {}) {
 
 export async function sendHeartbeat() {
   const installId = await getOrCreateInstallId();
+  let name;
+  try {
+    const profileRaw = await AsyncStorage.getItem('@songbook_profile');
+    if (profileRaw) {
+      const profile = JSON.parse(profileRaw);
+      if (profile?.name && typeof profile.name === 'string') {
+        name = profile.name.trim();
+      }
+    }
+  } catch {
+    // Ignore profile read errors
+  }
   return apiFetch('/api/mobile/heartbeat', {
     method: 'POST',
     body: JSON.stringify({
       installId,
+      name,
       platform: Platform.OS,
       appVersion: getAppVersion(),
     }),

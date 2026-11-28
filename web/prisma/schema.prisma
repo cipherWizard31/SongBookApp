@@ -11,6 +11,7 @@ datasource db {
 model DeviceUser {
   id         String   @id @default(cuid())
   installId  String   @unique
+  name       String?
   platform   String
   appVersion String
   isBlocked  Boolean  @default(false)

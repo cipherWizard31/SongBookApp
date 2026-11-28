@@ -8,10 +8,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { installId, platform, appVersion } = (await request.json()) as {
+    const { installId, platform, appVersion, name } = (await request.json()) as {
       installId?: string;
       platform?: string;
       appVersion?: string;
+      name?: string;
     };
 
     if (!installId || !platform || !appVersion) {
@@ -21,15 +22,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const cleanName = name?.trim() || undefined;
+
     const user = await prisma.deviceUser.upsert({
       where: { installId },
       update: {
         platform,
         appVersion,
+        ...(cleanName ? { name: cleanName } : {}),
         lastSeenAt: new Date(),
       },
       create: {
         installId,
+        name: cleanName,
         platform,
         appVersion,
       },

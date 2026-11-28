@@ -5,6 +5,7 @@ import { theme } from '@/lib/theme';
 export interface DeviceUserRow {
   id: string;
   installId: string;
+  name?: string | null;
   platform: string;
   appVersion: string;
   isBlocked: boolean;
@@ -102,6 +103,7 @@ export function UsersTable({
                   color: theme.colors.text.secondary,
                 }}
               >
+                <th className="py-3 pr-4 font-medium">Name</th>
                 <th className="py-3 pr-4 font-medium">Install ID</th>
                 <th className="py-3 pr-4 font-medium">Platform</th>
                 <th className="py-3 pr-4 font-medium">Version</th>
@@ -118,6 +120,16 @@ export function UsersTable({
                     borderBottom: `1px solid ${theme.colors.border.subtle}`,
                   }}
                 >
+                  <td
+                    className="py-3 pr-4 text-sm font-medium"
+                    style={{
+                      color: user.name
+                        ? theme.colors.text.primary
+                        : theme.colors.text.muted,
+                    }}
+                  >
+                    {user.name || 'Anonymous'}
+                  </td>
                   <td
                     className="py-3 pr-4 font-mono text-xs"
                     style={{ color: theme.colors.text.primary }}
