@@ -91,12 +91,12 @@ export async function syncGlobalDictionary() {
     finalSongs = data.songs;
     await AsyncStorage.setItem(DICT_SONGS_KEY, JSON.stringify(finalSongs));
     await AsyncStorage.setItem(DICT_VERSION_KEY, String(data.version));
-  } else if (data.upToDate && Array.isArray(data.publishedIds) && data.publishedIds.length > 0) {
-    // Version unchanged but check for songs that were removed from the server
+  } else if (data.upToDate && Array.isArray(data.publishedIds)) {
+    // Version unchanged but check for songs that were removed from the server (including when 0 remain)
     const serverIdSet = new Set(data.publishedIds.map(String));
     const prunedSongs = cachedSongs.filter((s) => serverIdSet.has(String(s.id)));
     if (prunedSongs.length !== cachedSongs.length) {
-      // Some songs were removed — persist the pruned list
+      // Some or all songs were removed — persist the pruned list
       finalSongs = prunedSongs;
       await AsyncStorage.setItem(DICT_SONGS_KEY, JSON.stringify(finalSongs));
     }
